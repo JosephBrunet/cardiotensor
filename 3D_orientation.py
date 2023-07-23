@@ -13,7 +13,6 @@ import numpy as np
 from tkinter import Tk     # from tkinter import Tk for Python 3.x
 from tkinter.filedialog import askopenfilename, askdirectory
 import glob 
-import psutil
 import multiprocessing
 
 import skimage.io
@@ -224,11 +223,11 @@ if __name__ == '__main__':
     
     folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/19.85um_LADAF-2021-17_heart_pag-0.04_0.12_jp2__tif'
 
-    folder_path = '/data/projects/hop/data_repository/biology/pig/19.59um_complete-organ/39.18um_pig-fresh_heart_pag-0.07_0.07_'
+    # folder_path = '/data/projects/hop/data_repository/biology/pig/19.59um_complete-organ/39.18um_pig-fresh_heart_pag-0.07_0.07_'
     #folder_path = '/data/projects/hop/data_repository/biology/pig/19.59um_complete-organ/19.59um_pig-fresh_heart_pag-0.07_0.07_'
 
 
-    #folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/32.04um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
+    folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/32.04um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
     #folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/16.02um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
     #folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/8.01um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
     
@@ -239,25 +238,14 @@ if __name__ == '__main__':
     path_bin_mask_heart = '/data/bm18/inhouse/JOSEPH/python/orientation/bin_mask_39um_heart.png'
 
     
-    crop_x = 0.12
-    crop_y = 0.12
+    crop_x = 0
+    crop_y = 0
     
-    
-    # if len(sys.argv) == 2:
-    #     folder_path = sys.argv[1]
-
-    # else:
-    #     sys.exit('ERROR: too much arguments\n')
     
     sigma = 1 # noise scale
     rho = 3 # integration scale
 
 
-    
-    # final_data = main(folder_path,sigma,rho)
-    
-    
-    
     
     
     
@@ -285,7 +273,6 @@ if __name__ == '__main__':
     if crop_z:
         N = rho*10+1
         #volume = img_array_dask[int(len(file_list)/1.57):int(len(file_list)/1.57+N),:,:].compute()
-        N_img = 3100
         N_img = img_array_dask.shape[0]/1.68
         print(N_img)
         
@@ -639,7 +626,7 @@ if __name__ == '__main__':
             ax[0].imshow(img, vmin=img_vmin, vmax=img_vmax ,cmap=plt.cm.gray)      
             tmp = ax[1].imshow(img_helix,cmap=reversed_map)                
             fig.colorbar(tmp) 
-            plt.savefig('test1.png', dpi=1200)           
+            #plt.savefig('test1.png', dpi=1200)           
             plt.show()
             
             
@@ -652,12 +639,10 @@ if __name__ == '__main__':
 
 
             
-            #plt.imsave('test2.png', img, cmap=plt.cm.gray)
-            tifffile.imsave('test2.png', img)
+            # #plt.imsave('test2.png', img, cmap=plt.cm.gray)
+            # tifffile.imsave('test2.png', img)
 
-
-            
-            plt.imsave('test3.png', img_helix, cmap=reversed_map)
+            # plt.imsave('test3.png', img_helix, cmap=reversed_map)
             plt.figure()
             plt.imshow(img_helix, cmap=reversed_map)
             plt.show()
@@ -665,7 +650,7 @@ if __name__ == '__main__':
             
         #img_helix = img_helix.astype('uint16')  
 
-        tifffile.imsave('orien.tif', img_helix)
+        #tifffile.imsave('orien.tif', img_helix)
  
 
 
@@ -770,53 +755,15 @@ if __name__ == '__main__':
 
         sys.exit()
 
-        # calls function to assign rgb value to each eigenvector and display results
-        # show_vol_orientation(chunk, vec, fa_result, coloring=colouring)
-        if save_as_tvk:
-            rgba = colouring(vec, fa_result)
-            rgb = np.zeros((rgba.shape[0], rgba.shape[1], rgba.shape[2], 3))
-            rgb[..., 0] = rgba[..., 0]       # red channel
-            rgb[..., 1] = rgba[..., 1]       # green channel
-            rgb[..., 2] = rgba[..., 2]       # blue channel
-            rgb *= 255                      # normalise data
-            rgb = rgb.astype(np.uint8)  # convert to uint8 to reduce file size
-        else:
-            rgb = np.nan
-
-        # store all data in a list
-        final_data[inds] = {'coh': coh_result,
-                            'vector': vec,
-                            'values': val,
-                            'order': order,
-                            'chunk_z_spacing': chunk_amount_z,
-                            'fa': fa_result,
-                            'rgb': rgb}
-        del coh_result, vec, val, fa_result, rgb    # save some memory by removing duplicate data
-
     # write results to file
     print('saving results to file...')
     
     print(final_data)    
     
 
-
-
-
-    if save_as_tvk:
-        # saves data as tvk file(s)
-        for ijj in tqdm(range(split_amount)):
-           write_tvk_file(final_data[ijj]['coh'], final_data[ijj]['vector'], final_data[ijj]['rgb'], 1, save_filename,
-                           final_data[ijj]['order'], final_data[ijj]['chunk_z_spacing'], sigma, rho, pool)
-
-    nifti_write(volume, final_data, save_filename, sigma, rho, split_axis)    # Saves data in nifti format
-
-
-
-    print(f'data saved in: {save_filename}')
     pool.close()
     pool.join()
     print('finished - program end')
-    plt.show()
     
     
     
