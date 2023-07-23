@@ -49,168 +49,14 @@ import utilsST_3D
 
 
 
-def coherence(val):
-    # function calculates the coherence value of every voxel
-    # Based on the following formula:
-    # c_s = (3 * eigval3) / (eigval1 ** 2 + eigval2 ** 2 + eigval3 ** 2) ** 0.5
-
-    # Flatten S.
-    input_shape = val.shape
-    val = val.reshape(3, -1)
-    c_s = np.empty((1,) + val.shape[1:], dtype="float32")
-    c_a = np.empty((1,) + val.shape[1:], dtype="float32")
-    tmp = np.empty((4,) + val.shape[1:], dtype="float32")
-
-    # compute c_s
-    np.multiply(val[2], 3, out=tmp[0])         # 3 * eigval3
-    np.multiply(val[0], val[0], out=tmp[1])   # eigval1^2
-    np.multiply(val[1], val[1], out=tmp[2])   # eigval2^2
-    np.multiply(val[2], val[2], out=tmp[3])   # eigval3^2
-    a = np.add(tmp[1], tmp[2])
-    a += tmp[3]
-    a **= 0.5
-    np.divide(tmp[0], a, out=c_s, where=a != 0)
-    # compute c_a
-    np.subtract(1, c_s, out=c_a)
-    del tmp
-    return c_a.reshape(input_shape[1:])
-
-def fractional_anisotropy(val):
-    # function calculates fractional anisotropy
-    # Based on the following formula:
-    # fa = (1/2)**0.5 * ((eigval1 - eigval2)**2 + (eigval2-eigval3)**2 + (eigval3 - eigval1)**2)** 0.5/(eigval1 ** 2 + eigval2 ** 2 + eigval3 ** 2)) ** 0.5
-
-    # Flatten val
-    input_shape = val.shape
-    val = val.reshape(3, -1)
-    fa = np.empty((1,) + val.shape[1:], dtype="float32")
-    tmp = np.empty((5,) + val.shape[1:], dtype="float32")
-
-    # compute fa
-    np.multiply(val[0], val[0], out=tmp[0])   # eigval1^2
-    np.multiply(val[1], val[1], out=tmp[1])   # eigval2^2
-    np.multiply(val[2], val[2], out=tmp[2])   # eigval3^2
-    np.add(tmp[0], tmp[1], out=tmp[3])
-    tmp[3] += tmp[2]
-
-    a = np.subtract(val[0], val[1])
-    a **= 2
-    b = np.subtract(val[1], val[2])
-    b **= 2
-    c = np.subtract(val[2], val[0])
-    c **= 2
-    np.add(a, b, out=tmp[4])
-    tmp[4] += c
-
-    d = np.divide(tmp[4], tmp[3], where=tmp[3] != 0)
-    d **= 0.5
-    e = 1/(2**0.5)
-
-    np.multiply(e, d, out=fa)
-    del tmp
-    return fa.reshape(input_shape[1:])
-
-
-def colouring(vec, fa):
-    # function to assign rgba value to data
-    vec = abs(vec)  # negative numbers don't matter for assigning colour
-    vec[~np.isfinite(vec)] = np.nan  # Replaces any inf values with nan
-
-    input_shape = vec.shape
-    vec = vec.reshape(3, -1)
-    tmp = np.empty((6,) + vec.shape[1:], dtype="float32")
-    # find red
-    np.subtract(vec[2], np.nanmin(vec[2]), out=tmp[0])
-    np.subtract(np.nanmax(vec[2]), np.nanmin(vec[2]), out=tmp[1])
-    r = np.divide(tmp[0], tmp[1])  # x-axis component is the red channel
-    # find blue
-    np.subtract(vec[1], np.nanmin(vec[1]), out=tmp[2])
-    np.subtract(np.nanmax(vec[1]), np.nanmin(vec[1]), out=tmp[3])
-    b = np.divide(tmp[2], tmp[3])  # x-axis component is the red channel
-    # find green
-    np.subtract(vec[0], np.nanmin(vec[0]), out=tmp[4])
-    np.subtract(np.nanmax(vec[0]), np.nanmin(vec[0]), out=tmp[5])
-    g = np.divide(tmp[4], tmp[5])  # x-axis component is the red channel
-    a = fa  # use fa as alpha channel
-
-    rgba = np.empty((input_shape[1], input_shape[2], input_shape[3], 4))
-    rgba[..., 0] = r.reshape(input_shape[1:])
-    rgba[..., 1] = g.reshape(input_shape[1:])
-    rgba[..., 2] = b.reshape(input_shape[1:])
-    rgba[..., 3] = a
-    # rgba *= 255  # normalise data
-    rgba = rgba.astype(np.uint8)  # convert to uint8 to reduce file size
-    del tmp
-    return rgba
-
-def array_slice(a, axis, start, end, step=1):
-    return a[(slice(None),) * (axis % a.ndim) + (slice(start, end, step),)]
-
-def chunk_split(volume, split_amount, padding):
-    # function to split large datasets into smaller manageable chunks for processing
-    # input:
-    #       volume = numpy array of the dataset to be split into chunks.
-    #       split_amount = integer of the number of chunks to split the data into.
-    #       padding = integer of the number of layers to add to each chunk. takes the data from the neighbouring chunk.
-    #                 if first or last chunk, padding will only be added to one side of the chunk.
-    # output:
-    #       volume_chunk = list containing multiple numpy arrays of the chunks.
-    #       chunk_amount_z = tuple containing the z-dimension of the every chunk the data was split into.
-
-    # Determine largest axis and split data along it
-    # if volume.shape[0] >= volume.shape[1] and volume.shape[0] >= volume.shape[2]:
-    #     split_axis = 0
-    # elif volume.shape[1] >= volume.shape[0] and volume.shape[1] >= volume.shape[2]:
-    #     split_axis = 1
-    # else:
-    #     split_axis = 2
-    
-    split_axis = 0
-
-    chunk_amount_z = tuple([volume.shape[split_axis] // split_amount + int(x < volume.shape[split_axis] % split_amount) for x in range(split_amount)])
-    volume_chunks = [None] * split_amount  # initialise variable
-    for iz in range(split_amount):
-        if iz == 0:
-            # deals with initial chunk
-            volume_chunks[iz] = {
-                                'data': array_slice(volume, split_axis, 0, (chunk_amount_z[iz] + padding)),
-                                'order': int(iz),
-                                'padding_start': 0,
-                                'padding_end': padding
-                                }
-            previous_finish = chunk_amount_z[iz]
-        elif iz == (split_amount - 1):
-            # deals with last chunk
-            volume_chunks[iz] = {
-                                'data': array_slice(volume, split_axis, (previous_finish - padding), (previous_finish + chunk_amount_z[iz])),
-                                'order': int(iz),
-                                'padding_start': padding,
-                                'padding_end': 0
-                                }
-        else:
-            # deals with all other chunks
-            volume_chunks[iz] = {
-                                'data': array_slice(volume, split_axis, (previous_finish - padding),(previous_finish + chunk_amount_z[iz] + padding)),
-                                'order': int(iz),
-                                'padding_start': padding,
-                                'padding_end': padding
-                                }
-            previous_finish = previous_finish + chunk_amount_z[iz]
-    return(volume_chunks, chunk_amount_z, split_axis)
 
 
 
 
+def main():
 
 
 
-
-# def main(folder_path,sigma,rho):
-    
-    
-if __name__ == '__main__':  
-    
-    
     #Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     #folder_path = askdirectory(initialdir=os.getcwd(), title="Select folder") # show an "Open" dialog box and return the path to the selected file
     
@@ -475,51 +321,8 @@ if __name__ == '__main__':
 
 
 
-        # # Create an array of vectors with shape (3, 10, 10)
-        # v = np.random.rand(3, 4, 1)
-        
-        # # Create an array of normal vectors with shape (3, 10, 10)
-        # n = np.random.rand(3, 4, 1)
-        
-        
-        # v[:,0,0]=np.array([1, 0,0])   # +
-        # v[:,1,0]=np.array([1, 0,0.1])   # -
-        # v[:,2,0]=np.array([0.1,0, 1])    # +
-        # v[:,3,0]=np.array([-0.1,0,-1])    # -
-        
-        # n[:,0,0]=np.array([1, 0,0])
-        # n[:,1,0]=np.array([1, 0,0])
-        # n[:,2,0]=np.array([1, 0,0])
-        # n[:,3,0]=np.array([1, 0,0])
-        
-        # # Calculate the signed angles between the vectors and normals
-        # signed_angles = calculate_angles(v,n)
-        # print(signed_angles)  # Output: (10, 10)
-
-
-
-
-        # def signed_angle(v1, v2):
-        #     # Calculate the dot product
-        #     dot = v1[0]*v2[0] + v1[1]*v2[1]
-        #     # Calculate the magnitudes of the vectors
-        #     mag1 = math.sqrt(v1[0]**2 + v1[1]**2)
-        #     mag2 = math.sqrt(v2[0]**2 + v2[1]**2)
-        #     # Calculate the angle using the dot product and magnitudes
-        #     angle = math.acos(dot / (mag1 * mag2))
-        #     # Calculate the cross product
-        #     cross = v1[0]*v2[1] - v1[1]*v2[0]
-        #     # Return the signed angle, using the cross product to determine the sign
-        #     if cross >= 0:
-        #         return angle
-        #     else:
-        #         return -angle
-        
-        
-        #vec_2D=vec_2D.astype('float16')
-        
         def calculate_helix_angle(img,vec_2D):
-            # Get the number of rows and columns of the matrix
+            
             rows, cols = img.shape
             
             
@@ -588,11 +391,7 @@ if __name__ == '__main__':
             return signed_angles
             
             
-            # from skspatial.objects import Plane
-            # from skspatial.objects import Points
-            # from skspatial.objects import Point
-            # plane = Plane(point=[476,10,0], normal=[0,-1,0])
-            # plane.project_vector([0.009186, 0.2316  , 0.9727  ])
+            
         z = int(volume.shape[0]/2)
         img = volume[z, :, :]
         center_point = get_click_point(img)
@@ -766,6 +565,172 @@ if __name__ == '__main__':
     print('finished - program end')
     
     
+    
+    
+    
+
+
+def coherence(val):
+    # function calculates the coherence value of every voxel
+    # Based on the following formula:
+    # c_s = (3 * eigval3) / (eigval1 ** 2 + eigval2 ** 2 + eigval3 ** 2) ** 0.5
+
+    # Flatten S.
+    input_shape = val.shape
+    val = val.reshape(3, -1)
+    c_s = np.empty((1,) + val.shape[1:], dtype="float32")
+    c_a = np.empty((1,) + val.shape[1:], dtype="float32")
+    tmp = np.empty((4,) + val.shape[1:], dtype="float32")
+
+    # compute c_s
+    np.multiply(val[2], 3, out=tmp[0])         # 3 * eigval3
+    np.multiply(val[0], val[0], out=tmp[1])   # eigval1^2
+    np.multiply(val[1], val[1], out=tmp[2])   # eigval2^2
+    np.multiply(val[2], val[2], out=tmp[3])   # eigval3^2
+    a = np.add(tmp[1], tmp[2])
+    a += tmp[3]
+    a **= 0.5
+    np.divide(tmp[0], a, out=c_s, where=a != 0)
+    # compute c_a
+    np.subtract(1, c_s, out=c_a)
+    del tmp
+    return c_a.reshape(input_shape[1:])
+
+def fractional_anisotropy(val):
+    # function calculates fractional anisotropy
+    # Based on the following formula:
+    # fa = (1/2)**0.5 * ((eigval1 - eigval2)**2 + (eigval2-eigval3)**2 + (eigval3 - eigval1)**2)** 0.5/(eigval1 ** 2 + eigval2 ** 2 + eigval3 ** 2)) ** 0.5
+
+    # Flatten val
+    input_shape = val.shape
+    val = val.reshape(3, -1)
+    fa = np.empty((1,) + val.shape[1:], dtype="float32")
+    tmp = np.empty((5,) + val.shape[1:], dtype="float32")
+
+    # compute fa
+    np.multiply(val[0], val[0], out=tmp[0])   # eigval1^2
+    np.multiply(val[1], val[1], out=tmp[1])   # eigval2^2
+    np.multiply(val[2], val[2], out=tmp[2])   # eigval3^2
+    np.add(tmp[0], tmp[1], out=tmp[3])
+    tmp[3] += tmp[2]
+
+    a = np.subtract(val[0], val[1])
+    a **= 2
+    b = np.subtract(val[1], val[2])
+    b **= 2
+    c = np.subtract(val[2], val[0])
+    c **= 2
+    np.add(a, b, out=tmp[4])
+    tmp[4] += c
+
+    d = np.divide(tmp[4], tmp[3], where=tmp[3] != 0)
+    d **= 0.5
+    e = 1/(2**0.5)
+
+    np.multiply(e, d, out=fa)
+    del tmp
+    return fa.reshape(input_shape[1:])
+
+
+def colouring(vec, fa):
+    # function to assign rgba value to data
+    vec = abs(vec)  # negative numbers don't matter for assigning colour
+    vec[~np.isfinite(vec)] = np.nan  # Replaces any inf values with nan
+
+    input_shape = vec.shape
+    vec = vec.reshape(3, -1)
+    tmp = np.empty((6,) + vec.shape[1:], dtype="float32")
+    # find red
+    np.subtract(vec[2], np.nanmin(vec[2]), out=tmp[0])
+    np.subtract(np.nanmax(vec[2]), np.nanmin(vec[2]), out=tmp[1])
+    r = np.divide(tmp[0], tmp[1])  # x-axis component is the red channel
+    # find blue
+    np.subtract(vec[1], np.nanmin(vec[1]), out=tmp[2])
+    np.subtract(np.nanmax(vec[1]), np.nanmin(vec[1]), out=tmp[3])
+    b = np.divide(tmp[2], tmp[3])  # x-axis component is the red channel
+    # find green
+    np.subtract(vec[0], np.nanmin(vec[0]), out=tmp[4])
+    np.subtract(np.nanmax(vec[0]), np.nanmin(vec[0]), out=tmp[5])
+    g = np.divide(tmp[4], tmp[5])  # x-axis component is the red channel
+    a = fa  # use fa as alpha channel
+
+    rgba = np.empty((input_shape[1], input_shape[2], input_shape[3], 4))
+    rgba[..., 0] = r.reshape(input_shape[1:])
+    rgba[..., 1] = g.reshape(input_shape[1:])
+    rgba[..., 2] = b.reshape(input_shape[1:])
+    rgba[..., 3] = a
+    # rgba *= 255  # normalise data
+    rgba = rgba.astype(np.uint8)  # convert to uint8 to reduce file size
+    del tmp
+    return rgba
+
+def array_slice(a, axis, start, end, step=1):
+    return a[(slice(None),) * (axis % a.ndim) + (slice(start, end, step),)]
+
+def chunk_split(volume, split_amount, padding):
+    # function to split large datasets into smaller manageable chunks for processing
+    # input:
+    #       volume = numpy array of the dataset to be split into chunks.
+    #       split_amount = integer of the number of chunks to split the data into.
+    #       padding = integer of the number of layers to add to each chunk. takes the data from the neighbouring chunk.
+    #                 if first or last chunk, padding will only be added to one side of the chunk.
+    # output:
+    #       volume_chunk = list containing multiple numpy arrays of the chunks.
+    #       chunk_amount_z = tuple containing the z-dimension of the every chunk the data was split into.
+
+    # Determine largest axis and split data along it
+    # if volume.shape[0] >= volume.shape[1] and volume.shape[0] >= volume.shape[2]:
+    #     split_axis = 0
+    # elif volume.shape[1] >= volume.shape[0] and volume.shape[1] >= volume.shape[2]:
+    #     split_axis = 1
+    # else:
+    #     split_axis = 2
+    
+    split_axis = 0
+
+    chunk_amount_z = tuple([volume.shape[split_axis] // split_amount + int(x < volume.shape[split_axis] % split_amount) for x in range(split_amount)])
+    volume_chunks = [None] * split_amount  # initialise variable
+    for iz in range(split_amount):
+        if iz == 0:
+            # deals with initial chunk
+            volume_chunks[iz] = {
+                                'data': array_slice(volume, split_axis, 0, (chunk_amount_z[iz] + padding)),
+                                'order': int(iz),
+                                'padding_start': 0,
+                                'padding_end': padding
+                                }
+            previous_finish = chunk_amount_z[iz]
+        elif iz == (split_amount - 1):
+            # deals with last chunk
+            volume_chunks[iz] = {
+                                'data': array_slice(volume, split_axis, (previous_finish - padding), (previous_finish + chunk_amount_z[iz])),
+                                'order': int(iz),
+                                'padding_start': padding,
+                                'padding_end': 0
+                                }
+        else:
+            # deals with all other chunks
+            volume_chunks[iz] = {
+                                'data': array_slice(volume, split_axis, (previous_finish - padding),(previous_finish + chunk_amount_z[iz] + padding)),
+                                'order': int(iz),
+                                'padding_start': padding,
+                                'padding_end': padding
+                                }
+            previous_finish = previous_finish + chunk_amount_z[iz]
+    return(volume_chunks, chunk_amount_z, split_axis)
+
+
+
+
+
+
+
+
+# def main(folder_path,sigma,rho):
+    
+    
+if __name__ == '__main__':  
+    main()
     
     
     
