@@ -53,7 +53,7 @@ end
 % Nz mut be an odd number (9, 11, 13 etc.); Minimum Nz = 9;
 % Definition of first and last image to compute fibre orientation
 % ===============================================================
-Nz = 3;
+Nz = 9;
 ini_ima = center_LV_i(1,3);
 fin_ima = center_LV_i(end,3);
 N = fin_ima - ini_ima - (Nz-1);
@@ -72,7 +72,7 @@ FilterType = 1;
 % ===============================================================
 fprintf ('Starting fibre analysis...\n');
 for j = 1 : 1 : N
-   if j ~= 155
+   if j ~= 650
       continue
    end
     cima = j - 1 + ini_ima + (Nz-1)*0.5;
@@ -105,7 +105,7 @@ for j = 1 : 1 : N
 % ===============================================================
 %  Plot FI   
 % ===============================================================
-   if j == 155
+   if j == 650
       close(figure(1)), figure(1), imagesc(rad2deg(FI)); hold on, 
       cmap = [0 0 0; hsv(180)]; colormap(cmap);
       plot(center(1,1),center(1,2),'xr','MarkerSize',20);

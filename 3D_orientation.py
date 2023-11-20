@@ -90,14 +90,28 @@ def main():
     # pt_apex = np.array([184,260,480])
 
     
-    # folder_path = 'W:\LADAF-2021-64\heart\19.89um_complete-organ_bm18\39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
-    folder_path = '/data/projects/hop/data_repository/LADAF-2021-64/heart/19.89um_complete-organ_bm18/39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
-    pt_MV = np.array([1341,1861,2374])
-    pt_apex = np.array([2048,1867,3643])
+    # # folder_path = 'W:\LADAF-2021-64\heart\19.89um_complete-organ_bm18\39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-64/heart/19.89um_complete-organ_bm18/39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # pt_MV = np.array([1341,1861,2374])
+    # pt_apex = np.array([2048,1867,3643])
 
+    folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/79.4um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    pt_MV = np.array([295,268,290])*4
+    pt_apex = np.array([184,260,480])*4
 
+    # folder_path = '/data/bm18/inhouse/JOSEPH/python/orientation/Code_fibre_analysis_Hector/images/79.4um_LADAF-2021-17_heart_pag-0.04_0.12_inv_'
+    # pt_MV = np.array([1180,1072,960])
+    # pt_apex = np.array([736,1040,200])
 
+    
+    # # folder_path = 'W:\LADAF-2021-64\heart\19.89um_complete-organ_bm18\39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # folder_path = '/data/projects/hop/data_repository/S-20-28/heart/19.85um_complete-organ_bm18/39.70um_S20-28_heart_pag-0.04_0.12_'
+    # pt_MV = np.array([177,195,236])*8
+    # pt_apex = np.array([290,176,451])*8
 
+    folder_path = '/data/projects/hop/data_repository/HOA-hub/pediatric-hearts/PL19_heart/19.19um_complete-organ/38.38um_PL19_heart_pag-0.12_0.13_'
+    pt_MV = np.array([1241,1490,1715])
+    pt_apex = np.array([1382,1838,3865])
 
 
 
@@ -139,8 +153,9 @@ def main():
     center_line = interpolate_points(pt_MV, pt_apex, N)
     center_vec = pt_apex - pt_MV
     center_vec = center_vec/np.linalg.norm(center_vec)
+    center_vec[0:2] = -center_vec[0:2]
     print(center_vec)
-
+    # center_vec = np.array([-0.504103, -0.03633175, 0.862879])
     
     # # Print the results
     # for point in center_line:
@@ -159,7 +174,8 @@ def main():
     
     if crop_z:
         N = rho*10+1
-        N_img = int(img_array_dask.shape[0]/1.6)  #1.68
+        N_img = int(img_array_dask.shape[0]/1.68)  #1.68
+        #N_img = 1470
         print(N_img)
         volume = img_array_dask[int(N_img-N/2):int(N_img+N/2),:,:].compute()
 
@@ -369,125 +385,125 @@ def main():
 
 
 
-        def calculate_helix_angle(img,vec_2D,center_point):
-            """
-            Calculate the signed helix angles at each point of a 2D image using a 2D orientation vector matrix 
-            and a center point defining the center of the radial coordiate system.
+        # def calculate_helix_angle(img,vec_2D,center_point):
+        #     """
+        #     Calculate the signed helix angles at each point of a 2D image using a 2D orientation vector matrix 
+        #     and a center point defining the center of the radial coordiate system.
 
-            Parameters:
-                img (numpy.ndarray): 2D image array.
-                vec_2D (numpy.ndarray): 2D vector.
-                center_point (tuple): Tuple (x, y) representing the center point of the image grid.
+        #     Parameters:
+        #         img (numpy.ndarray): 2D image array.
+        #         vec_2D (numpy.ndarray): 2D vector.
+        #         center_point (tuple): Tuple (x, y) representing the center point of the image grid.
 
-            Returns:
-                numpy.ndarray: An array containing the signed angles between the 2D vector and the normal vectors of the image grid.
-            """
-            rows, cols = img.shape
+        #     Returns:
+        #         numpy.ndarray: An array containing the signed angles between the 2D vector and the normal vectors of the image grid.
+        #     """
+        #     rows, cols = img.shape
             
-            x, y = np.meshgrid(np.arange(rows), np.arange(cols))
-            rad_vec = np.stack((x - center_point[0], y - center_point[1], np.zeros_like(x)), axis=0)
-            rad_vec = rad_vec / np.linalg.norm(rad_vec, axis=0, keepdims=True)
-            circ_matrix = np.cross(rad_vec,np.array([0,0,1]),axis=0)
+        #     x, y = np.meshgrid(np.arange(rows), np.arange(cols))
+        #     rad_vec = np.stack((x - center_point[0], y - center_point[1], np.zeros_like(x)), axis=0)
+        #     rad_vec = rad_vec / np.linalg.norm(rad_vec, axis=0, keepdims=True)
+        #     circ_matrix = np.cross(rad_vec,np.array([0,0,1]),axis=0)
 
-            v_proj = np.einsum('ijk,ijk->jk', vec_2D, rad_vec) / np.einsum('ijk,ijk->jk', rad_vec, rad_vec) * rad_vec
-            v_orth_proj = vec_2D - v_proj
-            v_orth_proj = v_orth_proj / np.linalg.norm(v_orth_proj, axis=0, keepdims=True)            
+        #     v_proj = np.einsum('ijk,ijk->jk', vec_2D, rad_vec) / np.einsum('ijk,ijk->jk', rad_vec, rad_vec) * rad_vec
+        #     v_orth_proj = vec_2D - v_proj
+        #     v_orth_proj = v_orth_proj / np.linalg.norm(v_orth_proj, axis=0, keepdims=True)            
                        
-            # Calculate the sign of each scalar in b
-            dot_product = np.sum(v_orth_proj * circ_matrix, axis=0)
-            signs = np.sign(dot_product)
-            signs = np.where(signs==0, 1, signs)
+        #     # Calculate the sign of each scalar in b
+        #     dot_product = np.sum(v_orth_proj * circ_matrix, axis=0)
+        #     signs = np.sign(dot_product)
+        #     signs = np.where(signs==0, 1, signs)
            
            
-            # Multiply a by signs elementwise
-            v_orth_proj = v_orth_proj * signs
+        #     # Multiply a by signs elementwise
+        #     v_orth_proj = v_orth_proj * signs
 
-            # signed_angles = calculate_angles(v_orth_proj)
+        #     # signed_angles = calculate_angles(v_orth_proj)
             
-            v = v_orth_proj
+        #     v = v_orth_proj
             
-           # Define the normal vector of the plane p
-            p = np.array([0, 0, 1])
+        #    # Define the normal vector of the plane p
+        #     p = np.array([0, 0, 1])
             
-            # Calculate the dot product between each vector in v and the normal vector p
-            dot_products = np.sum(v * p.reshape(3, 1, 1), axis=0)
+        #     # Calculate the dot product between each vector in v and the normal vector p
+        #     dot_products = np.sum(v * p.reshape(3, 1, 1), axis=0)
             
-            # Calculate the magnitudes of each vector in v and the normal vector p
-            v_magnitudes = np.sqrt(np.sum(v**2, axis=0))
-            p_magnitude = np.linalg.norm(p)
+        #     # Calculate the magnitudes of each vector in v and the normal vector p
+        #     v_magnitudes = np.sqrt(np.sum(v**2, axis=0))
+        #     p_magnitude = np.linalg.norm(p)
             
-            # Calculate the angles between each vector in v and the normal vector p
-            angles = np.arccos(dot_products / (v_magnitudes * p_magnitude))* 180 / np.pi
+        #     # Calculate the angles between each vector in v and the normal vector p
+        #     angles = np.arccos(dot_products / (v_magnitudes * p_magnitude))* 180 / np.pi
             
-            angles = 90 - angles
-            # Calculate the signed angles by checking the z component of each vector in v
-            signed_angles = np.where(v[2] > 90, angles - 180, angles) 
+        #     angles = 90 - angles
+        #     # Calculate the signed angles by checking the z component of each vector in v
+        #     signed_angles = np.where(v[2] > 90, angles - 180, angles) 
             
             
-            return signed_angles
+        #     return signed_angles
             
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-        def calculate_intrusion_angle(img,vec_2D,center_point):
-            """
-            Calculate the signed helix angles at each point of a 2D image using a 2D orientation vector matrix 
-            and a center point defining the center of the radial coordiate system.
+        # def calculate_intrusion_angle(img: np.ndarray,vec_2D: np.ndarray,center_point: np.ndarray) -> float:
+        #     """
+        #     Calculate the signed helix angles at each point of a 2D image using a 2D orientation vector matrix 
+        #     and a center point defining the center of the radial coordiate system.
 
-            Parameters:
-                img (numpy.ndarray): 2D image array.
-                vec_2D (numpy.ndarray): 2D vector.
-                center_point (tuple): Tuple (x, y) representing the center point of the image grid.
+        #     Parameters:
+        #         img (numpy.ndarray): 2D image array.
+        #         vec_2D (numpy.ndarray): 2D vector.
+        #         center_point (tuple): Tuple (x, y) representing the center point of the image grid.
 
-            Returns:
-                numpy.ndarray: An array containing the signed angles between the 2D vector and the normal vectors of the image grid.
-            """
-            rows, cols = img.shape
+        #     Returns:
+        #         numpy.ndarray: An array containing the signed angles between the 2D vector and the normal vectors of the image grid.
+        #     """
+        #     rows, cols = img.shape
             
-            x, y = np.meshgrid(np.arange(rows), np.arange(cols))
-            rad_vec = np.stack((x - center_point[0], y - center_point[1], np.zeros_like(x)), axis=0)
-            rad_vec = rad_vec / np.linalg.norm(rad_vec, axis=0, keepdims=True)
-            circ_matrix = np.cross(rad_vec,np.array([0,0,1]),axis=0)
+        #     x, y = np.meshgrid(np.arange(rows), np.arange(cols))
+        #     rad_vec = np.stack((x - center_point[0], y - center_point[1], np.zeros_like(x)), axis=0)
+        #     rad_vec = rad_vec / np.linalg.norm(rad_vec, axis=0, keepdims=True)
+        #     circ_matrix = np.cross(rad_vec,np.array([0,0,1]),axis=0)
             
-            z_vec = np.cross(rad_vec,circ_matrix,axis=0)
-            print(z_vec[:,100:105,155])
+        #     z_vec = np.cross(rad_vec,circ_matrix,axis=0)
+        #     print(z_vec[:,100:105,155])
 
 
-            v_proj = np.einsum('ijk,ijk->jk', vec_2D, z_vec) / np.einsum('ijk,ijk->jk', z_vec, z_vec) * z_vec
-            v_orth_proj = vec_2D - v_proj
-            v_orth_proj = v_orth_proj / np.linalg.norm(v_orth_proj, axis=0, keepdims=True)            
+        #     v_proj = np.einsum('ijk,ijk->jk', vec_2D, z_vec) / np.einsum('ijk,ijk->jk', z_vec, z_vec) * z_vec
+        #     v_orth_proj = vec_2D - v_proj
+        #     v_orth_proj = v_orth_proj / np.linalg.norm(v_orth_proj, axis=0, keepdims=True)            
                        
-            # Calculate the sign of each scalar in b
-            dot_product = np.sum(v_orth_proj * rad_vec, axis=0)
-            signs = np.sign(dot_product)
-            signs = np.where(signs==0, 1, signs)
+        #     # Calculate the sign of each scalar in b
+        #     dot_product = np.sum(v_orth_proj * rad_vec, axis=0)
+        #     signs = np.sign(dot_product)
+        #     signs = np.where(signs==0, 1, signs)
            
            
-            # Multiply a by signs elementwise
-            v_orth_proj = v_orth_proj * signs
+        #     # Multiply a by signs elementwise
+        #     v_orth_proj = v_orth_proj * signs
 
-            v = v_orth_proj
+        #     v = v_orth_proj
             
-           # Define the normal vector of the plane p
-            p = np.array([0, 0, 1])
+        #    # Define the normal vector of the plane p
+        #     p = np.array([0, 0, 1])
             
-            # Calculate the dot product between each vector in v and the normal vector p
-            # dot_products = np.sum(v * p.reshape(3, 1, 1), axis=0)
-            dot_product = np.sum(v_orth_proj * circ_matrix, axis=0)
+        #     # Calculate the dot product between each vector in v and the normal vector p
+        #     # dot_products = np.sum(v * p.reshape(3, 1, 1), axis=0)
+        #     dot_product = np.sum(v_orth_proj * circ_matrix, axis=0)
             
-            # Calculate the magnitudes of each vector in v and the normal vector p
-            v_magnitudes = np.sqrt(np.sum(v**2, axis=0))
-            p_magnitude = np.linalg.norm(p)
+        #     # Calculate the magnitudes of each vector in v and the normal vector p
+        #     v_magnitudes = np.sqrt(np.sum(v**2, axis=0))
+        #     p_magnitude = np.linalg.norm(p)
             
-            # Calculate the angles between each vector in v and the normal vector p
-            angles = np.arccos(dot_product / (v_magnitudes * p_magnitude))* 180 / np.pi
+        #     # Calculate the angles between each vector in v and the normal vector p
+        #     angles = np.arccos(dot_product / (v_magnitudes * p_magnitude))* 180 / np.pi
             
-            angles = 90 - angles
-            # Calculate the signed angles by checking the z component of each vector in v
-            signed_angles = np.where(v[2] > 90, angles - 180, angles) 
+        #     angles = 90 - angles
+        #     # Calculate the signed angles by checking the z component of each vector in v
+        #     signed_angles = np.where(v[2] > 90, angles - 180, angles) 
             
-            return signed_angles
+        #     return signed_angles
 
 
 
@@ -596,24 +612,25 @@ def main():
         
         h,w = img.shape
  
+ 
+        # Fraction Anisotropy Calculation
         l1 = val_2D[0, :, :]
         l2 = val_2D[1, :, :]
         l3 = val_2D[2, :, :]
         lm = (l1 + l2 + l3) / 3
-
         numerator = np.sqrt((l1 - lm)**2 + (l2 - lm)**2 + (l3 - lm)**2)
         denominator = np.sqrt(l1**2 + l2**2 + l3**2)
         FA = np.sqrt(3 / 2) * (numerator / denominator)
     
-        # center_vec = np.array([-0.5,-0.5,0.89])
-        # center_vec = center_vec / np.linalg.norm(center_vec)
         
         # # #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # center_vec = np.array([0,0.4,0.8])
         # center_vec = np.array([0,0,1])
         # center_vec = center_vec / np.linalg.norm(center_vec)
         # # #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         print('center line',center_vec)
+        
 
 
 
@@ -637,7 +654,6 @@ def main():
                 
             # Reshape vec_2D to (3, 100) for matrix multiplication
             vec_2D_reshaped = np.reshape(vec_3D, (3, -1))
-            
             # Rotate the vectors
             rotated_vecs = np.dot(rotation_matrix, vec_2D_reshaped)
             
@@ -647,7 +663,7 @@ def main():
             return rotated_vecs       
 
 
-        # rows,cols = img.shape
+        rows,cols = img.shape
 
         # def rotate_vectors_to_new_axis(vec_2D, center_vec):
             
@@ -677,18 +693,19 @@ def main():
 
 
 
-        vec_2D[:,int(h/2), int(w/2)+100] = np.array([1,1,1])
-        vec_2D[:,int(h/2), int(w/2)+100] = vec_2D[:,int(h/2), int(w/2)+100] / np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+100])
+        # vec_2D[:,int(h/2), int(w/2)+100] = np.array([1,1,1])
+        # vec_2D[:,int(h/2), int(w/2)+100] = vec_2D[:,int(h/2), int(w/2)+100] / np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+100])
         
-        vec_2D[:,int(h/2), int(w/2)+101] = np.array([1,1,-1])
-        vec_2D[:,int(h/2), int(w/2)+101] = vec_2D[:,int(h/2), int(w/2)+101] / np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101])
-        
-        
+        # vec_2D[:,int(h/2), int(w/2)+101] = np.array([1,1,-1])
+        # vec_2D[:,int(h/2), int(w/2)+101] = vec_2D[:,int(h/2), int(w/2)+101] / np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101])
         print('vec_2D 1',vec_2D[:,int(h/2), int(w/2)+100], np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+100]))
-        print('vec_2D 1',vec_2D[:,int(h/2), int(w/2)+101], np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101]))
+        print('vec_2D 2',vec_2D[:,int(h/2), int(w/2)+101], np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101]))
+        
+        
         vec_2D = rotate_vectors_to_new_axis(vec_2D, center_vec)
-        print('vec_2D 1',np.around(vec_2D[:,int(h/2), int(w/2)+100],decimals=4), np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+100]))
-        print('vec_2D 1',np.around(vec_2D[:,int(h/2), int(w/2)+101],decimals=4), np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101]))
+        
+        print('vec_2D 1 result ',np.around(vec_2D[:,int(h/2), int(w/2)+100],decimals=4), np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+100]))
+        print('vec_2D 2 result ',np.around(vec_2D[:,int(h/2), int(w/2)+101],decimals=4), np.linalg.norm(vec_2D[:,int(h/2), int(w/2)+101]))
 
         
         
@@ -738,7 +755,7 @@ def main():
             tmp = ax[0,1].imshow(img_helix,cmap=reversed_map)
             tmp = ax[1,0].imshow(img_intrusion,cmap=reversed_map)                                
             cmap=plt.get_cmap('inferno')
-            tmp2 = ax[1,1].imshow(FA[1180:3450,620:3950],cmap=cmap)                                
+            tmp2 = ax[1,1].imshow(FA,cmap=cmap)                                
             fig.colorbar(tmp) 
             plt.savefig('test1.png', dpi=1200)           
             plt.show()
