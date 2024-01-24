@@ -72,9 +72,9 @@ FilterType = 1;
 % ===============================================================
 fprintf ('Starting fibre analysis...\n');
 for j = 1 : 1 : N
-   if j ~= 650
+    if j ~= 860
       continue
-   end
+    end
     cima = j - 1 + ini_ima + (Nz-1)*0.5;
     [pathstr,name,ext] = fileparts([path_ima,ndir_ima(cima).name]);
     k=1;
@@ -105,7 +105,7 @@ for j = 1 : 1 : N
 % ===============================================================
 %  Plot FI   
 % ===============================================================
-   if j == 650
+   if j == 860
       close(figure(1)), figure(1), imagesc(rad2deg(FI)); hold on, 
       cmap = [0 0 0; hsv(180)]; colormap(cmap);
       plot(center(1,1),center(1,2),'xr','MarkerSize',20);
