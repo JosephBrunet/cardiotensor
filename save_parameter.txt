@@ -1,0 +1,55 @@
+    # folder_path = 'W:/LADAF-2021-17/heart/19.85um_complete-organ_bm18/158.8um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    # folder_path = 'W:/LADAF-2021-17/heart/19.85um_complete-organ_bm18/test'
+    
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/158.8um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/79.40um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/39.70um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/19.85um_LADAF-2021-17_heart_pag-0.04_0.12_jp2__tif'
+
+    # folder_path = '/data/projects/hop/data_repository/biology/pig/19.59um_complete-organ/39.18um_pig-fresh_heart_pag-0.07_0.07_'
+    #folder_path = '/data/projects/hop/data_repository/biology/pig/19.59um_complete-organ/19.59um_pig-fresh_heart_pag-0.07_0.07_'
+
+
+    # folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/32.04um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
+    folder_path = "/data/projects/hop/data_repository/LADAF-2021-17/heart/8.01um_complete-organ_bm18/32.04um_LADAF-2021-17_heart_complete-organ_pag-0.03_0.07_"
+
+    pt_MV = np.array([364,255,321])*8
+    pt_apex = np.array([273,357,554])*8
+    
+    folder_path = "/data/projects/hop/data_repository/LADAF-2021-17/heart/8.01um_complete-organ_bm18/16.02um_LADAF-2021-17_heart_complete-organ_pag-0.03_0.07_"
+
+    pt_MV = np.array([364,255,321])*16
+    pt_apex = np.array([273,357,554])*16
+    #folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/16.02um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
+    #folder_path = "/data/projects/md1290/EDF/8um_LADAF-2021-17_heart/.ZZ_UNDISTORTED_D0.0025_nobackup/PROCESSING/voltif/8.01um_LADAF-2021-17_heart-c__pag-0.03_0.07_"
+    
+    
+    # # folder_path = 'W:/LADAF-2021-17/heart/19.85um_complete-organ_bm18/317.6um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/317.6um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    # pt_MV = np.array([295,268,290])
+    # pt_apex = np.array([184,260,480])
+
+    
+    # # folder_path = 'W:\LADAF-2021-64\heart\19.89um_complete-organ_bm18\39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # folder_path = '/data/projects/hop/data_repository/LADAF-2021-64/heart/19.89um_complete-organ_bm18/39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # pt_MV = np.array([1341,1861,2374])
+    # pt_apex = np.array([2048,1867,3643])
+
+    folder_path = '/data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/79.4um_LADAF-2021-17_heart_pag-0.04_0.12_'
+    pt_MV = np.array([295,268,290])*4
+    pt_apex = np.array([184,260,480])*4
+
+    # folder_path = '/data/bm18/inhouse/JOSEPH/python/orientation/Code_fibre_analysis_Hector/images/79.4um_LADAF-2021-17_heart_pag-0.04_0.12_inv_'
+    # pt_MV = np.array([1180,1072,960])
+    # pt_apex = np.array([736,1040,200])
+
+    
+    # # folder_path = 'W:\LADAF-2021-64\heart\19.89um_complete-organ_bm18\39.78um_LADAF-2021-64_heart_pag-0.09_1.06_'
+    # folder_path = '/data/projects/hop/data_repository/S-20-28/heart/19.85um_complete-organ_bm18/39.70um_S20-28_heart_pag-0.04_0.12_'
+    # pt_MV = np.array([177,195,236])*8
+    # pt_apex = np.array([290,176,451])*8
+
+    # folder_path = '/data/projects/hop/data_repository/HOA-hub/pediatric-hearts/PL19_heart/19.19um_complete-organ/38.38um_PL19_heart_pag-0.12_0.13_'
+    # pt_MV = np.array([1241,1490,1715])
+    # pt_apex = np.array([1382,1838,3865])

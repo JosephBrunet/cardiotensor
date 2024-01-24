@@ -1,0 +1,7 @@
+IMAGES_PATH =          /data/projects/hop/data_repository_HOAHub/pediatric-hearts/727/heart/9.595um_complete-organ_bm18/19.19um_727_heart_complete-organ_pag-0.02_0.05_
+OUTPUT_PATH =          /data/projects/hop/data_repository_HOAHub/pediatric-hearts/727/heart/9.595um_complete-organ_bm18/19.19um_output_orientation
+SIGMA =                1 # noise scale
+RHO =                  3 # integration scale
+POINT_MITRAL_VALVE =   904,1149,2120
+POINT_APEX =           751,1062,3922
+TEST =                 True
