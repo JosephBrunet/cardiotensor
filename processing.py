@@ -11,7 +11,6 @@ import dask
 import glob
 import time
 import argparse
-import math
 from distutils.util import strtobool
 import warnings
 import cv2
