@@ -1,7 +1,0 @@
-IMAGES_PATH =          /data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/317.6um_LADAF-2021-17_heart_pag-0.04_0.12_
-OUTPUT_PATH =          /data/projects/hop/data_repository/LADAF-2021-17/heart/19.85um_complete-organ_bm18/output_orientation
-SIGMA =                1 # noise scale
-RHO =                  3 # integration scale
-POINT_MITRAL_VALVE =   295,268,290
-POINT_APEX =           184,260,480
-TEST =                 True

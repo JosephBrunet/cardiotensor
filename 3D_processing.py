@@ -538,7 +538,7 @@ def main():
 
     if len(sys.argv) < 2:
         Tk().withdraw()
-        para_file_path = askopenfilename(initialdir=os.getcwd(), title="Select file") # show an "Open" dialog box and return the path to the selected file
+        para_file_path = askopenfilename(initialdir=f"{os.getcwd()}/param_files", title="Select file") # show an "Open" dialog box and return the path to the selected file
         # para_file_path = "/data/bm18/inhouse/JOSEPH/python/orientation_heart/parameters_317.6um_LADAF-2021-17_heart.txt"
         if not para_file_path:
             sys.exit("No file selected!")
