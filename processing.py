@@ -33,18 +33,6 @@ from tkinter.filedialog import askopenfilename, askdirectory
 from memory_profiler import profile
 
 
-def interpolate_points(point1, point2, N_img):
-    x1, y1, z1 = point1
-    x2, y2, z2 = point2
-    z_values = list(range(N_img))
-    
-    points = []
-    for z in z_values:
-        t = (z - z1) / (z2 - z1)  # Calculate the interpolation parameter
-        x = x1 + (x2 - x1) * t
-        y = y1 + (y2 - y1) * t
-        points.append((x, y, z))
-    return np.array(points)
 
 
 
@@ -109,24 +97,11 @@ def read_parameter_file(para_file_path):
 
 
 
-    
-# @profile  
-def processing(para_file_path, start_index, end_index, IS_TEST=False):
-    # function to process data
-    
-    print(para_file_path)
-    import numpy as np
 
-    
-    print(f'Start index, End index : {start_index}, {end_index}')
-    
-    VOLUME_PATH, OUTPUT_DIR, SIGMA, RHO, PT_MV, PT_APEX, IS_TEST = read_parameter_file(para_file_path)
-    print(f'PARAMETERS : ',VOLUME_PATH, OUTPUT_DIR, SIGMA, RHO, PT_MV, PT_APEX)
-    
-    
-    #Check number of files to convert 
-    file_list_tif = sorted(glob.glob(VOLUME_PATH + "/*.tif*"))
-    file_list_jp2 = sorted(glob.glob(VOLUME_PATH + "/*.jp2*"))
+def get_file_list(volume_path):
+    # Check number of files to convert 
+    file_list_tif = sorted(glob.glob(volume_path + "/*.tif*"))
+    file_list_jp2 = sorted(glob.glob(volume_path + "/*.jp2*"))
 
     if file_list_tif and file_list_jp2:
         sys.exit('Both tif and jp2 files were found (check your folder path)')
@@ -140,17 +115,66 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
         sys.exit('No files were found (check your folder path)')
     
     print(f"File type: {file_type}")        
-    N_img = len(file_list)
-    print(f"{N_img} {file_type} files found\n")  
-    
+    return file_type, file_list
 
+
+def interpolate_points(point1, point2, N_img):
+    x1, y1, z1 = point1
+    x2, y2, z2 = point2
+    z_values = list(range(N_img))
+    
+    points = []
+    for z in z_values:
+        t = (z - z1) / (z2 - z1)  # Calculate the interpolation parameter
+        x = x1 + (x2 - x1) * t
+        y = y1 + (y2 - y1) * t
+        points.append((x, y, z))
+    return np.array(points)
+
+
+def calculate_center_vector(pt_mv, pt_apex):
+    # Calculate center vector
+    center_vec = pt_apex - pt_mv
+    center_vec = center_vec / np.linalg.norm(center_vec)
+    center_vec[0:2] = -center_vec[0:2]  # Invert x and y components (check how to correct this in the future)
+    return center_vec
+
+
+
+def adjust_start_end_index(start_index, end_index, volume_dask, padding_start, padding_end, is_test):
+    if start_index < 0:
+        raise ValueError("start_index must be greater than 0.")
+    if end_index < 0:
+        raise ValueError("end_index must be greater than 0.")
+    if end_index == 0:
+        end_index = volume_dask.shape[0]
+    
+    if is_test == True:
+        n_index = int(volume_dask.shape[0] / 1.68)
+        center_line = center_line[n_index:n_index + 1, :]
+        start_index_padded = n_index - padding_start
+        end_index_padded = n_index + 1 + padding_end
+    else:
+        center_line = center_line[start_index:end_index, :]
         
-    # Reads tiff files  
-    print('Reading images with Dask...')      
-    volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{file_type}')
-    print(f"Dask volume: {volume_dask}")
+        if start_index > padding_start:
+            start_index_padded = start_index - padding_start
+        else:
+            start_index_padded = 0
+            padding_start = 0
+        if end_index + padding_end > volume_dask.shape[0]:
+            padding_end = 0
+            end_index_padded = end_index
+        else:
+            end_index_padded = end_index + padding_end
     
+    print(f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}")
+    return start_index_padded, end_index_padded
 
+
+def load_volume(file_list, start_index_padded, end_index_padded):
+    
+    
     def custom_image_reader(file_path: str) -> np.ndarray:
         """
         Read an image from the given file path.
@@ -167,77 +191,23 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
         # image_data = unsharp_mask(image_data, radius=3, amount=0.6)
         
         return image_data
-
+    
     # Create a list of delayed tasks to read each image
-    file_list = sorted(glob.glob(f'{VOLUME_PATH}/*.{file_type}'))
     delayed_tasks = [dask.delayed(lambda x: np.array(custom_image_reader(x)))(file_path) for file_path in file_list]
-        
     
-    # Interpolate center line
-    center_line = interpolate_points(PT_MV, PT_APEX, N_img)
-    
-    center_vec = PT_APEX - PT_MV
-    center_vec = center_vec/np.linalg.norm(center_vec)
-    center_vec[0:2] = -center_vec[0:2]  # Invert x and y components (check how to correct this in the future)
-       
-
-        
-        
-
-    padding_start = math.ceil(RHO)
-    padding_end = math.ceil(RHO)
-    
-    
-    
-    if start_index < 0:
-        raise ValueError("start_index must be greater than 0.")
-    if end_index < 0:
-        raise ValueError("end_index must be greater than 0.")
-    if end_index == 0:
-        end_index = volume_dask.shape[0]
-
-            
-    
-    # Adjusting start_index and end_index based on padding
-    if IS_TEST == True:
-        N_index =  int(volume_dask.shape[0]/1.68)
-        center_line = center_line[N_index:N_index + 1,:]
-        start_index_padded = N_index - padding_start
-        end_index_padded = N_index + 1 + padding_end
-
-    else:
-        center_line = center_line[start_index:end_index,:]
-        
-        if start_index > padding_start:
-            start_index_padded = start_index - padding_start
-        else:
-            start_index_padded = 0
-            padding_start = 0
-        if end_index + padding_end > volume_dask.shape[0]:
-            padding_end = 0
-            end_index_padded = end_index
-        else:
-            end_index_padded = end_index + padding_end
-    
-            
-    print(f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}")
-
-
     # volume = volume_dask[start_index_padded:end_index_padded,:,:].compute()
     volume = np.array(dask.compute(*delayed_tasks[start_index_padded:end_index_padded]))
-            
-    
     volume = volume.astype('float32')
     print(f"Loaded volume shape {volume.shape}")    
     print('Dask size used by chunk: ',volume.size*4*12.5/1000000000, ' GB') # x4 because float32 / x 12.5 for structure tensore calculation 
+    return volume
 
 
-    
-    
 
-    # calculate structure tensor,eigenvalues and eigenvectors
-    print(f'\ncalculating structure tensor')
-    t1 = time.perf_counter()  # start time
+
+def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
+    # Calculates the structure tensor, eigenvalues, and eigenvectors based on the given volume, SIGMA, RHO, and USE_GPU
+    # Returns the structure tensor (s), eigenvectors (vec), and eigenvalues (val)
     
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -253,21 +223,71 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
     else:
         s, vec, val = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
                                                         structure_tensor=True) # vec has shape =(3,x,y,z) in the order of (z,y,x)
-    # s = structure_tensor_3d(volume, SIGMA, RHO)
-    # val,vec = eig_special_3d(s)
-    
 
-    # remove padding from data
+    return s, vec, val
+
+
+
+def remove_padding(volume, s, vec, val, padding_start, padding_end):
+    # Removes the padding from the volume, structure tensor, eigenvectors, and eigenvalues based on the given padding start
+    # Returns the updated volume, structure tensor, eigenvectors, and eigenvalues
+    
     array_end = vec.shape[1] - padding_end
     volume = volume[padding_start:array_end,:,:]
     s = s[:,padding_start:array_end,:,:]
     vec = vec[:,padding_start:array_end,:,:]
     val = val[:,padding_start:array_end,:,:]
-
-    t2 = time.perf_counter()  # stop time
-    print(f'finished calculating structure tensors in {t2 - t1} seconds')
     
     print(padding_start,array_end)
+
+
+    
+    return volume, s, vec, val
+
+    
+# @profile  
+def processing(para_file_path, start_index, end_index, IS_TEST=False):
+    # function to process data
+    
+    print(para_file_path)
+    import numpy as np
+
+    
+    print(f'Start index, End index : {start_index}, {end_index}')
+    
+    VOLUME_PATH, OUTPUT_DIR, SIGMA, RHO, PT_MV, PT_APEX, IS_TEST = read_parameter_file(para_file_path)
+    print(f'PARAMETERS : ',VOLUME_PATH, OUTPUT_DIR, SIGMA, RHO, PT_MV, PT_APEX)
+    
+    
+    
+    file_type, file_list = get_file_list(VOLUME_PATH)
+    N_img = len(file_list)
+    print(f"{N_img} {file_type} files found\n")  
+    
+    print('Reading images with Dask...')      
+    volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{file_type}')
+    print(f"Dask volume: {volume_dask}")
+        
+    center_line = interpolate_points(PT_MV, PT_APEX, N_img)
+    center_vec = calculate_center_vector(PT_MV, PT_APEX)
+    
+    padding_start = math.ceil(RHO)
+    padding_end = math.ceil(RHO)
+    
+    start_index_padded, end_index_padded = adjust_start_end_index(start_index, end_index, volume_dask, padding_start, padding_end, IS_TEST)
+    
+    volume = load_volume(volume_dask, start_index_padded, end_index_padded)
+       
+    
+     
+    print(f'\ncalculating structure tensor')
+    t1 = time.perf_counter()  # start time
+
+    s, vec, val = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU)
+    volume, s, vec, val = remove_padding(volume, s, vec, val, padding_start)
+    
+    t2 = time.perf_counter()  # stop time
+    print(f'finished calculating structure tensors in {t2 - t1} seconds')
 
 
 
@@ -276,37 +296,24 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
     print(f'\nCalculating helix/intrusion angle and fractional anisotropy\n')
     for z in range(vec.shape[1]):
         print(f"Processing image: {start_index + z}")
-        if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):05d}.png"):
+        
+        if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):05d}.tif"):
             print(f"File {(start_index + z):05d} already exist")
             continue
         
         center_point = np.around(center_line[z])        
-        # print(center_point)        
-
-        
         img = volume[z, :, :]
         vec_2D = vec[:,z, :, :]
         val_2D = val[:,z, :, :]
         
 
-
-        # Fraction Anisotropy Calculation
-        l1 = val_2D[0, :, :]
-        l2 = val_2D[1, :, :]
-        l3 = val_2D[2, :, :]
-        lm = (l1 + l2 + l3) / 3
-        numerator = np.sqrt((l1 - lm)**2 + (l2 - lm)**2 + (l3 - lm)**2)
-        denominator = np.sqrt(l1**2 + l2**2 + l3**2)
-        img_FA = np.sqrt(3 / 2) * (numerator / denominator)
-
-
+        img_FA = calculate_fraction_anisotropy(val_2D)
 
         vec_2D = rotate_vectors_to_new_axis(vec_2D, center_vec)     
         
-        st = time.time()
         img_helix,img_intrusion,_ = calculate_helix_angle(img,vec_2D,center_point)
-        print(f'Time: {time.time()-st}\n')
         
+
 
         # Convert the float64 image to int8
         # img_helix = convert_to_8bit(img_helix)
@@ -319,11 +326,12 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
         
   
   
-        img_vmin,img_vmax = np.nanpercentile(img, (5, 95))
-        orig_map=plt.get_cmap('hsv')
-        reversed_map = orig_map.reversed()
+
         if IS_TEST:
             print("\nPlotting images...")
+            img_vmin,img_vmax = np.nanpercentile(img, (5, 95))
+            orig_map=plt.get_cmap('hsv')
+            reversed_map = orig_map.reversed()
             fig, axes = plt.subplots(2, 2, figsize=(8, 4))
             ax = axes
             ax[0,0].imshow(img, vmin=img_vmin, vmax=img_vmax ,cmap=plt.cm.gray)   
@@ -446,6 +454,21 @@ def processing(para_file_path, start_index, end_index, IS_TEST=False):
 
 
     
+    
+    
+    
+def calculate_fraction_anisotropy(val_2D):
+    
+    # Fraction Anisotropy Calculation
+    l1 = val_2D[0, :, :]
+    l2 = val_2D[1, :, :]
+    l3 = val_2D[2, :, :]
+    lm = (l1 + l2 + l3) / 3
+    numerator = np.sqrt((l1 - lm)**2 + (l2 - lm)**2 + (l3 - lm)**2)
+    denominator = np.sqrt(l1**2 + l2**2 + l3**2)
+    img_FA = np.sqrt(3 / 2) * (numerator / denominator)
+    
+    return img_FA
 
 
 def calculate_helix_angle(img, vec_2D, center_point):
@@ -533,6 +556,10 @@ def rotate_vectors_to_new_axis(vec_3D, center_vec):
 
 
 
+
+
+
+
 def main():
 
     if len(sys.argv) < 2:
@@ -559,14 +586,6 @@ def main():
     print("--- %s seconds ---" % (time.time() - start_time))
 
     print("FINISH ! ")
-
-
-
-
-
-
-
-
     
 if __name__ == '__main__':  
     main()
