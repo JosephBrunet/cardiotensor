@@ -16,7 +16,7 @@ dependencies = [
 
 Install all the dependencies
 
-Create a new parameter file in `./param_file` similar to `param_template.txt` and fill all the parameters
+Create a new parameter file in `./param_file/` similar to `param_template.txt` and fill all the parameters
 
 Run `processing` and indicate the param file (run first with the option TEST activated to have a preview of the result)
 
