@@ -1,7 +1,0 @@
-IMAGES_PATH =          /data/bm18/inhouse/JOSEPH/test/SlicesY/SlicesY
-OUTPUT_PATH =          /data/bm18/inhouse/JOSEPH/test/SlicesY/SlicesY_output
-SIGMA =                1 # noise scale
-RHO =                  3 # integration scale
-POINT_MITRAL_VALVE =   630,898,1086
-POINT_APEX =           828,706,105
-TEST =                 True
