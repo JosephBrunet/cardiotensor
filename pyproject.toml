@@ -1,0 +1,112 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools",
+    "setuptools-scm"
+]
+
+[project]
+version = "1.0.0"
+authors = [
+    { email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet" }
+]
+classifiers = [
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Typing :: Typed"
+]
+dependencies = [
+    "click>=8.1.7",
+    "cloudpickle>=3.0.0",
+    "contourpy>=1.2.1",
+    "cupy-cuda12x>=13.1.0",
+    "cycler>=0.12.1",
+    "dask>=2024.5.1",
+    "dask-expr>=1.1.1",
+    "dask-image>=2024.5.3",
+    "fastrlock>=0.8.2",
+    "fonttools>=4.52.4",
+    "fsspec>=2024.5.0",
+    "imageio>=2.34.1",
+    "importlib_metadata>=7.1.0",
+    "kiwisolver>=1.4.5",
+    "lazy_loader>=0.4",
+    "locket>=1.0.0",
+    "matplotlib>=3.9.0",
+    "networkx>=3.3",
+    "numpy>=1.26.4",
+    "opencv-python>=4.9.0.80",
+    "packaging>=24.0",
+    "pandas>=2.2.2",
+    "partd>=1.4.2",
+    "pillow>=10.3.0",
+    "PIMS>=0.6.1",
+    "pyarrow>=16.1.0",
+    "pyparsing>=3.1.2",
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2024.1",
+    "PyYAML>=6.0.1",
+    "scikit-image>=0.23.2",
+    "scipy>=1.13.1",
+    "six>=1.16.0",
+    "slicerator>=1.1.0",
+    "structure-tensor>=0.2.1",
+    "tifffile>=2024.5.22",
+    "toolz>=0.12.1",
+    "tzdata>=2024.1",
+    "zipp>=3.19.0"
+]
+description = "Tools for quantifying cardiac fiber orientation"
+keywords = []
+name = "cardiac_fiber_tensor"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE.md" }
+
+[project.scripts]
+cft_processing = "cardiac_fiber_tensor.processing_heart:main"
+
+[project.urls]
+homepage = "https://github.com/JosephBrunet/image-processing-utils"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
+python_version = "3.8"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "glymur.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+fix = true
+force-exclude = true
+select = [
+    "F401",  # Remove unused imports
+    "I",  # Sort imports
+    "UP"  # Update Python syntax
+]
+target-version = "py38"
+isort.known-first-party = [
+    "image_processing_utils"
+]
+mccabe.max-complexity = 18
+pep8-naming.classmethod-decorators = [
+    "classmethod",
+    "pydantic.validator"
+]
+
+[tool.tomlsort]
+all = true
+spaces_indent_inline_array = 4
+trailing_comma_inline_array = true
+overrides."project.classifiers".inline_arrays = false
+overrides."tool.coverage.paths.source".inline_arrays = false

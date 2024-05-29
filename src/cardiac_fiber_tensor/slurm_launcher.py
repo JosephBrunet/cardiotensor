@@ -191,7 +191,7 @@ def run_heart_orientation_processing(file_path):
     print('PARAMETERS : ',images_path, output_dir, sigma, rho, pt_MV, pt_apex, is_test)
     
     if is_test == True:
-        sys.exit('Test mode activated, run directly 3D_processing.py')
+        sys.exit('Test mode activated, run directly 3D_processing.py or deactivate test mode in the parameter file')
     
     
     #Check number of files to convert 
@@ -224,26 +224,24 @@ def run_heart_orientation_processing(file_path):
     print('Dask size: ',volume_dask.size*2)
 
 
-
     def chunk_split(num_images,n):
 
         # Calculate the number of images per interval
         images_per_interval = num_images // n
+        
+        print(f"Number of images per interval: {images_per_interval}")
 
         # Create a list of intervals
         intervals = []
         start_index = 0
-
-        for i in range(n):
+        while start_index < num_images:
             end_index = start_index + images_per_interval
             intervals.append([start_index, end_index])
             start_index = end_index
-
-        # Adjust the last interval if there are remaining images
-        if num_images % n != 0:
-            intervals[-1][1] += num_images % n
+        intervals[-1][1] = num_images
 
         print(intervals)
+
         return intervals
 
     padding_start = math.ceil(rho)
@@ -302,7 +300,7 @@ def run_heart_orientation_processing(file_path):
     for i in index_intervals:
         
         print('Sending to SLURM...')
-        job_id = submit_job_to_slurm('processing', file_path, i[0], i[1], mem_needed=mem_needed)
+        job_id = submit_job_to_slurm('processing_heart', file_path, i[0], i[1], mem_needed=mem_needed)
         # sys.exit()
                 
     monitor_job_output(output_dir, N_img, file_type)

@@ -1,2 +1,4 @@
 /__pycache__
 /param_files
+
+*.egg-info*
