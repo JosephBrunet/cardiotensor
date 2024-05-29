@@ -198,6 +198,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
 
     center_line = center_line[start_index_padded:end_index_padded]  # adjust the center line to the new start and end index
     
+    
+    
+    
     posdef = np.sum(val < 0, axis=0) == 0
     vec_norm = np.linalg.norm(vec,axis=0)
     for i in range(3):
@@ -207,6 +210,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     
     negative_z = vec[2, :] < 0
     vec[:, negative_z] *= -1
+    
+    
+    
 
     t2 = time.perf_counter()  # stop time
     print(f'finished calculating structure tensors in {t2 - t1} seconds')

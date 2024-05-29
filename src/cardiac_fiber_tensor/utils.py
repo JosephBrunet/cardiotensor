@@ -261,7 +261,7 @@ def load_volume(file_list, start_index_padded, end_index_padded):
             np.ndarray: The image data as a NumPy array.
         """
         nonlocal count_img  # Declare count_img as non-local to modify it
-        print(f"{count_img}/{len(file_list)} - Reading image: {os.path.basename(file_path)}")
+        print(f"{count_img}/{np.abs(end_index_padded-start_index_padded)} - Reading image: {os.path.basename(file_path)}")
         sys.stdout.flush()
         image_data = cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
         
