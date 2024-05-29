@@ -1,7 +1,0 @@
-IMAGES_PATH =          /data/projects/hop/data_repository_HOAHub/pediatric-hearts/727/heart/9.595um_complete-organ_bm18/19.19um_727_heart_complete-organ_pag-0.02_0.05_  # Folder where the images are located
-OUTPUT_PATH =          /data/projects/hop/data_repository_HOAHub/pediatric-hearts/727/heart/9.595um_complete-organ_bm18/19.19um_output_orientation  # Folder where you want to put the output slices
-SIGMA =                1 # noise scale window
-RHO =                  3 # integration scale window
-POINT_MITRAL_VALVE =   904,1149,2120  # X, Y, Z
-POINT_APEX =           751,1062,3922  # X, Y, Z
-TEST =                 True  # If True only process and plot a slice, if False do the entire processing

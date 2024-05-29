@@ -26,37 +26,40 @@ USE_GPU = False
 
 from structure_tensor import parallel_structure_tensor_analysis
 
-from utils import *
+from cardiac_fiber_tensor.utils import *
 
 
 
 
 # @profile  
-def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
+def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     # function to process data
     
     print(f"\n---------------------------------")
-    print(f'READING PARAMETER FILE : {para_file_path}\n')
-
+    print(f'READING PARAMETER FILE : {conf_file_path}\n')
     
     print(f'Start index, End index : {start_index}, {end_index}\n')
     
-    params = read_parameter_file(para_file_path)
-    VOLUME_PATH, MASK_PATH, OUTPUT_DIR, SIGMA, RHO, PT_MV, PT_APEX, IS_FLIP, IS_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'OUTPUT_PATH', 'SIGMA', 'RHO', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'FLIP', 'TEST']]
+    try:
+        params = read_conf_file(conf_file_path)
+    except Exception as e:
+        sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
+    
+    
+    VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'TEST', 'N_SLICE_TEST']]
 
     if not IS_TEST:
         is_already_done = True
         if end_index == 0:
             is_already_done = False
         for idx in range(start_index, end_index):
-            if not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + idx):05d}.tif"):
+            if not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + idx):06d}.tif"):
                 is_already_done = False
                 break
 
         if is_already_done:
             print('All images are already done')
             return
-                      
      
     if MASK_PATH:
         is_mask = True
@@ -65,7 +68,8 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
         is_mask = False
         
     print(f"\n---------------------------------")
-    print(f"READING VOLUME INFORMATION FROM {VOLUME_PATH}...\n")
+    print(f"READING VOLUME INFORMATION\n")
+    print(f"Volume path: {VOLUME_PATH}")
     img_list, img_type = get_image_list(VOLUME_PATH)
     N_img = len(img_list)
     print(f"{N_img} {img_type} files found\n")  
@@ -73,37 +77,40 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
     print('Reading images with Dask...')      
     volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{img_type}')
     print(f"Dask volume: {volume_dask}")
-    print('\nAll information gathered\n')
+    print('\nAll information gathered')
 
     
     if is_mask:
         print(f"\n---------------------------------")
         print(f"READING MASK INFORMATION FROM {MASK_PATH}...\n")
-        mask_type, mask_list = get_image_list(MASK_PATH)
+        mask_list, mask_type = get_image_list(MASK_PATH)
         print(f"{len(mask_list)} {mask_type} files found\n")  
         mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
         print(f"Dask mask: {mask_dask}")
         N_mask = len(mask_list)
         binning_factor = N_img / N_mask
         print(f"Mask bining factor: {binning_factor}\n")
-        print('\nAll information gathered\n')
+        print('\nAll information gathered')
 
     
     print(f"\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
     center_line = interpolate_points(PT_MV, PT_APEX, N_img)
     center_vec = calculate_center_vector(PT_MV, PT_APEX, IS_FLIP)
-    print(f"\nCenter vector: {center_vec}")
+    print(f"Center vector: {center_vec}")
     
     print(f"\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
     padding_start = math.ceil(RHO)
     padding_end = math.ceil(RHO)
-    if padding_start > start_index:
-        padding_start = start_index
-    if padding_end > (N_img - end_index):
-        padding_end = N_img - end_index
-    start_index_padded, end_index_padded = adjust_start_end_index(start_index, end_index, N_img, padding_start, padding_end, IS_TEST)
+    if not IS_TEST:
+        if padding_start > start_index:
+            padding_start = start_index
+        if padding_end > (N_img - end_index):
+            padding_end = N_img - end_index
+            
+    print(f"Padding start, Padding end : {padding_start}, {padding_end}")
+    start_index_padded, end_index_padded = adjust_start_end_index(start_index, end_index, N_img, padding_start, padding_end, IS_TEST, N_SLICE_TEST)
     print(f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}")
     
 
@@ -112,7 +119,6 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
     print("LOAD VOLUMES\n")
     volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float64')
     print(f"Loaded volume shape {volume.shape}")    
-    print('Dask size used by chunk: ',volume.size*4*12.5/1000000000, ' GB') # x4 because float32 / x 12.5 for structure tensore calculation 
 
     if is_mask:
         start_index_padded_mask = int((start_index_padded / binning_factor)-binning_factor/2)
@@ -180,11 +186,15 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
     print(f'CALCULATING STRUCTURE TENSOR')
     t1 = time.perf_counter()  # start time
     s, vec, val = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU)    
-    print(vec.shape)
+    print(f"Vector shape: {vec.shape}")
     volume, _, vec, val = remove_padding(volume, s, vec, val, padding_start, padding_end)
     del s
-    print(vec.shape)
+    print(f"Vector shape after removing padding: {vec.shape}")
     
+    
+
+    # print( np.isnan(vec[1,0,:,:]).all())
+    # sys.exit()
 
     center_line = center_line[start_index_padded:end_index_padded]  # adjust the center line to the new start and end index
     
@@ -201,7 +211,7 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
     t2 = time.perf_counter()  # stop time
     print(f'finished calculating structure tensors in {t2 - t1} seconds')
 
-    IS_NP_SAVE = True
+    IS_NP_SAVE = False
     if IS_NP_SAVE:
         os.makedirs(OUTPUT_DIR,exist_ok=True)
         np.save(f"{OUTPUT_DIR}/eigen_vec.npy", vec)
@@ -214,182 +224,76 @@ def process_3d_data(para_file_path, start_index=0, end_index=0, IS_TEST=False):
     for z in range(vec.shape[1]):
         print(f"Processing image: {start_index + z}")
         
-        if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):05d}.tif") and IS_TEST == False:
-            print(f"File {(start_index + z):05d} already exist")
+        if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif") and IS_TEST == False:
+            print(f"File {(start_index + z):06d} already exist")
             continue
         
         center_point = np.around(center_line[z])        
         img = volume[z, :, :]
-        vec_2D = vec[:,z, :, :]
-        val_2D = val[:,z, :, :]
+        vector_field_slice = vec[:,z, :, :]
         
-        print(f"Center point: {center_point}")
-        print(f"Center vector: {center_vec}")
+        eigen_val_slice = val[:,z, :, :]
+        
+        img_FA = calculate_fraction_anisotropy(eigen_val_slice)
+
+        vector_field_slice = rotate_vectors_to_new_axis(vector_field_slice, center_vec) 
         
 
-        # plt.imshow(vec_2D[2,:])
-        # plt.figure(2)
-        # plt.imshow(vec_2D[0,:])
-        # plt.show()
-
-
-        img_FA = calculate_fraction_anisotropy(val_2D)
-
-
-
-        # print("\nPlotting hivkkihgivhv...")
-        # img_vmin,img_vmax = np.nanpercentile(img, (5, 95))
-        # orig_map=plt.get_cmap('hsv')
-        # reversed_map = orig_map.reversed()
-        # fig, axes = plt.subplots(2, 2, figsize=(8, 4))
-        # ax = axes
-        # ax[0,0].imshow(img, vmin=img_vmin, vmax=img_vmax ,cmap=plt.cm.gray)   
-        # # Draw a red point at the specified coordinate
-        # x, y = center_point[0:2]
-        # ax[0,0].scatter(x, y, c='red', s=50, marker='o')
-        # ax[0,0].scatter(PT_MV[0],PT_MV[1], c='green', s=50, marker='o')
-        # ax[0,0].scatter(PT_APEX[0],PT_APEX[1], c='blue', s=50, marker='o')
-        # tmp = ax[0,1].imshow(vec_2D[0,:,:],cmap=orig_map)
-        # ax[1,0].imshow(vec_2D[1,:,:],cmap=orig_map)
-        # ax[1,1].imshow(vec_2D[2,:,:],cmap=orig_map)
-        # fig.colorbar(tmp) 
-        # plt.show()
-
-        # posdef = np.sum(vec_2D < 0, axis=0) == 0
+        img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice,center_point)
         
-        # plt.imshow(posdef)
-        # plt.show()
-
-
-
-        # posdef = (img_helix < 0) == 0
-        # plt.imshow(posdef)
-        # plt.show()
-
+        print(img_helix)
         
-        # posdef = (vec_2D[0,:] < 0) == 0
-        # plt.imshow(posdef)
-        # plt.figure(2)
-        # posdef = (vec_2D[1,:] < 0) == 0
-        # plt.imshow(posdef)
-        # plt.show()
-        
-        # center_vec = np.array([0.8,0,0.2])
-        
-        
-        
-        
-        # import scipy.io
-        # mat = scipy.io.loadmat('FV.mat')
-        
-        # vec_2D = mat["VF"]#.reshape(val_2D.shape)
-        # vec_2D = vec_2D.transpose(2, 0, 1)
-        
-
-
-        # import scipy.io
-        # scipy.io.savemat('test.mat', {'vec_2D': vec_2D})
-        # sys.exit()
-        
-        
-        
-        
-        vec_2D = rotate_vectors_to_new_axis(vec_2D, center_vec) 
-        
-        
-        
-        # posdef = (vec_2D[0,:] < 0) == 0
-        # plt.imshow(posdef)
-        # plt.figure(2)
-        # posdef = (vec_2D[1,:] < 0) == 0
-        # plt.imshow(posdef)
-        # plt.show()
-           
-           
-           
-        img_helix,img_intrusion = compute_helix_and_transverse_angles(vec_2D,center_point)
-        
-
-
-
-
-
-        # print("\nPlotting images...")
-        # img_vmin,img_vmax = np.nanpercentile(img, (5, 95))
-        # orig_map=plt.get_cmap('hsv')
-        # reversed_map = orig_map.reversed()
-        # fig, axes = plt.subplots(2, 2, figsize=(8, 4))
-        # ax = axes
-        # ax[0,0].imshow(img, vmin=img_vmin, vmax=img_vmax ,cmap=plt.cm.gray)   
-        # # Draw a red point at the specified coordinate
-        # x, y = center_point[0:2]
-        # ax[0,0].scatter(x, y, c='red', s=50, marker='o')   
-                
-        # tmp = ax[0,1].imshow(img_helix,cmap=orig_map)
-        # ax[1,0].imshow(img_intrusion,cmap=orig_map)  
-        # tmp2 = ax[1,1].imshow(img_FA,cmap=plt.get_cmap('inferno'))  
-        
-        # ax[0,0].scatter(x, y, c='red', s=50, marker='o')   
-        # ax[0,0].scatter(PT_MV[0],PT_MV[1], c='green', s=50, marker='o')
-        # ax[0,0].scatter(PT_APEX[0],PT_APEX[1], c='blue', s=50, marker='o')
-        # ax[0,1].scatter(x, y, c='red', s=50, marker='o')   
-        # ax[0,1].scatter(PT_MV[0],PT_MV[1], c='green', s=50, marker='o')
-        # ax[0,1].scatter(PT_APEX[0],PT_APEX[1], c='blue', s=50, marker='o')
-        # ax[1,0].scatter(x, y, c='red', s=50, marker='o')   
-        # ax[1,0].scatter(PT_MV[0],PT_MV[1], c='green', s=50, marker='o')
-        # ax[1,0].scatter(PT_APEX[0],PT_APEX[1], c='blue', s=50, marker='o')
-        # fig.colorbar(tmp)                     
-        # plt.show()        
-        
-        
-        
-        # plt.imshow(img_helix,cmap=orig_map)
-        # plt.show()
-        # plt.imsave(f"testingH.jpg", img_helix, cmap=orig_map)
-        
-        # plt.imshow(img_intrusion,cmap=orig_map)
-        # plt.show()
-        # plt.imsave(f"testingI.jpg", img_intrusion, cmap=orig_map)
         
         if IS_TEST:
             plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
         if not IS_TEST:           
-            write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, z)
-            
-            
-    print('finished - program end')
+            write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
 
-
-
-
+    return
 
 def main():
 
     if len(sys.argv) < 2:
         Tk().withdraw()
-        para_file_path = askopenfilename(initialdir=f"{os.getcwd()}/param_files", title="Select file") # show an "Open" dialog box and return the path to the selected file
-        # para_file_path = "/data/bm18/inhouse/JOSEPH/python/orientation_heart/parameters_317.6um_LADAF-2021-17_heart.txt"
-        if not para_file_path:
+        conf_file_path = askopenfilename(initialdir=f"{os.getcwd()}/param_files", title="Select file") # show an "Open" dialog box and return the path to the selected file
+        if not conf_file_path:
             sys.exit("No file selected!")
         start_index = 0
         end_index = 0
         
     elif len(sys.argv) >= 2:
         parser = argparse.ArgumentParser(description='Convert images between tif and jpeg2000 formats.')
-        parser.add_argument('para_file_path', type=str, help='Path to the input text file.')
+        parser.add_argument('conf_file_path', type=str, help='Path to the input text file.')
         parser.add_argument('--start_index', type=int, default=0, help='Starting index for processing.')
         parser.add_argument('--end_index', type=int, default=0, help='Ending index for processing.')
         args = parser.parse_args()
-        para_file_path = args.para_file_path
+        conf_file_path = args.conf_file_path
         start_index = args.start_index
         end_index = args.end_index
     
-    # start_index = 7500
-    # end_index = 7520
+    try:
+        params = read_conf_file(conf_file_path)
+    except Exception as e:
+        sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
     
-    start_time = time.time()
-    process_3d_data(para_file_path, start_index, end_index) 
-    print("--- %s seconds ---" % (time.time() - start_time))
+    VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'TEST', 'N_SLICE_TEST']]
+    
+    img_list, img_type = get_image_list(VOLUME_PATH)
+    
+    # Set end_index to total_images if it's zero
+    if end_index == 0:
+        end_index = len(img_list)
+    
+    if not IS_TEST:
+        for idx in range(start_index, end_index, N_CHUNK):
+            print(f"Processing slices {idx} to {idx+N_CHUNK}")
+            start_time = time.time()
+            process_3d_data(conf_file_path, idx, idx + N_CHUNK) 
+            print("--- %s seconds ---" % (time.time() - start_time))
+    else:
+        start_time = time.time()
+        process_3d_data(conf_file_path, start_index, end_index) 
+        print("--- %s seconds ---" % (time.time() - start_time))
 
     print("FINISH ! ")
     

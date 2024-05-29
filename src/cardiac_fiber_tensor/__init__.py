@@ -1,4 +1,4 @@
-from cardiac-fiber-tensor import (  # noqa
+from cardiac_fiber_tensor import (  # noqa
     processing_heart,
     utils,
     slurm_launcher
