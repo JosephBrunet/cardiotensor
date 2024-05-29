@@ -302,7 +302,7 @@ def run_heart_orientation_processing(file_path):
     for i in index_intervals:
         
         print('Sending to SLURM...')
-        job_id = submit_job_to_slurm('3D_processing', file_path, i[0], i[1], mem_needed=mem_needed)
+        job_id = submit_job_to_slurm('processing', file_path, i[0], i[1], mem_needed=mem_needed)
         # sys.exit()
                 
     monitor_job_output(output_dir, N_img, file_type)
