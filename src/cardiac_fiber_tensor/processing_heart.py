@@ -240,9 +240,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         
 
         img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice,center_point)
-        
-        print(img_helix)
-        
+                
         
         if IS_TEST:
             plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
