@@ -3,7 +3,7 @@
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
 ## Overview
-**CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images. This package is based on the structure-tensor package (https://github.com/Skielex/structure-tensor)
+**CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images.
 
 ## Installation
 
@@ -18,6 +18,10 @@ pip -m install .
 - Create a .conf file for your dataset (example in /param_files/parameters_template.conf)
 - Run `myotensor` in the terminal
 - Select your conf file
+
+## More information
+
+This package is based on the structure-tensor package (https://github.com/Skielex/structure-tensor)
 
 ## License
 
