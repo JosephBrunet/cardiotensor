@@ -2,23 +2,25 @@
 
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
-## How to use:
+## Overview
+**CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images. This package is based on the structure-tensor package (https://github.com/Skielex/structure-tensor)
 
-Install all the dependencies
+## Installation
+To install the required dependencies, use the following command:
+```sh
+pip install .
+```
 
-Create a new parameter file in `./param_file/` similar to `param_template.txt` and fill all the parameters
+## Usage
 
-Run `processing` with and indicate the param file (run first with the option TEST activated to have a preview of the result)
+- Create a .conf file for your dataset (example in /example/parameters_template.conf)
+- Run `cft_proccessing` in the terminal
+- Select your conf file
 
-Use `python3 processing.py --help` to look at the optional parameters
+## License
 
+This project is licensed under an MIT License, the terms specified in the LICENSE.md file.
 
-dependencies = [  
-    "structure_tensor",  
-    "dask_image>=2023.3.0",  
-    "dask",  
-    "numpy,  
-    "opencv-python",  
-    "matplotlib",  
-    "cupy",  
-]  
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
