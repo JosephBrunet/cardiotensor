@@ -29,7 +29,7 @@ dependencies = [
     "structure-tensor",
     "tifffile",
 ]
-description = "Tools for quantifying cardiac fiber orientation"
+description = "Toolkit designed for quantifying 3D cardiomyocytes orientations in heart images"
 keywords = []
 name = "MyoTensor"
 readme = "README.md"
