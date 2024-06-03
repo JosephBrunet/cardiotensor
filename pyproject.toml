@@ -31,13 +31,13 @@ dependencies = [
 ]
 description = "Tools for quantifying cardiac fiber orientation"
 keywords = []
-name = "cardiac_fiber_tensor"
+name = "MyoTensor"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE.md" }
 
 [project.scripts]
-cft_processing = "cardiac_fiber_tensor.processing_heart:main"
+cft_processing = "MyoTensor.processing_heart:main"
 
 [project.urls]
 homepage = "https://github.com/JosephBrunet/image-processing-utils"
