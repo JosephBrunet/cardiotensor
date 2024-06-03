@@ -1,4 +1,4 @@
-#  MyoTensor
+# MyoTensor
 
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
@@ -7,17 +7,15 @@ Utils for calculating the orientation of fibers in a heart. Godspeed
 
 ## Installation
 
-Install package using the following command:
+Clone the repository and install package using the following command:
 
 ```sh
-pip -m install MyoTensor
+pip -m install .
 ```
-
-or clone the repository.
 
 ## Usage
 
-- Create a .conf file for your dataset (example in /example/parameters_template.conf)
+- Create a .conf file for your dataset (example in /param_files/parameters_template.conf)
 - Run `cft_proccessing` in the terminal
 - Select your conf file
 
