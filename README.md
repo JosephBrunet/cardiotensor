@@ -6,10 +6,12 @@ Utils for calculating the orientation of fibers in a heart. Godspeed
 **CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images. This package is based on the structure-tensor package (https://github.com/Skielex/structure-tensor)
 
 ## Installation
-To install the required dependencies, use the following command:
+
+Install package using the following command:
 ```sh
-pip install .
+pip -m install 
 ```
+or clone the repository.
 
 ## Usage
 
