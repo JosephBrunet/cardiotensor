@@ -37,7 +37,7 @@ requires-python = ">=3.8"
 license = { file = "LICENSE.md" }
 
 [project.scripts]
-cft_processing = "MyoTensor.processing_heart:main"
+myotensor = "MyoTensor.processing_heart:main"
 
 [project.urls]
 homepage = "https://github.com/JosephBrunet/image-processing-utils"
