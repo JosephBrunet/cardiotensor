@@ -16,7 +16,7 @@ pip -m install .
 ## Usage
 
 - Create a .conf file for your dataset (example in /param_files/parameters_template.conf)
-- Run `cft_proccessing` in the terminal
+- Run `myotensor` in the terminal
 - Select your conf file
 
 ## License
