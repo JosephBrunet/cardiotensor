@@ -10,7 +10,7 @@ Utils for calculating the orientation of fibers in a heart. Godspeed
 Clone the repository and install package using the following command:
 
 ```sh
-pip -m install .
+pip install .
 ```
 
 ## Usage
