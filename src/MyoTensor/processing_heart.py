@@ -26,7 +26,7 @@ USE_GPU = False
 
 from structure_tensor import parallel_structure_tensor_analysis
 
-from cardiac_fiber_tensor.utils import *
+from MyoTensor.utils import *
 
 
 
