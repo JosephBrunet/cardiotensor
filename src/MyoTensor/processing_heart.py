@@ -53,14 +53,14 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         if end_index == 0:
             is_already_done = False
         for idx in range(start_index, end_index):
-            if not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + idx):06d}.tif"):
+            if not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(idx):06d}.tif"):
                 is_already_done = False
                 break
 
-        if is_already_done:
+        if is_already_done:            
             print('All images are already done')
             return
-     
+         
     if MASK_PATH:
         is_mask = True
     else:
@@ -200,14 +200,14 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     
     
     
-    
-    posdef = np.sum(val < 0, axis=0) == 0
-    vec_norm = np.linalg.norm(vec,axis=0)
-    for i in range(3):
-        vec[i] = vec[i] / (vec_norm*posdef)
-        
-    #vec[2,:] = -vec[2,:]
-    
+    # Putting all the vectors in positive direction
+    posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
+    vec_norm = np.linalg.norm(vec, axis=0)  # Compute the norm of the vectors along the first axis
+
+    # Use broadcasting to normalize the vectors
+    vec = vec / (vec_norm * posdef)
+
+    # Check for negative z component and flip if necessary
     negative_z = vec[2, :] < 0
     vec[:, negative_z] *= -1
     
@@ -247,7 +247,6 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
 
         img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice,center_point)
                 
-        
         if IS_TEST:
             plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
         if not IS_TEST:           
