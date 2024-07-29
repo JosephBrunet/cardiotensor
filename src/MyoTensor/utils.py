@@ -19,13 +19,14 @@ try:
 except ImportError:
     USE_GPU = False
 
+print(f"USE_GPU: {USE_GPU}")
 
 from structure_tensor import parallel_structure_tensor_analysis
 
 
 
 
-def convert_to_8bit(img, minimum=0, maximum=100):
+def convert_to_8bit(img, perc_min = 0, perc_max = 100, output_min = None, output_max = None):
     """
     Convert the input image to 8-bit format.
 
@@ -40,15 +41,21 @@ def convert_to_8bit(img, minimum=0, maximum=100):
     # norm = np.zeros(img.shape[:2], dtype=np.float32)
     # img_8bit = cv2.normalize(img, norm, 0, 255, cv2.NORM_MINMAX).astype('uint8')
     
-    minimum,maximum = np.nanpercentile(img, (minimum, maximum))
+    minimum,maximum = np.nanpercentile(img, (perc_min, perc_max))
 
     print(f"Minimum, Maximum : {minimum}, {maximum}")
     
-    minimum = int(minimum)
-    maximum = int(maximum)
+    # minimum = int(minimum)
+    # maximum = int(maximum)
+
+    if output_min and output_max:   
+        minimum = output_min
+        maximum = output_max
+        
     
     img_normalized = (img + np.abs(minimum)) * (255 / (maximum - minimum))  # Normalize the image to the range [0, 255]
-    img_8bit = img_normalized.astype('np.uint8')
+    img_8bit = img_normalized.astype(np.uint8)
+    
     return img_8bit
 
 
@@ -303,17 +310,18 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     
-    # flag_GPU=False
-    # if USE_GPU:
-    #     S, vec, val = parallel_structure_tensor_analysis(volume, 
-    #                                                     SIGMA, 
-    #                                                     RHO, 
-    #                                                     devices=['cuda:0'] +['cuda:1']+64*['cpu'], 
-    #                                                     block_size=200,
-    #                                                     structure_tensor=True)                                                   
-    # else:
-    S, vec, val = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
-                                                        structure_tensor=True) # vec has shape =(3,x,y,z) in the order of (z,y,x)
+    flag_GPU=True
+    if USE_GPU and flag_GPU:
+        print('GPU activated')
+        S, vec, val = parallel_structure_tensor_analysis(volume, 
+                                                        SIGMA, 
+                                                        RHO, 
+                                                        devices=32*['cuda:0'] +32*['cuda:1'] +64*['cpu'],
+                                                        block_size=400,  
+                                                        structure_tensor=True) 
+    else:
+        S, vec, val = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
+                                                            structure_tensor=True) # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
     return S, vec, val
 
@@ -540,23 +548,25 @@ def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTP
     Returns:
         None
     """
-  
-    # # Convert the float64 image to int8
-    # img_helix = convert_to_8bit(img_helix, -90, 90)
-    # img_intrusion = convert_to_8bit(img_intrusion, -90, 90)
-    # img_FA = convert_to_8bit(img_FA, 0, 1)
-    
+
+
     os.makedirs(OUTPUT_DIR + '/HA', exist_ok=True)
     os.makedirs(OUTPUT_DIR + '/IA', exist_ok=True)
     os.makedirs(OUTPUT_DIR + '/FA', exist_ok=True)        
 
-    print(f"Saving image:")
-
+    print(f"Saving image: {z}")
+    
     if '8bit' in OUTPUT_TYPE:
-
+        
+        # Convert the float64 image to int8
+        img_helix = convert_to_8bit(img_helix, output_min=-90, output_max=90)
+        img_intrusion = convert_to_8bit(img_intrusion, output_min=-90,  output_max=90)
+        img_FA = convert_to_8bit(img_FA, output_min=0, output_max=1)
+        
         cv2.imwrite(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix)
         cv2.imwrite(f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion)
         cv2.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
+        
         
     elif 'rgb' in OUTPUT_TYPE:
         def write_img_rgb(img, output_path, cmap=plt.get_cmap('hsv')):
