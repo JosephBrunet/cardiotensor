@@ -23,34 +23,36 @@ dependencies = [
     "dask-image",
     "matplotlib",
     "numpy",
-    "opencv-python",
+    "opencv-python-headless",
     "pillow",
     "scikit-image",
-    "structure-tensor",
+    "structure-tensor>=0.3.0",
     "tifffile",
 ]
 description = "Toolkit designed for quantifying 3D cardiomyocytes orientations in heart images"
 keywords = []
 name = "MyoTensor"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = { file = "LICENSE.md" }
 
 [project.scripts]
 myotensor = "MyoTensor.processing_heart:main"
+myoanalyse = "MyoTensor.gui:main"
+
 
 [project.urls]
 homepage = "https://github.com/JosephBrunet/MyoTensor"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py311']
 
 [tool.mypy]
 plugins = [
     "pydantic.mypy"
 ]
-python_version = "3.8"
+python_version = "3.11"
 strict = true
 
 [[tool.mypy.overrides]]
