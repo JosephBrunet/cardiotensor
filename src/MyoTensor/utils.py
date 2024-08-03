@@ -21,7 +21,7 @@ except ImportError:
 
 print(f"USE_GPU: {USE_GPU}")
 
-from structure_tensor import parallel_structure_tensor_analysis
+from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 
 
 
@@ -304,34 +304,36 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
         Flag to use GPU if available.
 
     Returns:
-    - tuple: (s, vec, val)
+    - tuple: (s, val, vec)
         The structure tensor (s), eigenvectors (vec), and eigenvalues (val).
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     
-    flag_GPU=True
+    flag_GPU=False
     if USE_GPU and flag_GPU:
         print('GPU activated')
-        S, vec, val = parallel_structure_tensor_analysis(volume, 
+        S, val, vec = parallel_structure_tensor_analysis(volume, 
                                                         SIGMA, 
                                                         RHO, 
                                                         devices=32*['cuda:0'] +32*['cuda:1'] +64*['cpu'],
-                                                        block_size=400,  
-                                                        structure_tensor=True) 
+                                                        block_size=400, 
+                                                        truncate=4.0, 
+                                                        structure_tensor=np.float32) 
     else:
-        S, vec, val = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
-                                                            structure_tensor=True) # vec has shape =(3,x,y,z) in the order of (z,y,x)
+        S, val, vec = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
+                                                         truncate=4.0,
+                                                         structure_tensor=np.float32) # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
-    return S, vec, val
-
-
-
+    return S, val, vec
 
 
 
 
-def remove_padding(volume, s, vec, val, padding_start, padding_end):
+
+
+
+def remove_padding(volume, s, val, vec, padding_start, padding_end):
     """
     Removes padding from the processed data.
 
@@ -350,7 +352,7 @@ def remove_padding(volume, s, vec, val, padding_start, padding_end):
         The end padding to remove.
 
     Returns:
-    - tuple: (volume, s, vec, val)
+    - tuple: (volume, s, val, vec)
         The adjusted data without padding.
     """
     array_end = vec.shape[1] - padding_end
@@ -359,7 +361,7 @@ def remove_padding(volume, s, vec, val, padding_start, padding_end):
     vec = vec[:,padding_start:array_end,:,:]
     val = val[:,padding_start:array_end,:,:]
     
-    return volume, s, vec, val
+    return volume, s, val, vec
 
 
     

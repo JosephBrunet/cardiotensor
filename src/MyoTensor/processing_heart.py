@@ -24,8 +24,6 @@ except ImportError:
     USE_GPU = False
 USE_GPU = False
 
-from structure_tensor import parallel_structure_tensor_analysis
-
 from MyoTensor.utils import *
 
 
@@ -85,8 +83,8 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         print(f"READING MASK INFORMATION FROM {MASK_PATH}...\n")
         mask_list, mask_type = get_image_list(MASK_PATH)
         print(f"{len(mask_list)} {mask_type} files found\n")  
-        mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
-        print(f"Dask mask: {mask_dask}")
+        # mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
+        # print(f"Dask mask: {mask_dask}")
         N_mask = len(mask_list)
         binning_factor = N_img / N_mask
         print(f"Mask bining factor: {binning_factor}\n")
@@ -117,19 +115,19 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     
     print(f"\n---------------------------------")
     print("LOAD VOLUMES\n")
-    volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float64')
+    volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float32')
     print(f"Loaded volume shape {volume.shape}")    
 
     if is_mask:
-        start_index_padded_mask = int((start_index_padded / binning_factor)-binning_factor/2)
+        start_index_padded_mask = int((start_index_padded / binning_factor)-1)#-binning_factor/2)
         if start_index_padded_mask < 0:
             start_index_padded_mask = 0
-        end_index_padded_mask = int((end_index_padded / binning_factor)+binning_factor/2)
+        end_index_padded_mask = int((end_index_padded / binning_factor)+1)#+binning_factor/2)
         if end_index_padded_mask > N_mask:
             end_index_padded_mask = N_mask
         
         
-        print(f"Mask start index padded, Mask end index padded : {start_index_padded_mask}, {end_index_padded_mask}")
+        print(f"Mask start index padded: {start_index_padded_mask} - Mask end index padded : {end_index_padded_mask}")
         
         mask = load_volume(mask_list, start_index_padded_mask, end_index_padded_mask)
         print(f"Mask volume loaded of shape {mask.shape}")
@@ -138,11 +136,12 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         from scipy.ndimage import zoom
         mask = zoom(mask, binning_factor, order=0)
         
+        
         # start_index_mask_upscaled = int(mask.shape[0]/2)-int(volume.shape[0]/2)
         # end_index_mask_upscaled = start_index_mask_upscaled+volume.shape[0]
             
-        start_index_mask_upscaled = int(np.abs(start_index_padded_mask*binning_factor - start_index_padded))
-        end_index_mask_upscaled = start_index_mask_upscaled+volume.shape[0]
+        start_index_mask_upscaled = int(np.abs(start_index_padded_mask * binning_factor - start_index_padded))
+        end_index_mask_upscaled = start_index_mask_upscaled + volume.shape[0]
         
         print(volume.shape)
         print(mask.shape)
@@ -165,12 +164,12 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             # Resize the slice to match the corresponding slice of the volume
             mask_resized[i] = cv2.resize(mask[i], (volume.shape[2], volume.shape[1]), interpolation = cv2.INTER_LINEAR)
             
-            kernel = np.ones((2,2),np.uint8)
-            mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
+            # kernel = np.ones((2,2),np.uint8)
+            # mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
 
         mask = mask_resized
         
-        assert mask.shape == volume.shape, f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
+        assert mask.shape == volume.shape, f"Mask shape {mask.shape} does not match volume shape {volume.shape}"           
 
         volume[mask == 0] = np.nan
         
@@ -178,26 +177,27 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         del mask_resized    
         del mask
 
-
+    
 
 
 
     print(f"\n---------------------------------")
     print(f'CALCULATING STRUCTURE TENSOR')
     t1 = time.perf_counter()  # start time
-    s, vec, val = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU)    
+    s, val, vec  = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU)    
     print(f"Vector shape: {vec.shape}")
-    volume, _, vec, val = remove_padding(volume, s, vec, val, padding_start, padding_end)
+    volume, _, val, vec = remove_padding(volume, s, val, vec, padding_start, padding_end)
     del s
     print(f"Vector shape after removing padding: {vec.shape}")
     
-    
-
     # print( np.isnan(vec[1,0,:,:]).all())
     # sys.exit()
 
     center_line = center_line[start_index_padded:end_index_padded]  # adjust the center line to the new start and end index
     
+    
+    # # plt.imshow(vec[0,0, :, :]);plt.show()
+    # import pdb; pdb.set_trace()
     
     
     # Putting all the vectors in positive direction
@@ -205,14 +205,16 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     vec_norm = np.linalg.norm(vec, axis=0)  # Compute the norm of the vectors along the first axis
 
     # Use broadcasting to normalize the vectors
-    vec = vec / (vec_norm * posdef)
+    # vec = vec / (vec_norm * posdef)
+    
+    vec = vec / (vec_norm)
+
 
     # Check for negative z component and flip if necessary
-    negative_z = vec[2, :] < 0
-    vec[:, negative_z] *= -1
+    # negative_z = vec[2, :] < 0
+    # vec[:, negative_z] *= -1
     
-    
-    
+
 
     t2 = time.perf_counter()  # stop time
     print(f'finished calculating structure tensors in {t2 - t1} seconds')
@@ -223,10 +225,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         np.save(f"{OUTPUT_DIR}/eigen_vec.npy", vec)
 
 
-
-
     print(f'\nCalculating helix/intrusion angle and fractional anisotropy:')
-    
     for z in range(vec.shape[1]):
         print(f"Processing image: {start_index + z}")
         
@@ -246,6 +245,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         
 
         img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice,center_point)
+          
+
+
                 
         if IS_TEST:
             plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
