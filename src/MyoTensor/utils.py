@@ -310,7 +310,7 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     
-    flag_GPU=False
+    flag_GPU=True
     if USE_GPU and flag_GPU:
         print('GPU activated')
         S, val, vec = parallel_structure_tensor_analysis(volume, 
@@ -321,7 +321,13 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
                                                         truncate=4.0, 
                                                         structure_tensor=np.float32) 
     else:
+        
+        num_cpus = os.cpu_count()
+        num_cpus = max(num_cpus, 4)
+        print(f"Number of CPUs used: {num_cpus}")
+         
         S, val, vec = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
+                                                         devices = num_cpus*['cpu'],
                                                          truncate=4.0,
                                                          structure_tensor=np.float32) # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
