@@ -3,8 +3,7 @@
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
 
-![Alt text](example/result_slice.png)
-
+![Alt text](./example/result_slice.png)
 
 ## Overview
 **CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images.
