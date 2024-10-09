@@ -43,7 +43,7 @@ def convert_to_8bit(img, perc_min = 0, perc_max = 100, output_min = None, output
     
     minimum,maximum = np.nanpercentile(img, (perc_min, perc_max))
 
-    print(f"Minimum, Maximum : {minimum}, {maximum}")
+    # print(f"Minimum, Maximum : {minimum}, {maximum}")
     
     # minimum = int(minimum)
     # maximum = int(maximum)
@@ -62,6 +62,10 @@ def convert_to_8bit(img, perc_min = 0, perc_max = 100, output_min = None, output
 
 
 def read_conf_file(file_path):
+    
+    if not os.path.exists(file_path):
+        sys.exit(f"The configuration file {file_path} does not exist.")
+    
     config = configparser.ConfigParser()
     config.read(file_path)
 
@@ -289,7 +293,7 @@ def load_volume(file_list, start_index_padded, end_index_padded):
 
 
 
-def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
+def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU, device='', block_size=''):
     """
     Calculates the structure tensor for the given volume data.
 
@@ -310,22 +314,25 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU):
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     
+    num_cpus = os.cpu_count()
+    num_cpus = max(num_cpus, 4)
+    print(f"Number of CPUs used: {num_cpus}")
+    
     flag_GPU=True
     if USE_GPU and flag_GPU:
         print('GPU activated')
+        if device=='':
+            devices=32*['cuda:0'] + 32*['cuda:1'] + num_cpus*['cpu']
+        if block_size=='':
+            block_size=400
         S, val, vec = parallel_structure_tensor_analysis(volume, 
                                                         SIGMA, 
                                                         RHO, 
-                                                        devices=32*['cuda:0'] +32*['cuda:1'] +64*['cpu'],
-                                                        block_size=400, 
+                                                        devices=device,
+                                                        block_size=block_size, 
                                                         truncate=4.0, 
                                                         structure_tensor=np.float32) 
-    else:
-        
-        num_cpus = os.cpu_count()
-        num_cpus = max(num_cpus, 4)
-        print(f"Number of CPUs used: {num_cpus}")
-         
+    else:  
         S, val, vec = parallel_structure_tensor_analysis(volume, SIGMA, RHO,
                                                          devices = num_cpus*['cpu'],
                                                          truncate=4.0,

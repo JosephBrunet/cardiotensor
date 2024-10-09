@@ -41,6 +41,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
+        print(e)
         sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
     
     
@@ -64,6 +65,54 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     else:
         print("Mask path not provided")
         is_mask = False
+        
+    import pdb; pdb.set_trace()
+       
+        
+    def read_raw_volume(file_path, shape, dtype):
+        """
+        Reads a raw volume file and returns it as a numpy array.
+
+        Parameters:
+        - file_path (str): Path to the raw volume file.
+        - shape (tuple of ints): Dimensions of the volume, e.g., (z, y, x).
+        - dtype (numpy dtype): Data type of the volume, e.g., np.uint8, np.float32.
+
+        Returns:
+        - volume (numpy.ndarray): The volume as a numpy array.
+        """
+        # Calculate the total number of elements
+        num_elements = np.prod(shape)
+        
+        # Read the binary data from the file
+        with open(file_path, 'rb') as file:
+            data = np.fromfile(file, dtype=dtype, count=num_elements)
+        
+        # Reshape the flat array to the desired 3D shape
+        volume = data.reshape(shape)
+        
+        return volume
+import numpy as np
+
+# Define the dimensions and data type of the volume
+width, height, depth = 512, 512, 256  # Example dimensions
+data_type = np.uint8  # Example data type
+
+# Path to the .raw file
+file_path = 'path/to/your/file.raw'
+
+# Read the binary data from the .raw file
+volume_data = np.fromfile(file_path, dtype=data_type)
+
+# Reshape the data to the volume dimensions
+volume_data = volume_data.reshape((depth, height, width))
+
+# Verify the shape
+print(volume_data.shape)
+
+
+
+
         
     print(f"\n---------------------------------")
     print(f"READING VOLUME INFORMATION\n")
@@ -164,8 +213,17 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             # Resize the slice to match the corresponding slice of the volume
             mask_resized[i] = cv2.resize(mask[i], (volume.shape[2], volume.shape[1]), interpolation = cv2.INTER_LINEAR)
             
-            # kernel = np.ones((2,2),np.uint8)
-            # mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
+            kernel_size = kernel_size = RHO * 2
+            # Ensure kernel_size is odd
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+            kernel_size = int(kernel_size)
+            
+            assert kernel_size % 2 == 1, "Kernel size has to be an odd number"      
+
+        #     kernel = np.ones((kernel_size,kernel_size),np.uint8)
+        #     mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
+        # print(f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]")
 
         mask = mask_resized
         
@@ -177,6 +235,30 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         del mask_resized    
         del mask
 
+    # num_cpus= 64
+    # aa = ["num_cpus*['cpu']", 
+    #       "32*['cuda:0'] + 32*['cuda:1'] + num_cpus*['cpu']", 
+    #       "16*['cuda:0'] + 16*['cuda:1'] + num_cpus*['cpu']",
+    #       "8*['cuda:0'] + 8*['cuda:1'] + num_cpus*['cpu']",
+    #       "8*['cuda:0'] + num_cpus*['cpu']",
+    #       "16*['cuda:0'] + num_cpus*['cpu']",
+    #       "32*['cuda:0'] + num_cpus*['cpu']"]
+    # bb = [200,300,400]
+    # for a in aa:
+    #     for b in bb:
+            
+    #         print(f"\n---------------------------------")
+    #         print(f'CALCULATING STRUCTURE TENSOR')
+    #         t1 = time.perf_counter()  # start time
+    #         s, val, vec  = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU,device=eval(a), block_size=b)    
+    #         t2 = time.perf_counter()  # stop time
+    #         print(f'{t2 - t1} seconds - device: {a}, block_size: {b}')
+    #         time.sleep(2)
+            
+            
+    # sys.exit()
+    
+    
     
 
 
@@ -295,6 +377,10 @@ def main():
             start_time = time.time()
             process_3d_data(conf_file_path, idx, idx + N_CHUNK) 
             print("--- %s seconds ---" % (time.time() - start_time))
+            
+            if time.time() - start_time > 5:
+                sys.exit()
+
     else:
         start_time = time.time()
         process_3d_data(conf_file_path, start_index, end_index) 
