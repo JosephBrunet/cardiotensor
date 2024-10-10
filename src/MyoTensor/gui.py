@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QFileDialog, QApplication, QGraphicsEllipseItem, QGraphicsItem,
     QGraphicsLineItem, QGraphicsScene, QGraphicsView, QHBoxLayout,
     QPushButton, QVBoxLayout, QWidget, QShortcut, QLineEdit, QLabel,
-    QMenuBar, QAction, QSpinBox
+    QMenuBar, QAction, QSpinBox, QRadioButton, QButtonGroup
 )
 from skimage import color, io
 from skimage.measure import block_reduce
@@ -29,7 +29,7 @@ def np2pixmap(np_img):
 
 
 class Window(QWidget):
-    def __init__(self, conf_file_path, N_slice, N_line, angle_range):
+    def __init__(self, conf_file_path, N_slice, N_line, angle_range, image_mode):
         super().__init__()
 
         self.half_point_size = 5
@@ -45,8 +45,13 @@ class Window(QWidget):
         self.N_slice = N_slice
         self.angle_range = angle_range
         self.N_line = N_line
+        self.image_mode = image_mode
         self.intensity_profiles = []
-        
+        self.x_min_lim = None
+        self.x_max_lim = None
+        self.y_min_lim = None
+        self.y_max_lim = None
+
         self.view = QGraphicsView()
         self.view.setRenderHint(QPainter.Antialiasing)
 
@@ -65,18 +70,36 @@ class Window(QWidget):
         ]
         
         self.MASK_PATH = MASK_PATH
+        self.OUTPUT_DIR = OUTPUT_DIR
         
-
-        HA_path = Path(OUTPUT_DIR) / "HA"
+        HA_path = Path(self.OUTPUT_DIR) / "HA"
+        IA_path = Path(self.OUTPUT_DIR) / "IA"
+        FA_path = Path(self.OUTPUT_DIR) / "FA"
+        
         if not HA_path.exists:
             sys.exit(f"No HA folder ({HA_path})")
+        if not IA_path.exists:
+            sys.exit(f"No IA folder ({IA_path})")
+        elif not FA_path.exists:
+            sys.exit(f"No FA folder ({FA_path})")
 
-        self.HA_img_list, HA_img_type = get_image_list(HA_path)
-        
-        center_line = interpolate_points(PT_MV, PT_APEX, len(self.HA_img_list))
+
+        # Select the appropriate image list based on the output mode
+        if self.image_mode == 'HA':
+            self.img_list, img_type = get_image_list(HA_path)
+        elif self.image_mode == 'IA':
+            self.img_list, img_type = get_image_list(IA_path)
+        elif self.image_mode == 'FA':
+            self.img_list, img_type = get_image_list(FA_path)
+        else:
+            sys.exit(f"Invalid output mode: {self.image_mode}. Must be 'HA', 'IA', or 'FA'.")
+
+        # Compute center line and center point
+        center_line = interpolate_points(PT_MV, PT_APEX, len(self.img_list))
         center_point = np.around(center_line[self.N_slice])
-        
-        slice_path = self.HA_img_list[self.N_slice]  
+
+        # Load the selected slice
+        slice_path = self.img_list[self.N_slice]
         if not slice_path.exists():
             print(f"File {slice_path} doesn't exist")
             return
@@ -84,10 +107,10 @@ class Window(QWidget):
             print(f"Slice found ({slice_path})")
             
             
-        self.img_helix = self.load_image(slice_path, self.MASK_PATH)
+        self.current_img = self.load_image(slice_path, self.MASK_PATH)
 
 
-        self.load_image_to_gui(self.img_helix)
+        self.load_image_to_gui(self.current_img)
         
         menu_bar = QMenuBar(self)
         file_menu = menu_bar.addMenu('File')
@@ -96,6 +119,19 @@ class Window(QWidget):
         change_slice_action.triggered.connect(self.change_slice_dialog)
         file_menu.addAction(change_slice_action)
         
+        change_mode = QAction('Choose image type', self)
+        change_mode.triggered.connect(self.change_img_mode)
+        file_menu.addAction(change_mode)
+
+        graph_menu = menu_bar.addMenu('Graph')
+        set_x_lim_action = QAction('Set x axis limits', self)
+        set_x_lim_action.triggered.connect(self.set_x_lim_dialog)
+        graph_menu.addAction(set_x_lim_action)
+        
+        set_y_lim_action = QAction('Set y axis limits', self)
+        set_y_lim_action.triggered.connect(self.set_y_lim_dialog)
+        graph_menu.addAction(set_y_lim_action)
+
         vbox = QVBoxLayout(self)
         vbox.setMenuBar(menu_bar)
         vbox.addWidget(self.view)
@@ -147,7 +183,7 @@ class Window(QWidget):
 
     #     self.color_idx -= 1
 
-    #     bg = Image.fromarray(self.img_helix_rgb.astype("uint8"), "RGB")
+    #     bg = Image.fromarray(self.current_img_rgb.astype("uint8"), "RGB")
     #     mask = Image.fromarray(self.prev_mask.astype("uint8"), "RGB")
     #     img = Image.blend(bg, mask, 0.2)
 
@@ -223,6 +259,9 @@ class Window(QWidget):
         
 
     def plot_profile(self):
+        if self.line_np is None:
+            print("No line drawn")
+            return
         if not self.line_np.any():
             print("No line drawn")
             return
@@ -232,16 +271,33 @@ class Window(QWidget):
         
         print(start_point)
         print(end_point)
-        
-        self.intensity_profiles = calculate_intensities(self.img_helix, start_point, end_point, self.angle_range, self.N_line)
                 
-        plot_intensity(self.intensity_profiles)
+        # Adjust minimum and maximum based on the mode
+        if self.image_mode == 'HA':
+            minimum = -90  # Use the default behavior or adjust values
+            maximum = 90
+            label_y = 'Helical Angle (°)'
+        elif self.image_mode == 'IA':
+            # Adjust min/max for IA if necessary
+            minimum = -90
+            maximum = 90
+            label_y = 'Intrusion Angle (°)'
+        elif self.image_mode == 'FA':
+            # Adjust min/max for FA if necessary
+            minimum = 0
+            maximum = 1
+            label_y = 'Fractional Anisotropy'
+                
+        self.intensity_profiles = calculate_intensities(self.current_img, start_point, end_point, self.angle_range, self.N_line,  max_value = maximum, min_value = minimum)
+        
+        plot_intensity(self.intensity_profiles, label_y=label_y, x_max_lim=self.x_max_lim, x_min_lim=self.x_min_lim, y_max_lim=self.y_max_lim, y_min_lim=self.y_min_lim)
+
         
 
         # bin_factor = 16                      
-        # img_helix_bin = block_reduce(self.img_helix, block_size=(bin_factor, bin_factor), func=np.mean)
+        # current_img_bin = block_reduce(self.current_img, block_size=(bin_factor, bin_factor), func=np.mean)
         
-        # intensity_profiles = calculate_intensities(img_helix_bin, start_point/bin_factor, end_point/bin_factor, self.angle_range, self.N_line)      
+        # intensity_profiles = calculate_intensities(current_img_bin, start_point/bin_factor, end_point/bin_factor, self.angle_range, self.N_line)      
         # plot_intensity(intensity_profiles)
         
         
@@ -257,7 +313,7 @@ class Window(QWidget):
         end_point = self.line_np[2:] * self.bin_factor
 
         if not self.intensity_profiles:
-            self.intensity_profiles = calculate_intensities(self.img_helix, start_point, end_point, self.angle_range, self.N_line)
+            self.intensity_profiles = calculate_intensities(self.current_img, start_point, end_point, self.angle_range, self.N_line)
         
         save_path, _ = QFileDialog.getSaveFileName(self, "Save Profile", "", "Csv Files (*.csv);;All Files (*)")
         
@@ -279,7 +335,7 @@ class Window(QWidget):
             print(f"READING MASK INFORMATION FROM {mask_path}...\n")
             mask_list, mask_type = get_image_list(mask_path)
             N_mask = len(mask_list)
-            mask_bin_factor = len(self.HA_img_list) / N_mask
+            mask_bin_factor = len(self.img_list) / N_mask
             print(f"Mask bining factor: {mask_bin_factor}\n")
             
             img_mask = self.load_image(mask_list[int(self.N_slice / mask_bin_factor)])
@@ -293,9 +349,9 @@ class Window(QWidget):
 
         
 
-    def load_image_to_gui(self, img_helix):
+    def load_image_to_gui(self, current_img):
                 
-        height, width = img_helix.shape[:2]
+        height, width = current_img.shape[:2]
         
         # Calculate the bin_factor such that the downsampled image is less than 1000 pixels in both dimensions
         self.bin_factor = 1
@@ -304,27 +360,27 @@ class Window(QWidget):
         
         print(f"Bin factor: {self.bin_factor}")
                 
-        img_helix_bin = block_reduce(img_helix, block_size=(self.bin_factor, self.bin_factor), func=np.mean)
+        current_img_bin = block_reduce(current_img, block_size=(self.bin_factor, self.bin_factor), func=np.mean)
         
         
-        # img_helix_bin = img_helix_bin.astype(float)
+        # current_img_bin = current_img_bin.astype(float)
 
         
-        minimum = np.nanmin(img_helix_bin)
-        maximum = np.nanmax(img_helix_bin)
-        img_helix_bin = (img_helix_bin + np.abs(minimum)) * (1 / (maximum - minimum)) 
+        minimum = np.nanmin(current_img_bin)
+        maximum = np.nanmax(current_img_bin)
+        current_img_bin = (current_img_bin + np.abs(minimum)) * (1 / (maximum - minimum)) 
         cmap = plt.get_cmap('hsv')
-        img_helix_rgb = cmap(img_helix_bin)
-        img_helix_rgb = (img_helix_rgb[:, :, :3] * 255).astype(np.uint8)
+        current_img_rgb = cmap(current_img_bin)
+        current_img_rgb = (current_img_rgb[:, :, :3] * 255).astype(np.uint8)
 
         gray_color = [128, 128, 128]
-        img_helix_rgb[np.isnan(img_helix_bin)] = gray_color
+        current_img_rgb[np.isnan(current_img_bin)] = gray_color
         
-        self.img_helix_rgb = img_helix_rgb
+        self.current_img_rgb = current_img_rgb
 
-        pixmap = np2pixmap(self.img_helix_rgb)
+        pixmap = np2pixmap(self.current_img_rgb)
 
-        H, W, _ = self.img_helix_rgb.shape
+        H, W, _ = self.current_img_rgb.shape
 
         self.scene = QGraphicsScene(0, 0, W, H)
         self.end_point = None
@@ -408,7 +464,7 @@ class Window(QWidget):
 
         self.is_mouse_down = False
 
-        H, W, _ = self.img_helix_rgb.shape
+        H, W, _ = self.current_img_rgb.shape
         self.line_np = np.array([sy, sx, y, x])
         print("Line:", self.line_np * self.bin_factor)
 
@@ -421,7 +477,7 @@ class Window(QWidget):
 
         self.spin_box = QSpinBox()
         self.spin_box.setMinimum(0)
-        self.spin_box.setMaximum(len(self.HA_img_list) - 1)
+        self.spin_box.setMaximum(len(self.img_list) - 1)
         self.spin_box.setValue(self.N_slice)
         layout.addWidget(self.spin_box)
 
@@ -434,12 +490,171 @@ class Window(QWidget):
         
     def change_slice(self):
         self.N_slice = self.spin_box.value()
-        slice_path = self.HA_img_list[self.N_slice]
-        self.img_helix = self.load_image(slice_path, self.MASK_PATH).astype(float)
-        self.load_image_to_gui(self.img_helix)
+        slice_path = self.img_list[self.N_slice]
+        self.current_img = self.load_image(slice_path, self.MASK_PATH).astype(float)
+        self.load_image_to_gui(self.current_img)
         self.dialog.close()
         
         
+        
+                
+    def set_x_lim_dialog(self):
+        self.dialog = QWidget()
+        self.dialog.setWindowTitle("Change X-Axis Limits")
+
+        layout = QVBoxLayout()
+
+        # Create spin boxes for min and max limits
+        self.x_min_spin_box = QSpinBox()
+        self.x_max_spin_box = QSpinBox()
+
+        # Set ranges for spin boxes (can be modified as needed)
+        self.x_min_spin_box.setRange(-10000, 10000)  # Set appropriate limits
+        self.x_max_spin_box.setRange(-10000, 10000)
+
+        # Add spin boxes to the layout
+        layout.addWidget(QLabel("X Min:"))
+        layout.addWidget(self.x_min_spin_box)
+        layout.addWidget(QLabel("X Max:"))
+        layout.addWidget(self.x_max_spin_box)
+
+        # Create the change button
+        change_button = QPushButton("Set X Limits")
+        change_button.clicked.connect(self.set_x_lim)
+        layout.addWidget(change_button)
+
+        # Set layout and display dialog
+        self.dialog.setLayout(layout)
+        self.dialog.show()
+
+    def set_x_lim(self):
+        # Get values from spin boxes
+        self.x_min_lim = self.x_min_spin_box.value()
+        self.x_max_lim = self.x_max_spin_box.value()
+
+        # Close the dialog after setting limits
+        self.dialog.close()
+
+    def set_y_lim_dialog(self):
+        self.dialog = QWidget()
+        self.dialog.setWindowTitle("Change Y-Axis Limits")
+
+        layout = QVBoxLayout()
+
+        # Create spin boxes for min and max limits
+        self.y_min_spin_box = QSpinBox()
+        self.y_max_spin_box = QSpinBox()
+
+        # Set ranges for spin boxes (can be modified as needed)
+        self.y_min_spin_box.setRange(-10000, 10000)  # Set appropriate limits
+        self.y_max_spin_box.setRange(-10000, 10000)
+
+        # Add spin boxes to the layout
+        layout.addWidget(QLabel("Y Min:"))
+        layout.addWidget(self.y_min_spin_box)
+        layout.addWidget(QLabel("Y Max:"))
+        layout.addWidget(self.y_max_spin_box)
+
+        # Create the change button
+        change_button = QPushButton("Set Y Limits")
+        change_button.clicked.connect(self.set_y_lim)
+        layout.addWidget(change_button)
+
+        # Set layout and display dialog
+        self.dialog.setLayout(layout)
+        self.dialog.show()
+
+    def set_y_lim(self):
+        # Get values from spin boxes
+        self.y_min_lim = self.y_min_spin_box.value()
+        self.y_max_lim = self.y_max_spin_box.value()
+
+
+        # Close the dialog after setting limits
+        self.dialog.close()
+
+            
+            
+         
+            
+    def change_img_mode(self):
+        # Create a new dialog for changing the image mode
+        self.dialog = QWidget()
+        self.dialog.setWindowTitle("Choose Image Mode")
+
+        layout = QVBoxLayout()
+
+        # Create radio buttons for each mode (HA, IA, FA)
+        ha_radio = QRadioButton("HA", self.dialog)
+        ia_radio = QRadioButton("IA", self.dialog)
+        fa_radio = QRadioButton("FA", self.dialog)
+
+        # Create a button group to ensure only one is selected at a time
+        button_group = QButtonGroup(self.dialog)
+        button_group.addButton(ha_radio)
+        button_group.addButton(ia_radio)
+        button_group.addButton(fa_radio)
+
+        # Set the currently active mode as checked
+        if self.image_mode == "HA":
+            ha_radio.setChecked(True)
+        elif self.image_mode == "IA":
+            ia_radio.setChecked(True)
+        elif self.image_mode == "FA":
+            fa_radio.setChecked(True)
+
+        # Add radio buttons to the layout
+        layout.addWidget(ha_radio)
+        layout.addWidget(ia_radio)
+        layout.addWidget(fa_radio)
+
+        # Create a button to confirm the selection
+        confirm_button = QPushButton("Confirm", self.dialog)
+        confirm_button.clicked.connect(lambda: self.set_img_mode(ha_radio, ia_radio, fa_radio))
+
+        # Add the confirm button to the layout
+        layout.addWidget(confirm_button)
+
+        # Set the layout for the dialog and display it
+        self.dialog.setLayout(layout)
+        self.dialog.show()
+
+    def set_img_mode(self, ha_radio, ia_radio, fa_radio):
+        # Set the image mode based on the selected radio button
+        if ha_radio.isChecked():
+            self.image_mode = "HA"
+        elif ia_radio.isChecked():
+            self.image_mode = "IA"
+        elif fa_radio.isChecked():
+            self.image_mode = "FA"
+
+        print(f"Image mode changed to {self.image_mode}")
+
+        # Reload the images based on the selected mode
+        if self.image_mode == 'HA':
+            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "HA")
+        elif self.image_mode == 'IA':
+            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "IA")
+        elif self.image_mode == 'FA':
+            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "FA")
+        else:
+            print("Invalid image mode")
+
+        # Load the first slice in the new mode
+        self.current_img = self.load_image(self.img_list[self.N_slice], self.MASK_PATH)
+        self.load_image_to_gui(self.current_img)
+
+        # Close the dialog
+        self.dialog.close()
+                
+            
+            
+            
+            
+            
+            
+            
+            
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Image Processing Script")
@@ -447,13 +662,15 @@ def parse_arguments():
     parser.add_argument("N_slice", type=int, help="Slice number")
     parser.add_argument("--N_line", type=int, default=5, help="Number of lines")
     parser.add_argument("--angle_range", type=float, default=20, help="Angle range in degrees")
+    parser.add_argument("--image_mode", type=str, default="HA", help="Output mode (HA, IA, or FA)")
+
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
 
     app = QApplication(sys.argv)
-    w = Window(args.conf_file_path, args.N_slice, args.N_line, args.angle_range)
+    w = Window(args.conf_file_path, args.N_slice, args.N_line, args.angle_range, args.image_mode)
     w.show()
     app.exec()
 

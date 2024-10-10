@@ -67,7 +67,7 @@ def find_end_points(start_point, end_point, angle_range, N_line):
     return np.array(end_points)
 
 
-def calculate_intensities(img_helix, start_point, end_point, angle_range=5, N_line=10):
+def calculate_intensities(img_helix, start_point, end_point, angle_range=5, N_line=10, max_value = None, min_value = None):
       
     end_points = find_end_points(start_point, end_point, angle_range, N_line)
     
@@ -76,15 +76,23 @@ def calculate_intensities(img_helix, start_point, end_point, angle_range=5, N_li
     intensity_profiles = []
     for i, end in enumerate(end_points):
         print(f"Measure {i+1}/{len(end_points)}")
-        intensity_profile = profile_line(img_helix, start_point, end, order=0) * 180/255 - 90
+        intensity_profile = profile_line(img_helix, start_point, end, order=0)
+                                
+        if min_value != None and max_value != None:
+            intensity_profile = intensity_profile * (max_value - min_value)/255 + min_value
+            
         intensity_profiles.append(intensity_profile)
    
     return intensity_profiles
 
 
-def plot_intensity(intensity_profiles):
+
+
+
+def plot_intensity(intensity_profiles, label_y = "", x_max_lim=None, x_min_lim=None, y_max_lim=None, y_min_lim=None):
     plt.figure(figsize=(10, 6))
 
+    # Get the minimum length of the profiles
     min_length = min(intensity_profile.shape[0] for intensity_profile in intensity_profiles)
     
     # Trim the arrays to the minimum length
@@ -93,29 +101,52 @@ def plot_intensity(intensity_profiles):
     # Convert list of trimmed arrays to a 2D NumPy array
     intensity_profiles = np.stack(trimmed_arrays)
     
-    # for idx,i in enumerate(intensity_profiles):
-    #     plt.plot(i, label=f'{idx}', linewidth=0.5, c='k')
-
+    # Calculate mean and median arrays
     mean_array = np.mean(intensity_profiles, axis=0)
     median_array = np.median(intensity_profiles, axis=0)
     
-    # Calculate the 2.5th and 97.5th percentiles
+    # Calculate the 5th and 95th percentiles
     lower_percentile = np.percentile(intensity_profiles, 5, axis=0)
     upper_percentile = np.percentile(intensity_profiles, 95, axis=0)
     
-    # Plot the mean and median
-    plt.plot(mean_array, label='Mean')
-    plt.plot(median_array, label='Median')
+    # Create a normalized x-axis ranging from 0 to 1
+    x_axis_arr = np.linspace(0, 1, len(mean_array))
     
-    # Add shaded area for the 95% centiles
-    plt.fill_between(range(min_length), lower_percentile, upper_percentile, color='gray', alpha=0.5, label='95% Centiles')
+    # Plot the mean
+    plt.plot(x_axis_arr, mean_array, label='Mean', linewidth=2)  # Make the line thicker for better visibility
     
-    # plt.ylim(-90, 90)
-    plt.title('Intensity Profiles along the Lines')
-    plt.xlabel('Pixel position along the line')
-    plt.ylabel('Intensity')
-    plt.legend()
+    # Add shaded area for the 5th to 95th percentiles
+    plt.fill_between(x_axis_arr, lower_percentile, upper_percentile, color='gray', alpha=0.5, label=f'5%-95% Percentiles')
+    
+    # Increase axis and label thickness
+    ax = plt.gca()  # Get current axis
+    ax.spines['top'].set_linewidth(2)
+    ax.spines['right'].set_linewidth(2)
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
+    
+    # Increase tick width and font size
+    ax.xaxis.set_tick_params(width=2)
+    ax.yaxis.set_tick_params(width=2)
+    plt.xticks(fontsize=12, weight='bold')
+    plt.yticks(fontsize=12, weight='bold')
+
+    # Set thicker labels with larger font size
+    plt.xlabel('Normalized Transmural Depth', fontsize=14, weight='bold')
+    plt.ylabel(label_y, fontsize=14, weight='bold')
+    
+    # Set axis limits if provided
+    if x_max_lim:
+        plt.xlim([x_min_lim, x_max_lim])  # Set the x-axis limits, e.g., plt.xlim([0, 1])
+    if y_max_lim:
+        plt.ylim([y_min_lim, y_max_lim])  # Set the y-axis limits, e.g., plt.ylim([min_value, max_value])
+
+    
+    # Show legend and plot
+    # plt.legend(fontsize=12)
     plt.show()
+    
+    
 
 def save_intensity(intensity_profiles, save_path):
     

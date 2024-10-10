@@ -66,49 +66,49 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         print("Mask path not provided")
         is_mask = False
         
-    import pdb; pdb.set_trace()
+#     import pdb; pdb.set_trace()
        
         
-    def read_raw_volume(file_path, shape, dtype):
-        """
-        Reads a raw volume file and returns it as a numpy array.
+#     def read_raw_volume(file_path, shape, dtype):
+#         """
+#         Reads a raw volume file and returns it as a numpy array.
 
-        Parameters:
-        - file_path (str): Path to the raw volume file.
-        - shape (tuple of ints): Dimensions of the volume, e.g., (z, y, x).
-        - dtype (numpy dtype): Data type of the volume, e.g., np.uint8, np.float32.
+#         Parameters:
+#         - file_path (str): Path to the raw volume file.
+#         - shape (tuple of ints): Dimensions of the volume, e.g., (z, y, x).
+#         - dtype (numpy dtype): Data type of the volume, e.g., np.uint8, np.float32.
 
-        Returns:
-        - volume (numpy.ndarray): The volume as a numpy array.
-        """
-        # Calculate the total number of elements
-        num_elements = np.prod(shape)
+#         Returns:
+#         - volume (numpy.ndarray): The volume as a numpy array.
+#         """
+#         # Calculate the total number of elements
+#         num_elements = np.prod(shape)
         
-        # Read the binary data from the file
-        with open(file_path, 'rb') as file:
-            data = np.fromfile(file, dtype=dtype, count=num_elements)
+#         # Read the binary data from the file
+#         with open(file_path, 'rb') as file:
+#             data = np.fromfile(file, dtype=dtype, count=num_elements)
         
-        # Reshape the flat array to the desired 3D shape
-        volume = data.reshape(shape)
+#         # Reshape the flat array to the desired 3D shape
+#         volume = data.reshape(shape)
         
-        return volume
-import numpy as np
+#         return volume
+# import numpy as np
 
-# Define the dimensions and data type of the volume
-width, height, depth = 512, 512, 256  # Example dimensions
-data_type = np.uint8  # Example data type
+# # Define the dimensions and data type of the volume
+# width, height, depth = 512, 512, 256  # Example dimensions
+# data_type = np.uint8  # Example data type
 
-# Path to the .raw file
-file_path = 'path/to/your/file.raw'
+# # Path to the .raw file
+# file_path = 'path/to/your/file.raw'
 
-# Read the binary data from the .raw file
-volume_data = np.fromfile(file_path, dtype=data_type)
+# # Read the binary data from the .raw file
+# volume_data = np.fromfile(file_path, dtype=data_type)
 
-# Reshape the data to the volume dimensions
-volume_data = volume_data.reshape((depth, height, width))
+# # Reshape the data to the volume dimensions
+# volume_data = volume_data.reshape((depth, height, width))
 
-# Verify the shape
-print(volume_data.shape)
+# # Verify the shape
+# print(volume_data.shape)
 
 
 
@@ -372,7 +372,7 @@ def main():
         end_index = len(img_list)
     
     if not IS_TEST:
-        for idx in range(start_index, end_index, N_CHUNK):
+        for idx in range(start_index, end_index, -N_CHUNK):
             print(f"Processing slices {idx} to {idx+N_CHUNK}")
             start_time = time.time()
             process_3d_data(conf_file_path, idx, idx + N_CHUNK) 
