@@ -322,9 +322,10 @@ def calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU, device='', block_siz
     if USE_GPU and flag_GPU:
         print('GPU activated')
         if device=='':
-            devices=32*['cuda:0'] + 32*['cuda:1'] + num_cpus*['cpu']
+            device=32*['cuda:0'] + 32*['cuda:1'] + num_cpus*['cpu']
         if block_size=='':
-            block_size=400
+            block_size=400        
+        
         S, val, vec = parallel_structure_tensor_analysis(volume, 
                                                         SIGMA, 
                                                         RHO, 
