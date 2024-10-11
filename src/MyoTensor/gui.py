@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
 from skimage import color, io
 from skimage.measure import block_reduce
 from MyoTensor.utils import *
-from MyoTensor.analyse_functions import *
+from MyoTensor.analysis_functions import *
 import matplotlib.pyplot as plt
 
 

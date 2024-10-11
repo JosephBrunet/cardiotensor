@@ -1,6 +1,7 @@
 from MyoTensor import (  # noqa
     processing_heart,
-    analyse_functions,
+    processing_functions,
+    analysis_functions,
     utils,
     gui,
 )

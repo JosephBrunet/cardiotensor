@@ -25,6 +25,7 @@ except ImportError:
 USE_GPU = False
 
 from MyoTensor.utils import *
+from MyoTensor.processing_functions import *
 
 
 
@@ -71,13 +72,10 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     print(f"READING VOLUME INFORMATION\n")
     print(f"Volume path: {VOLUME_PATH}")
         
-    if VOLUME_PATH[-4:] == '.raw':
-        img_type = 'raw'
-        # Define the dimensions and data type of the volume
-        width, height, depth = 2041,2041,2456  # Example dimensions
-        N_img = 2456
-        data_type = np.uint16  # Example data type
-
+    if VOLUME_PATH[-4:] == '.mhd':
+        img_type = 'mhd'
+        meta_dict = read_mhd(VOLUME_PATH)
+        N_img = meta_dict['DimSize'][2]
 
     elif os.path.isdir(VOLUME_PATH):
         img_list, img_type = get_image_list(VOLUME_PATH)
@@ -87,7 +85,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         print('Reading images with Dask...')      
         volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{img_type}')
         print(f"Dask volume: {volume_dask}")
-        print('\nAll information gathered')
+        
+    print(f"Number of slices: {N_img}")
+    print('\nAll information gathered')
 
         
     print(f"\n---------------------------------")
@@ -112,25 +112,18 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     
 
 
-    if VOLUME_PATH[-4:] == '.raw':
+    if VOLUME_PATH[-4:] == '.mhd':
         # Read the binary data from the .raw file
-        volume = np.fromfile(VOLUME_PATH, dtype=data_type)
-
-        try:
-            # Reshape the data to the volume dimensions
-            volume = volume.reshape((depth, height, width))
-        except ValueError:
-            sys.exit("The shape of the volume you gave is not correct")
-
-        # Verify the shape
-        print(volume.shape)
+        volume, _ = load_raw_data_with_mhd(VOLUME_PATH)
         volume = volume[start_index_padded:end_index_padded, :, :].astype('float32')
+        
         
     elif os.path.isdir(VOLUME_PATH):
         print(f"\n---------------------------------")
         print("LOAD VOLUMES\n")
         volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float32')
-        print(f"Loaded volume shape {volume.shape}")   
+    
+    print(f"Loaded volume shape {volume.shape}")   
         
 
     if is_mask:
