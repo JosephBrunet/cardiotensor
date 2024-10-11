@@ -13,7 +13,7 @@ import tifffile
 from typing import Dict, Tuple, Any
 from os import PathLike
 
-
+import SimpleITK as sitk
 
 
 def convert_to_8bit(img, perc_min = 0, perc_max = 100, output_min = None, output_max = None):
@@ -86,6 +86,41 @@ def get_image_list(directory):
         sys.exit("No image files found in the directory.")
     
     return img_list, img_type
+
+
+
+
+def get_volume_shape(VOLUME_PATH):
+    """
+    Determines the z-dimension (number of slices) of a volume based on the VOLUME_PATH.
+    
+    Parameters:
+    - VOLUME_PATH: str
+        The path to either a .mhd file or a folder containing slices.
+    
+    Returns:
+    - int: The z-dimension of the volume (number of slices).
+    """
+    # Case 1: If it's a .mhd file
+    if os.path.isfile(VOLUME_PATH) and VOLUME_PATH.endswith('.mhd'):
+        # Use SimpleITK to read the .mhd file and get the image size
+        image = sitk.ReadImage(VOLUME_PATH)
+        size = image.GetSize()  # returns (x, y, z)
+        return size[2]  # Return the z-dimension
+
+    # Case 2: If it's a folder with image slices
+    elif os.path.isdir(VOLUME_PATH):
+        # Count the number of image slices in the folder (assuming all are in the same format)
+        supported_extensions = ('.tif', '.tiff', 'jp2')
+        slice_files = [f for f in os.listdir(VOLUME_PATH) if f.lower().endswith(supported_extensions)]
+        return len(slice_files)  # Return the number of slices (z-dimension)
+
+    else:
+        raise ValueError("The VOLUME_PATH must either be a .mhd file or a folder containing slices.")
+
+
+
+
 
 
 
