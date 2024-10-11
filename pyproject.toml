@@ -28,6 +28,8 @@ dependencies = [
     "scikit-image",
     "structure-tensor>=0.3.0",
     "tifffile",
+    'SimpleITK',
+    'PyQt5',
 ]
 description = "Toolkit designed for quantifying 3D cardiomyocytes orientations in heart images"
 keywords = []
