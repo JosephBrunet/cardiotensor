@@ -25,6 +25,7 @@ except ImportError:
 USE_GPU = False
 
 from MyoTensor.utils import *
+from MyoTensor.processing_functions import *
 
 
 
@@ -66,80 +67,29 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         print("Mask path not provided")
         is_mask = False
         
-#     import pdb; pdb.set_trace()
-       
-        
-#     def read_raw_volume(file_path, shape, dtype):
-#         """
-#         Reads a raw volume file and returns it as a numpy array.
-
-#         Parameters:
-#         - file_path (str): Path to the raw volume file.
-#         - shape (tuple of ints): Dimensions of the volume, e.g., (z, y, x).
-#         - dtype (numpy dtype): Data type of the volume, e.g., np.uint8, np.float32.
-
-#         Returns:
-#         - volume (numpy.ndarray): The volume as a numpy array.
-#         """
-#         # Calculate the total number of elements
-#         num_elements = np.prod(shape)
-        
-#         # Read the binary data from the file
-#         with open(file_path, 'rb') as file:
-#             data = np.fromfile(file, dtype=dtype, count=num_elements)
-        
-#         # Reshape the flat array to the desired 3D shape
-#         volume = data.reshape(shape)
-        
-#         return volume
-# import numpy as np
-
-# # Define the dimensions and data type of the volume
-# width, height, depth = 512, 512, 256  # Example dimensions
-# data_type = np.uint8  # Example data type
-
-# # Path to the .raw file
-# file_path = 'path/to/your/file.raw'
-
-# # Read the binary data from the .raw file
-# volume_data = np.fromfile(file_path, dtype=data_type)
-
-# # Reshape the data to the volume dimensions
-# volume_data = volume_data.reshape((depth, height, width))
-
-# # Verify the shape
-# print(volume_data.shape)
-
-
-
-
         
     print(f"\n---------------------------------")
     print(f"READING VOLUME INFORMATION\n")
     print(f"Volume path: {VOLUME_PATH}")
-    img_list, img_type = get_image_list(VOLUME_PATH)
-    N_img = len(img_list)
-    print(f"{N_img} {img_type} files found\n")  
-    
-    print('Reading images with Dask...')      
-    volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{img_type}')
-    print(f"Dask volume: {volume_dask}")
+        
+    if VOLUME_PATH[-4:] == '.mhd':
+        img_type = 'mhd'
+        meta_dict = read_mhd(VOLUME_PATH)
+        N_img = meta_dict['DimSize'][2]
+
+    elif os.path.isdir(VOLUME_PATH):
+        img_list, img_type = get_image_list(VOLUME_PATH)
+        N_img = len(img_list)
+        print(f"{N_img} {img_type} files found\n")  
+        
+        print('Reading images with Dask...')      
+        volume_dask = dask_image.imread.imread(f'{VOLUME_PATH}/*.{img_type}')
+        print(f"Dask volume: {volume_dask}")
+        
+    print(f"Number of slices: {N_img}")
     print('\nAll information gathered')
 
-    
-    if is_mask:
-        print(f"\n---------------------------------")
-        print(f"READING MASK INFORMATION FROM {MASK_PATH}...\n")
-        mask_list, mask_type = get_image_list(MASK_PATH)
-        print(f"{len(mask_list)} {mask_type} files found\n")  
-        # mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
-        # print(f"Dask mask: {mask_dask}")
-        N_mask = len(mask_list)
-        binning_factor = N_img / N_mask
-        print(f"Mask bining factor: {binning_factor}\n")
-        print('\nAll information gathered')
-
-    
+        
     print(f"\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
     center_line = interpolate_points(PT_MV, PT_APEX, N_img)
@@ -155,19 +105,44 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             padding_start = start_index
         if padding_end > (N_img - end_index):
             padding_end = N_img - end_index
+    if IS_TEST:
+        if N_SLICE_TEST > N_img:
+            sys.exit("Error: N_SLICE_TEST > number of images")
             
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(start_index, end_index, N_img, padding_start, padding_end, IS_TEST, N_SLICE_TEST)
     print(f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}")
     
 
+
+    if VOLUME_PATH[-4:] == '.mhd':
+        # Read the binary data from the .raw file
+        volume, _ = load_raw_data_with_mhd(VOLUME_PATH)
+        volume = volume[start_index_padded:end_index_padded, :, :].astype('float32')
+        
+        
+    elif os.path.isdir(VOLUME_PATH):
+        print(f"\n---------------------------------")
+        print("LOAD VOLUMES\n")
+        volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float32')
     
-    print(f"\n---------------------------------")
-    print("LOAD VOLUMES\n")
-    volume = load_volume(img_list, start_index_padded, end_index_padded).astype('float32')
-    print(f"Loaded volume shape {volume.shape}")    
+    print(f"Loaded volume shape {volume.shape}")   
+        
 
     if is_mask:
+        
+        print(f"\n---------------------------------")
+        print(f"READING MASK INFORMATION FROM {MASK_PATH}...\n")
+        mask_list, mask_type = get_image_list(MASK_PATH)
+        print(f"{len(mask_list)} {mask_type} files found\n")  
+        # mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
+        # print(f"Dask mask: {mask_dask}")
+        N_mask = len(mask_list)
+        binning_factor = N_img / N_mask
+        print(f"Mask bining factor: {binning_factor}\n")
+        print('\nAll information gathered')
+
+        
         start_index_padded_mask = int((start_index_padded / binning_factor)-1)#-binning_factor/2)
         if start_index_padded_mask < 0:
             start_index_padded_mask = 0
