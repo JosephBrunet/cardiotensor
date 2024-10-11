@@ -338,23 +338,29 @@ def main():
     except Exception as e:
         sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
     
-    VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'TEST', 'N_SLICE_TEST']]
+    VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, REVERSE, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'REVERSE', 'TEST', 'N_SLICE_TEST']]
     
-    img_list, img_type = get_image_list(VOLUME_PATH)
-    
+    N_img = get_volume_shape(VOLUME_PATH)
+            
     # Set end_index to total_images if it's zero
     if end_index == 0:
-        end_index = len(img_list)
+        end_index = N_img
     
     if not IS_TEST:
-        for idx in range(start_index, end_index, -N_CHUNK):
-            print(f"Processing slices {idx} to {idx+N_CHUNK}")
-            start_time = time.time()
-            process_3d_data(conf_file_path, idx, idx + N_CHUNK) 
-            print("--- %s seconds ---" % (time.time() - start_time))
+        # If REVERSE is True, run the loop in reverse order; otherwise, run normally        
             
-            if time.time() - start_time > 5:
-                sys.exit()
+        if REVERSE:
+            for idx in range(end_index, start_index - N_CHUNK, -N_CHUNK):            
+                print(f"Processing slices {idx - N_CHUNK} to {idx}")
+                start_time = time.time()
+                process_3d_data(conf_file_path, idx - N_CHUNK, idx) 
+                print("--- %s seconds ---" % (time.time() - start_time))
+        else:
+            for idx in range(start_index, end_index, N_CHUNK):
+                print(f"Processing slices {idx} to {min(idx + N_CHUNK, end_index)}")
+                start_time = time.time()
+                process_3d_data(conf_file_path, idx, min(idx + N_CHUNK, end_index))
+                print("--- %s seconds ---" % (time.time() - start_time))
 
     else:
         start_time = time.time()
