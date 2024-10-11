@@ -105,6 +105,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             padding_start = start_index
         if padding_end > (N_img - end_index):
             padding_end = N_img - end_index
+    if IS_TEST:
+        if N_SLICE_TEST > N_img:
+            sys.exit("Error: N_SLICE_TEST > number of images")
             
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(start_index, end_index, N_img, padding_start, padding_end, IS_TEST, N_SLICE_TEST)
