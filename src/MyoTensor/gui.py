@@ -17,8 +17,10 @@ from PyQt5.QtWidgets import (
 from skimage import color, io
 from skimage.measure import block_reduce
 from MyoTensor.utils import *
+from MyoTensor.processing_functions import *
 from MyoTensor.analysis_functions import *
 import matplotlib.pyplot as plt
+
 
 
 def np2pixmap(np_img):

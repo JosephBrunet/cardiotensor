@@ -16,6 +16,12 @@ from distutils.util import strtobool
 import warnings
 import numpy as np
 
+# from line_profiler import LineProfiler
+
+import multiprocessing as mp
+
+MULTIPROCESS = True
+
 # Optional GPU support
 try:
     import cupy as cp
@@ -26,7 +32,6 @@ USE_GPU = False
 
 from MyoTensor.utils import *
 from MyoTensor.processing_functions import *
-
 
 
 
@@ -283,35 +288,63 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
 
 
     print(f'\nCalculating helix/intrusion angle and fractional anisotropy:')
-    for z in range(vec.shape[1]):
-        print(f"Processing image: {start_index + z}")
-        
-        if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif") and IS_TEST == False:
-            print(f"File {(start_index + z):06d} already exist")
-            continue
-        
-        center_point = np.around(center_line[z])        
-        img = volume[z, :, :]
-        vector_field_slice = vec[:,z, :, :]
-        
-        eigen_val_slice = val[:,z, :, :]
-        
-        img_FA = calculate_fraction_anisotropy(eigen_val_slice)
+    
+    
+    print(f'Multiprocessing: {MULTIPROCESS}')
+    if MULTIPROCESS:
+        print(f'Using {mp.cpu_count()} cpu')
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            result = pool.starmap_async(
+                compute_slice_angles_and_anisotropy,
+                [(z, vec[:,z, :, :], volume[z, :, :], np.around(center_line[z]), val[:,z, :, :], center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_TYPE, start_index, IS_TEST) for z in range(vec.shape[1])]
+            )
+            result.wait()  # Wait for completion
 
-        vector_field_slice = rotate_vectors_to_new_axis(vector_field_slice, center_vec) 
+    else:  
+        for z in range(vec.shape[1]):
+            print(f"Processing image: {start_index + z}")
+            if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif") and IS_TEST == False:
+                print(f"File {(start_index + z):06d} already exist")
+                continue
+            
+            center_point = np.around(center_line[z])        
+            img = volume[z, :, :]
+            vector_field_slice = vec[:,z, :, :]
+            eigen_val_slice = val[:,z, :, :]
         
+            img_FA = calculate_fraction_anisotropy(eigen_val_slice)
 
-        img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice,center_point)
-          
+            vector_field_slice_rotated = rotate_vectors_to_new_axis(vector_field_slice, center_vec) 
+            img_helix,img_intrusion = compute_helix_and_transverse_angles(vector_field_slice_rotated,center_point)
+            
+                    
+            if IS_TEST:
+                plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
+            if not IS_TEST:           
+                write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
+
+        return
 
 
-                
-        if IS_TEST:
-            plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
-        if not IS_TEST:           
-            write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
 
-    return
+def compute_slice_angles_and_anisotropy (z, vector_field_slice, img_slice , center_point, eigen_val_slice, center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_TYPE, start_index, IS_TEST):
+    print(f"Processing image: {start_index + z}")
+    if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif") and IS_TEST == False:
+        print(f"File {(start_index + z):06d} already exist")
+        return
+        
+    img_FA = calculate_fraction_anisotropy(eigen_val_slice)
+    vector_field_slice_rotated = rotate_vectors_to_new_axis(vector_field_slice, center_vec)
+    img_helix, img_intrusion = compute_helix_and_transverse_angles(vector_field_slice_rotated, center_point)
+
+    if IS_TEST:
+        plot_images(img_slice , img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
+    else:
+        write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
+
+
+
+
 
 def main():
 
@@ -353,6 +386,7 @@ def main():
             for idx in range(end_index, start_index - N_CHUNK, -N_CHUNK):            
                 print(f"Processing slices {idx - N_CHUNK} to {idx}")
                 start_time = time.time()
+                
                 process_3d_data(conf_file_path, idx - N_CHUNK, idx) 
                 print("--- %s seconds ---" % (time.time() - start_time))
         else:
