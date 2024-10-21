@@ -96,6 +96,9 @@ class Window(QWidget):
         else:
             sys.exit(f"Invalid output mode: {self.image_mode}. Must be 'HA', 'IA', or 'FA'.")
 
+        if self.N_slice > len(self.img_list):
+            raise IndexError("The image selected is superior to the number of images present in the result directory")
+
         # Compute center line and center point
         center_line = interpolate_points(PT_MV, PT_APEX, len(self.img_list))
         center_point = np.around(center_line[self.N_slice])

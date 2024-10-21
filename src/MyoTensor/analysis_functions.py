@@ -113,7 +113,7 @@ def plot_intensity(intensity_profiles, label_y = "", x_max_lim=None, x_min_lim=N
     x_axis_arr = np.linspace(0, 1, len(mean_array))
     
     # Plot the mean
-    plt.plot(x_axis_arr, mean_array, label='Mean', linewidth=2)  # Make the line thicker for better visibility
+    plt.plot(x_axis_arr, mean_array, label='Mean', linewidth=2, color='k')  # Make the line thicker for better visibility
     
     # Add shaded area for the 5th to 95th percentiles
     plt.fill_between(x_axis_arr, lower_percentile, upper_percentile, color='gray', alpha=0.5, label=f'5%-95% Percentiles')
