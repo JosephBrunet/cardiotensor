@@ -36,7 +36,7 @@ from MyoTensor.processing_functions import *
 
 
 # @profile  
-def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
+def process_3d_data(conf_file_path, start_index=0, end_index=0, use_gpu=False):
     # function to process data
     
     print(f"\n---------------------------------")
@@ -139,6 +139,8 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         print(f"\n---------------------------------")
         print(f"READING MASK INFORMATION FROM {MASK_PATH}...\n")
         mask_list, mask_type = get_image_list(MASK_PATH)
+        if len(mask_list) == 0:
+            sys.exit("No mask images found - verify your path")
         print(f"{len(mask_list)} {mask_type} files found\n")  
         # mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
         # print(f"Dask mask: {mask_dask}")
@@ -168,7 +170,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
         
         # start_index_mask_upscaled = int(mask.shape[0]/2)-int(volume.shape[0]/2)
         # end_index_mask_upscaled = start_index_mask_upscaled+volume.shape[0]
-            
+        
         start_index_mask_upscaled = int(np.abs(start_index_padded_mask * binning_factor - start_index_padded))
         end_index_mask_upscaled = start_index_mask_upscaled + volume.shape[0]
         
@@ -193,7 +195,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             # Resize the slice to match the corresponding slice of the volume
             mask_resized[i] = cv2.resize(mask[i], (volume.shape[2], volume.shape[1]), interpolation = cv2.INTER_LINEAR)
             
-            kernel_size = kernel_size = RHO * 2
+            kernel_size = RHO
             # Ensure kernel_size is odd
             if kernel_size % 2 == 0:
                 kernel_size += 1
@@ -201,9 +203,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
             
             assert kernel_size % 2 == 1, "Kernel size has to be an odd number"      
 
-        #     kernel = np.ones((kernel_size,kernel_size),np.uint8)
-        #     mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
-        # print(f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]")
+            kernel = np.ones((kernel_size,kernel_size),np.uint8)
+            mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations = 1)
+        print(f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]")
 
         mask = mask_resized
         
@@ -246,7 +248,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     print(f"\n---------------------------------")
     print(f'CALCULATING STRUCTURE TENSOR')
     t1 = time.perf_counter()  # start time
-    s, val, vec  = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU)    
+    s, val, vec  = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)    
     print(f"Vector shape: {vec.shape}")
     volume, _, val, vec = remove_padding(volume, s, val, vec, padding_start, padding_end)
     del s
@@ -263,7 +265,7 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     
     
     # Putting all the vectors in positive direction
-    posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
+    # posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
     vec_norm = np.linalg.norm(vec, axis=0)  # Compute the norm of the vectors along the first axis
 
     # Use broadcasting to normalize the vectors
@@ -281,17 +283,18 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
     t2 = time.perf_counter()  # stop time
     print(f'finished calculating structure tensors in {t2 - t1} seconds')
 
-    IS_NP_SAVE = False
-    if IS_NP_SAVE:
-        os.makedirs(OUTPUT_DIR,exist_ok=True)
-        np.save(f"{OUTPUT_DIR}/eigen_vec.npy", vec)
 
-
+    # if not IS_TEST:
+    #     if not os.path.exists(f"{OUTPUT_DIR + '/eigen_vec'}/eigen_vec_{start_index:06d}_{end_index:06d}.npy"):
+    #         print(f'\nSaving the eigen vectors')
+    #         os.makedirs(OUTPUT_DIR + '/eigen_vec',exist_ok=True)
+    #         np.save(f"{OUTPUT_DIR + '/eigen_vec'}/eigen_vec_{start_index:06d}_{end_index:06d}.npy", vec)
+            
+        
     print(f'\nCalculating helix/intrusion angle and fractional anisotropy:')
-    
-    
     print(f'Multiprocessing: {MULTIPROCESS}')
-    if MULTIPROCESS:
+    
+    if MULTIPROCESS and not IS_TEST:
         print(f'Using {mp.cpu_count()} cpu')
         with mp.Pool(processes=mp.cpu_count()) as pool:
             result = pool.starmap_async(
@@ -320,8 +323,9 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, IS_TEST=False):
                     
             if IS_TEST:
                 plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
-            if not IS_TEST:           
+            if not IS_TEST:   
                 write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
+                write_vector_field(vector_field_slice,start_index, OUTPUT_DIR, z)
 
         return
 
@@ -341,6 +345,7 @@ def compute_slice_angles_and_anisotropy (z, vector_field_slice, img_slice , cent
         plot_images(img_slice , img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
     else:
         write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
+        write_vector_field(vector_field_slice,start_index, OUTPUT_DIR, z)
 
 
 
@@ -361,23 +366,29 @@ def main():
         parser.add_argument('conf_file_path', type=str, help='Path to the input text file.')
         parser.add_argument('--start_index', type=int, default=0, help='Starting index for processing.')
         parser.add_argument('--end_index', type=int, default=0, help='Ending index for processing.')
+        parser.add_argument('--gpu', action='store_true', help='Activate the gpu')
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
         start_index = args.start_index
         end_index = args.end_index
+        use_gpu = args.gpu
     
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
-        sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
+        print(f'⚠️  Error reading parameter file: {conf_file_path}')
+        sys.exit(e)
     
     VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, REVERSE, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'REVERSE', 'TEST', 'N_SLICE_TEST']]
     
-    N_img = get_volume_shape(VOLUME_PATH)
+    h, w, N_img = get_volume_shape(VOLUME_PATH)
             
     # Set end_index to total_images if it's zero
     if end_index == 0:
         end_index = N_img
+    
+    if not USE_GPU:
+        use_gpu = False    
     
     if not IS_TEST:
         # If REVERSE is True, run the loop in reverse order; otherwise, run normally        
@@ -387,18 +398,18 @@ def main():
                 print(f"Processing slices {idx - N_CHUNK} to {idx}")
                 start_time = time.time()
                 
-                process_3d_data(conf_file_path, idx - N_CHUNK, idx) 
+                process_3d_data(conf_file_path, idx - N_CHUNK, idx, use_gpu=use_gpu) 
                 print("--- %s seconds ---" % (time.time() - start_time))
         else:
             for idx in range(start_index, end_index, N_CHUNK):
                 print(f"Processing slices {idx} to {min(idx + N_CHUNK, end_index)}")
                 start_time = time.time()
-                process_3d_data(conf_file_path, idx, min(idx + N_CHUNK, end_index))
+                process_3d_data(conf_file_path, idx, min(idx + N_CHUNK, end_index), use_gpu=use_gpu)
                 print("--- %s seconds ---" % (time.time() - start_time))
 
     else:
         start_time = time.time()
-        process_3d_data(conf_file_path, start_index, end_index) 
+        process_3d_data(conf_file_path, start_index, end_index, use_gpu=use_gpu) 
         print("--- %s seconds ---" % (time.time() - start_time))
 
     print("FINISH ! ")

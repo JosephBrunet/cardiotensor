@@ -90,36 +90,41 @@ def get_image_list(directory):
 
 
 
-def get_volume_shape(VOLUME_PATH):
+def get_volume_shape(VOLUME_PATH) -> Tuple[int, int, int]:
     """
-    Determines the z-dimension (number of slices) of a volume based on the VOLUME_PATH.
-    
+    Determines the volume shape (x, y, z) based on the VOLUME_PATH.
+
     Parameters:
     - VOLUME_PATH: str
         The path to either a .mhd file or a folder containing slices.
     
     Returns:
-    - int: The z-dimension of the volume (number of slices).
+    - tuple: The volume shape as (x, y, z).
     """
     # Case 1: If it's a .mhd file
     if os.path.isfile(VOLUME_PATH) and VOLUME_PATH.endswith('.mhd'):
         # Use SimpleITK to read the .mhd file and get the image size
         image = sitk.ReadImage(VOLUME_PATH)
         size = image.GetSize()  # returns (x, y, z)
-        return size[2]  # Return the z-dimension
+        return size  # Return the full shape as (x, y, z)
 
     # Case 2: If it's a folder with image slices
     elif os.path.isdir(VOLUME_PATH):
         # Count the number of image slices in the folder (assuming all are in the same format)
         supported_extensions = ('.tif', '.tiff', 'jp2')
         slice_files = [f for f in os.listdir(VOLUME_PATH) if f.lower().endswith(supported_extensions)]
-        return len(slice_files)  # Return the number of slices (z-dimension)
-
+        z_dim = len(slice_files)  # Z-dimension is the number of slices
+        
+        if z_dim > 0:
+            # Load the first image to get x and y dimensions
+            first_image = cv2.imread(os.path.join(VOLUME_PATH, slice_files[0]), cv2.IMREAD_UNCHANGED)
+            y_dim, x_dim = first_image.shape[:2]
+            return (x_dim, y_dim, z_dim)
+        else:
+            raise ValueError("No image slices found in the specified directory.")
+    
     else:
         raise ValueError("The VOLUME_PATH must either be a .mhd file or a folder containing slices.")
-
-
-
 
 
 
