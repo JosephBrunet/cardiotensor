@@ -58,9 +58,15 @@ def process_3d_data(conf_file_path, start_index=0, end_index=0, use_gpu=False):
         if end_index == 0:
             is_already_done = False
         for idx in range(start_index, end_index):
-            if not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(idx):06d}.tif"):
+            if (
+                not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{idx:06d}.tif")
+                or not os.path.exists(f"{OUTPUT_DIR}/IA/IA_{idx:06d}.tif")
+                or not os.path.exists(f"{OUTPUT_DIR}/FA/FA_{idx:06d}.tif")
+                or not os.path.exists(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{idx:06d}.npy")
+            ):
                 is_already_done = False
                 break
+
 
         if is_already_done:            
             print('All images are already done')
