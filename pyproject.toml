@@ -46,7 +46,7 @@ myo-vtk = "MyoTensor.create_vtk:main"
 myo-amira = "MyoTensor.create_amira_file:main"
 
 [project.urls]
-homepage = "https://github.com/JosephBrunet/MyoTensor"
+homepage = "https://github.com/JosephBrunet/CardioTensor"
 
 [tool.black]
 line-length = 88
@@ -71,10 +71,8 @@ select = [
     "I",  # Sort imports
     "UP"  # Update Python syntax
 ]
-target-version = "py38"
-isort.known-first-party = [
-    "image_processing_utils"
-]
+target-version = "py311"
+
 mccabe.max-complexity = 18
 pep8-naming.classmethod-decorators = [
     "classmethod",
