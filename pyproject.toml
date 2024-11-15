@@ -39,9 +39,11 @@ requires-python = ">=3.11"
 license = { file = "LICENSE.md" }
 
 [project.scripts]
-myotensor = "MyoTensor.processing_heart:main"
-myoanalyse = "MyoTensor.gui:main"
-
+myo-tensor = "MyoTensor.processing_heart:main"
+myo-tensor-slurm = "MyoTensor.slurm_launcher:main"
+myo-analyse = "MyoTensor.gui:main"
+myo-vtk = "MyoTensor.create_vtk:main"
+myo-amira = "MyoTensor.create_amira_file:main"
 
 [project.urls]
 homepage = "https://github.com/JosephBrunet/MyoTensor"

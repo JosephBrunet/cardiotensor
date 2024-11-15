@@ -4,4 +4,7 @@ from MyoTensor import (  # noqa
     analysis_functions,
     utils,
     gui,
+    slurm_launcher,
+    create_vtk_file,
+    create_amira_file,
 )
