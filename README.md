@@ -1,4 +1,4 @@
-# MyoTensor
+# cardiotensor
 
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
@@ -6,7 +6,7 @@ Utils for calculating the orientation of fibers in a heart. Godspeed
 ![Alt text](./example/result_slice.png)
 
 ## Overview
-**CardiacFiberTensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images.
+**cardiotensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images.
 
 ## Installation
 
@@ -19,7 +19,7 @@ pip install .
 ## Usage
 
 - Create a .conf file for your dataset (example in /param_files/parameters_template.conf)
-- Run `myotensor` in the terminal
+- Run `cardio-tensor` in the terminal
 - Select your conf file
 
 ## More information
