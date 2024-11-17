@@ -33,20 +33,20 @@ dependencies = [
 ]
 description = "Toolkit designed for quantifying 3D cardiomyocytes orientations in heart images"
 keywords = []
-name = "MyoTensor"
+name = "cardiotensor"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE.md" }
 
 [project.scripts]
-myo-tensor = "MyoTensor.processing_heart:main"
-myo-tensor-slurm = "MyoTensor.slurm_launcher:main"
-myo-analyse = "MyoTensor.gui:main"
-myo-vtk = "MyoTensor.create_vtk:main"
-myo-amira = "MyoTensor.create_amira_file:main"
+cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
+cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
+cardio-analyse = "cardiotensor.scripts.analysis_gui:script"
+cardio-vtk = "cardiotensor.scripts.vtk_writer:script"
+cardio-amira = "cardiotensor.scripts.amira_writer:script"
 
 [project.urls]
-homepage = "https://github.com/JosephBrunet/CardioTensor"
+homepage = "https://github.com/JosephBrunet/cardiotensor"
 
 [tool.black]
 line-length = 88
