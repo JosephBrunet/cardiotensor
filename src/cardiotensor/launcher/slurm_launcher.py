@@ -223,6 +223,7 @@ def slurm_launcher(conf_file_path):
         start, end = batch[0][0], batch[-1][1]
         job_id = submit_job_to_slurm(python_file_path, conf_file_path, start, end, N_chunk=N_CHUNK, mem_needed=mem_needed)        
         print(f"Submitted job for batch starting at {start} and ending at {end} (job ID: {job_id})")
+        
 
     monitor_job_output(OUTPUT_DIR, N_img, conf_file_path)
     print("\n🤖 Beep beep boop! Binning complete, human! 🤖\n")

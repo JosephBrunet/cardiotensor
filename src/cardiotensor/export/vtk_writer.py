@@ -287,7 +287,7 @@ def vtk_writer(conf_file_path, bin_factor=1, start_index=None, end_index=None):
     # HA
 
     output_HA = OUTPUT_DIR / 'HA'
-    HA_list = sorted(list(output_HA.glob('*.tif')))
+    HA_list = sorted(list(output_HA.glob('*.tif'))) + sorted(list(output_HA.glob('*.jp2')))
     HA_volume = load_volume(HA_list[start_index:end_index])
     # mask_volume = np.where(HA_volume == 0, 0, 1)
 
