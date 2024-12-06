@@ -10,6 +10,7 @@ import argparse
 from skimage.measure import block_reduce
 import multiprocessing as mp
 import tifffile
+from alive_progress import alive_bar
 
 
 from cardiotensor.utils import (
@@ -18,6 +19,145 @@ from cardiotensor.utils import (
     load_volume, 
     convert_to_8bit
 )
+
+
+
+
+def process_vector_block(block, bin_factor, h, w, output_dir, idx):
+    """
+    Function to process a single block of numpy files and save the downsampled output.
+    """
+    print(f"Processing block: {idx}")
+    output_file = f"{output_dir}/eigen_vec/eigen_vec_{idx:06d}.npy"
+    
+    # Skip processing if the output already exists
+    if os.path.exists(output_file):
+        print(f"Skipping block {idx}, file already exists.")
+        return
+
+    array = np.empty((3, len(block), h, w))
+    bin_array = np.empty((3, math.ceil(h / bin_factor), math.ceil(w / bin_factor)))
+
+    for i, p in enumerate(block):
+        print(f"Reading file: {p.name}")
+        array[:, i, :, :] = np.load(p)  # Load the numpy data
+
+    # Compute the mean across the stack
+    array = array.mean(axis=1)
+
+    # Define the block size for binning
+    block_size = (bin_factor, bin_factor)
+
+    # Apply block_reduce to downsample the volume
+    bin_array[0, :, :] = block_reduce(array[0, :, :], block_size=block_size, func=np.mean)
+    bin_array[1, :, :] = block_reduce(array[1, :, :], block_size=block_size, func=np.mean)
+    bin_array[2, :, :] = block_reduce(array[2, :, :], block_size=block_size, func=np.mean)
+
+    bin_array = bin_array.astype(np.float32)
+
+    # Save the downsampled array
+    np.save(output_file, bin_array)
+    print(f"Saved block {idx} to {output_file}")
+
+def downsample_vector_volume(input_npy, bin_factor, output_dir):
+    """
+    Downsamples a vector volume using multiprocessing.
+    """
+    output_dir = Path(output_dir) / f"bin{bin_factor}"
+    os.makedirs(output_dir / "eigen_vec", exist_ok=True)
+
+    npy_list = sorted(list(input_npy.glob('*.npy')))
+    N_img = len(npy_list)
+    _, h, w = np.load(npy_list[0]).shape
+
+    # Split files into blocks based on bin_factor
+    blocks = [npy_list[i:i + bin_factor] for i in range(0, len(npy_list), bin_factor)]
+
+    # Prepare the arguments for each block
+    tasks = [(block, bin_factor, h, w, output_dir, idx) for idx, block in enumerate(blocks)]
+
+    # Use multiprocessing with apply_async
+    with mp.Pool(processes=min(mp.cpu_count(),16)) as pool:
+        results = [
+            pool.apply_async(process_vector_block, args=(block, bin_factor, h, w, output_dir, idx))
+            for block, bin_factor, h, w, output_dir, idx in tasks
+        ]
+        # Wait for all processes to finish
+        [result.wait() for result in results]
+
+
+
+
+
+
+def process_image_block(block, bin_factor, h, w, output_dir, idx):
+    """
+    Function to process a single block of image files and save the downsampled output.
+    """
+    print(f"Processing block: {idx}")
+    output_file = f"{output_dir}/HA/HA_{idx:06d}.tif"
+    
+    # Skip processing if the output already exists
+    if os.path.exists(output_file):
+        print(f"Skipping block {idx}, file already exists.")
+        return
+
+    array = np.empty((len(block), h, w))
+    bin_array = np.empty((math.ceil(h / bin_factor), math.ceil(w / bin_factor)))
+
+    for i, p in enumerate(block):
+        print(f"Reading file: {p.name}")
+        array[i, :, :] = cv2.imread(str(p), cv2.IMREAD_UNCHANGED)  # Load the image as numpy array
+
+    # Compute the mean across the stack
+    array = array.mean(axis=0)
+
+    # Define the block size for binning
+    block_size = (bin_factor, bin_factor)
+
+    # Apply block_reduce to downsample the volume
+    bin_array[:, :] = block_reduce(array[:, :], block_size=block_size, func=np.mean)
+
+    bin_array = convert_to_8bit(bin_array, output_min=-90, output_max=90)
+
+    # Save the downsampled image
+    cv2.imwrite(output_file, bin_array)
+    print(f"Saved block {idx} to {output_file}")
+
+
+def downsample_volume(input_path, bin_factor, output_dir):
+    
+    output_dir = output_dir / f"bin{bin_factor}"
+    os.makedirs(output_dir / "HA", exist_ok=True)
+        
+    HA_list = sorted(list(input_path.glob('*.tif')))
+
+    N_img = len(HA_list)
+    h, w = cv2.imread(str(HA_list[0]), cv2.IMREAD_UNCHANGED).shape
+      
+     
+    blocks = [HA_list[i:i + bin_factor] for i in range(0, len(HA_list), bin_factor)]
+    
+    # Prepare the arguments for each block
+    tasks = [(block, bin_factor, h, w, output_dir, idx) for idx, block in enumerate(blocks)]
+
+    print(f"Total blocks to process: {len(blocks)}")
+    
+    # Use multiprocessing with apply_async
+    with mp.Pool(processes=min(mp.cpu_count(), 16)) as pool:
+        results = [
+            pool.apply_async(process_image_block, args=(block, bin_factor, h, w, output_dir, idx))
+            for block, bin_factor, h, w, output_dir, idx in tasks
+        ]
+        # Wait for all processes to finish
+        [result.wait() for result in results]
+
+    print("All blocks processed.")
+   
+
+
+
+
 
 
 
@@ -63,7 +203,7 @@ def angle_between_vectors(vec1, vec2):
 
     
 # Function to find consecutive points in the vector field direction
-def find_consecutive_points(start_point, vector_field, num_steps=4, segment_lenth=10, angle_threshold=60):
+def find_consecutive_points(start_point, vector_field, num_steps=4, segment_length=10, angle_threshold=60):
     """
     Given a starting point, find consecutive points in the direction specified by the vector field.
     
@@ -84,20 +224,18 @@ def find_consecutive_points(start_point, vector_field, num_steps=4, segment_lent
         z, y, x = current_point
         
         if 0 <= z < vector_field.shape[1] and 0 <= y < vector_field.shape[2] and 0 <= x < vector_field.shape[3]:
-            direction_vector = vector_field[:, z, y, x] * segment_lenth
+            direction_vector = vector_field[:, z, y, x] * segment_length
             if np.isnan(direction_vector).any():
                 break
             if direction_vector_tmp.any():
-                print(f"Angle: {angle_between_vectors(direction_vector_tmp, direction_vector)}")
+                # print(f"Angle: {angle_between_vectors(direction_vector_tmp, direction_vector)}")
                 if angle_between_vectors(direction_vector_tmp, direction_vector) > angle_threshold:
-                    print("Break because of angle")
                     break
             # Calculate the next point by moving in the direction of the vector
-            print(direction_vector, start_point)
             next_point = (
-                int(round(z + direction_vector[0])),
-                int(round(y + direction_vector[1])),
-                int(round(x + direction_vector[2]))
+                int(np.round(z + direction_vector[0])),
+                int(np.round(y + direction_vector[1])),
+                int(np.round(x + direction_vector[2]))
             )
             
             # Ensure the point is within bounds
@@ -117,6 +255,10 @@ def find_consecutive_points(start_point, vector_field, num_steps=4, segment_lent
     
     return consecutive_points
     
+
+
+
+
 
 
 
@@ -212,165 +354,22 @@ def write_am_file(consecutive_points_list, HA_angle, z_angle, file_path="output.
         f.write("@7\n")
         for i, angle in enumerate(z_angle):
             f.write(f"{angle}\n")  
-            
-            
         
-        
-
     print(f"Amira file written to {file_path}")
 
 
 
 
-def process_block(block, bin_factor, h, w, output_dir, idx):
-    """
-    Function to process a single block of numpy files and save the downsampled output.
-    """
-    print(f"Processing block: {idx}")
-    output_file = f"{output_dir}/eigen_vec/eigen_vec_{idx:06d}.npy"
-    
-    # Skip processing if the output already exists
-    if os.path.exists(output_file):
-        print(f"Skipping block {idx}, file already exists.")
-        return
-
-    array = np.empty((3, len(block), h, w))
-    bin_array = np.empty((3, math.ceil(h / bin_factor), math.ceil(w / bin_factor)))
-
-    for i, p in enumerate(block):
-        print(f"Reading file: {p.name}")
-        array[:, i, :, :] = np.load(p)  # Load the numpy data
-
-    # Compute the mean across the stack
-    array = array.mean(axis=1)
-
-    # Define the block size for binning
-    block_size = (bin_factor, bin_factor)
-
-    # Apply block_reduce to downsample the volume
-    bin_array[0, :, :] = block_reduce(array[0, :, :], block_size=block_size, func=np.mean)
-    bin_array[1, :, :] = block_reduce(array[1, :, :], block_size=block_size, func=np.mean)
-    bin_array[2, :, :] = block_reduce(array[2, :, :], block_size=block_size, func=np.mean)
-
-    bin_array = bin_array.astype(np.float32)
-
-    # Save the downsampled array
-    np.save(output_file, bin_array)
-    print(f"Saved block {idx} to {output_file}")
-
-def downsample_vector_volume(input_npy, bin_factor, output_dir):
-    """
-    Downsamples a vector volume using multiprocessing.
-    """
-    output_dir = Path(output_dir) / f"bin{bin_factor}"
-    os.makedirs(output_dir / "eigen_vec", exist_ok=True)
-
-    npy_list = sorted(list(input_npy.glob('*.npy')))
-    N_img = len(npy_list)
-    _, h, w = np.load(npy_list[0]).shape
-
-    # Split files into blocks based on bin_factor
-    blocks = [npy_list[i:i + bin_factor] for i in range(0, len(npy_list), bin_factor)]
-
-    # Prepare the arguments for each block
-    tasks = [(block, bin_factor, h, w, output_dir, idx) for idx, block in enumerate(blocks)]
-
-    # Use multiprocessing with apply_async
-    with mp.Pool() as pool:
-        results = [
-            pool.apply_async(process_block, args=(block, bin_factor, h, w, output_dir, idx))
-            for block, bin_factor, h, w, output_dir, idx in tasks
-        ]
-        # Wait for all processes to finish
-        [result.wait() for result in results]
-
-
-# def downsample_vector_volume(input_npy, bin_factor, output_dir):
-    
-#     output_dir = output_dir / f"bin{bin_factor}"
-        
-#     npy_list = sorted(list(input_npy.glob('*.npy')))
-
-#     N_img = len(npy_list)
-#     _, h, w = np.load(npy_list[0]).shape
-
-
-      
-#     blocks = [npy_list[i:i + bin_factor] for i in range(0, len(npy_list), bin_factor)]
-    
-#     for idx, b in enumerate(blocks):
-#         print(f"Processing block: {idx}/{len(blocks)}")
-
-#         if os.path.exists(f"{output_dir}/eigen_vec/eigen_vec_{(idx):06d}.npy"):
-#             continue
-        
-#         array = np.empty((3, len(b), h, w))
-#         bin_array = np.empty((3, math.ceil(h/bin_factor), math.ceil(w/bin_factor)))
-
-#         for i, p in enumerate(b):
-#             print(f"Reading file: {p.name}")
-            
-#             # Load the numpy data
-#             array[:,i,:,:] = np.load(p)  # Shape should match the expected volume slice
-            
-            
-#         array = array.mean(axis=1)
-        
-#         # Define the block size for each axis
-#         block_size = (bin_factor, bin_factor)
-        
-#         # Use block_reduce to bin the volume        
-#         bin_array[0,:,:] = block_reduce(array[0,:,:], block_size=block_size, func=np.mean) 
-#         bin_array[1,:,:] = block_reduce(array[1,:,:], block_size=block_size, func=np.mean) 
-#         bin_array[2,:,:] = block_reduce(array[2,:,:], block_size=block_size, func=np.mean) 
-
-#         bin_array = bin_array.astype(np.float32)
-
-#         write_vector_field(bin_array, 0, output_dir, idx)
 
 
 
 
-def downsample_volume(input_path, bin_factor, output_dir):
-    
-    output_dir = output_dir / f"bin{bin_factor}"
-    os.makedirs(output_dir / "HA", exist_ok=True)
-        
-    HA_list = sorted(list(input_path.glob('*.tif')))
 
-    N_img = len(HA_list)
-    h, w = cv2.imread(str(HA_list[0]), cv2.IMREAD_UNCHANGED).shape
-      
-     
-    blocks = [HA_list[i:i + bin_factor] for i in range(0, len(HA_list), bin_factor)]
-    
-    for idx, b in enumerate(blocks):
-        print(f"Processing block: {idx}/{len(blocks)}")
-        if os.path.exists(f"{output_dir}/HA/HA_{(idx):06d}.tif"):
-            continue
-        
-        array = np.empty((len(b), h, w))
-        bin_array = np.empty((math.ceil(h/bin_factor), math.ceil(w/bin_factor)))
 
-        for i, p in enumerate(b):
-            print(f"Reading file: {p.name}")
-            
-            # Load the numpy data
-            array[i,:,:] = cv2.imread(p, cv2.IMREAD_UNCHANGED)  # Shape should match the expected volume slice
-            
-            
-        array = array.mean(axis=0)
-        
-        # Define the block size for each axis
-        block_size = (bin_factor, bin_factor)
-        
-        # Use block_reduce to bin the volume        
-        bin_array[:,:] = block_reduce(array[:,:], block_size=block_size, func=np.mean) 
 
-        bin_array = convert_to_8bit(bin_array, output_min=-90, output_max=90)
 
-        cv2.imwrite(f"{output_dir}/HA/HA_{(idx):06d}.tif", bin_array)
-   
+
+
 
 
 def amira_writer(conf_file_path,start_index=None,end_index=None, bin_factor=None):
@@ -410,7 +409,6 @@ def amira_writer(conf_file_path,start_index=None,end_index=None, bin_factor=None
     
     npy_list = sorted(list(output_npy.glob('*.npy')))#[start_index:end_index]
             
-    
     vector_field = load_volume(npy_list, start_index=start_index, end_index=end_index)
     vector_field = np.moveaxis(vector_field, 0, 1)
 
@@ -427,7 +425,7 @@ def amira_writer(conf_file_path,start_index=None,end_index=None, bin_factor=None
     #---------------------------------------------
     # HA
 
-    HA_list = sorted(list(output_HA.glob('*.tif')))
+    HA_list = sorted(list(output_HA.glob('*.tif'))) + sorted(list(output_HA.glob('*.jp2')))
     HA_volume = load_volume(HA_list, start_index=start_index, end_index=end_index)
     # mask_volume = np.where(HA_volume == 0, 0, 1)
 
@@ -463,13 +461,13 @@ def amira_writer(conf_file_path,start_index=None,end_index=None, bin_factor=None
     # Get all indices where mask_volume is 1
     valid_indices = np.argwhere(mask_volume == 1)
     # Check if there are enough points
-    N_points = 5000
+    N_ini_points = 20000
     
-    if len(valid_indices) < N_points:
+    if len(valid_indices) < N_ini_points:
         print("Not enough points with mask value 1. Adjust the number of points or check mask_volume.")
     else:
-        # Randomly select N_points indices from the valid indices
-        random_points = valid_indices[np.random.choice(valid_indices.shape[0], N_points, replace=False)]
+        # Randomly select N_ini_points indices from the valid indices
+        random_points = valid_indices[np.random.choice(valid_indices.shape[0], N_ini_points, replace=False)]
 
         print("Random 3D points within mask:\n", random_points)
     print("Random points created")
@@ -479,27 +477,39 @@ def amira_writer(conf_file_path,start_index=None,end_index=None, bin_factor=None
     pixel_size_um = 32.04
     pixel_size_um = 8.01
 
-    num_steps = 200
-    segment_lenth = 10
-    segment_length_threshold = 4 #num_steps*2/3
+    num_steps = 10000000
+    segment_length = 20
+    segment_length_threshold = 20 #num_steps*2/3
     angle_threshold = 60
 
     # Iterate over each point in random_points to find consecutive points
     consecutive_points_list = []
-    for point in random_points:
-        point = tuple(int(x) for x in point)
-        consecutive_points = find_consecutive_points(point, vector_field, num_steps=num_steps, segment_lenth=segment_lenth, angle_threshold=angle_threshold)
-        # Add the start_index to offset correctly
-        consecutive_points = [(point[0]+start_index, point[1], point[2]) for point in consecutive_points]
-        
-        if len(consecutive_points) >= segment_length_threshold: 
-            consecutive_points_list.append(consecutive_points)
+    with alive_bar(len(random_points), title="Processing Points") as bar:
+        for point in random_points:
+            
+            # print(f"\nCreation of fiber from point {point}")
+            
+            point = tuple(int(x) for x in point)
+            consecutive_points = find_consecutive_points(point, vector_field, num_steps=num_steps, segment_length=segment_length, angle_threshold=angle_threshold)
+            # Add the start_index to offset correctly
+            consecutive_points = [(point[0]+start_index, point[1], point[2]) for point in consecutive_points]
+            
+            if len(consecutive_points) >= segment_length_threshold: 
+                consecutive_points_list.append(consecutive_points)
+                # print(f"\nCreated a fiber of {len(consecutive_points)} points")
+            # else:
+            #     print(f"\nFiber to small")
 
-    # Print results
-    for idx, points in enumerate(consecutive_points_list):
-        print(f"Starting from point {random_points[idx]}:\nConsecutive points: {points}\n")    
+            # Update the progress bar after processing each point
+            bar()
+                        
+                
+                
+    # # Print results
+    # for idx, points in enumerate(consecutive_points_list):
+    #     print(f"Starting from point {random_points[idx]}:\nConsecutive points: {points}\n")    
     
-    print(len(consecutive_points_list))
+    print(f"{len(consecutive_points_list)}")
 
     HA_angle = []
     for point_list in consecutive_points_list:
@@ -559,5 +569,3 @@ def scale_points(consecutive_points, pixel_size):
     return scaled_points
     
     
-if __name__ == '__main__':  
-    main()
