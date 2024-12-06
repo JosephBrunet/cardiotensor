@@ -34,7 +34,9 @@ def read_conf_file(file_path):
         'MASK_PATH': config.get('DATASET', 'MASK_PATH', fallback=None).strip(),
         'FLIP': config.getboolean('DATASET', 'FLIP', fallback=True),
         'OUTPUT_PATH': config.get('OUTPUT', 'OUTPUT_PATH', fallback=None).strip(),
+        'OUTPUT_FORMAT': config.get('OUTPUT', 'OUTPUT_FORMAT', fallback='jp2').strip(),
         'OUTPUT_TYPE': config.get('OUTPUT', 'OUTPUT_TYPE', fallback=None).strip(),
+        'VECTORS': config.getboolean('OUTPUT', 'VECTORS', fallback=False),
         'SIGMA': config.getfloat('STRUCTURE TENSOR CALCULATION', 'SIGMA', fallback=None),
         'RHO': config.getfloat('STRUCTURE TENSOR CALCULATION', 'RHO', fallback=None),
         'N_CHUNK': config.getint('STRUCTURE TENSOR CALCULATION', 'N_CHUNK', fallback=100),
@@ -46,7 +48,6 @@ def read_conf_file(file_path):
     }
 
     return config_dict
-
 
 
 
@@ -193,9 +194,10 @@ def load_volume(file_list, start_index=0, end_index=0):
         """
         if os.path.basename(file_path)[-4:] == '.npy':
             image_data = np.load(str(file_path))
+        elif os.path.basename(file_path)[-4:] == '.jp2':
+            image_data = cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
         else:
             image_data = cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
-        
         return image_data
 
     # If end_index is 0, set it to the length of the file list to load all files
