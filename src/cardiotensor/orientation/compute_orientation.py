@@ -2,20 +2,16 @@ import os
 import sys
 import time
 import math
-import glob
-import argparse
 import numpy as np
 import cv2
-import dask
 import dask_image.imread
 import matplotlib.pyplot as plt
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from skimage.filters import unsharp_mask
 from distutils.util import strtobool
-import warnings
-import numpy as np
 from alive_progress import alive_bar
+import tifffile
 
 # from line_profiler import LineProfiler
 
@@ -34,7 +30,8 @@ USE_GPU = False
 from cardiotensor.utils import (
     read_conf_file, 
     get_image_list, 
-    load_volume
+    load_volume,
+    load_raw_data_with_mhd
 )
 from cardiotensor.orientation import (
     interpolate_points, 
@@ -46,13 +43,32 @@ from cardiotensor.orientation import (
     rotate_vectors_to_new_axis, 
     compute_helix_and_transverse_angles, 
     write_images, 
-    write_vector_field
+    write_vector_field,
+    plot_images
 )
 
 
-# @profile  
+def is_tiff_image_valid(image_path):
+    """Check if the TIFF image is readable and valid."""
+
+    try:
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            raise ValueError("cv2.imread failed to load the image. Unsupported or corrupted TIFF file.")
+        return True
+    except Exception as e:
+        print(f"Error reading TIFF image {image_path}: {e}")
+        return False
+
+
+
 def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=False):
     # function to process data
+    
+    
+    print(f"\n---------------------------------")          
+    print(f"🤖 - Processing slices {start_index} to {end_index}")
+    
     
     print(f"\n---------------------------------")
     print(f'READING PARAMETER FILE : {conf_file_path}\n')
@@ -65,7 +81,27 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
         print(e)
         sys.exit(f'⚠️  Error reading parameter file: {conf_file_path}')
     
-    VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_TYPE, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, IS_TEST, N_SLICE_TEST = [params[key] for key in ['IMAGES_PATH', 'MASK_PATH', 'FLIP', 'OUTPUT_PATH', 'OUTPUT_TYPE', 'SIGMA', 'RHO', 'N_CHUNK', 'POINT_MITRAL_VALVE', 'POINT_APEX', 'TEST', 'N_SLICE_TEST']]
+    (
+        VOLUME_PATH, MASK_PATH, IS_FLIP, OUTPUT_DIR, OUTPUT_FORMAT,
+        OUTPUT_TYPE, IS_VECTORS, SIGMA, RHO, N_CHUNK, PT_MV, PT_APEX, 
+        IS_TEST, N_SLICE_TEST
+    ) = [params[key] for key in [
+                                'IMAGES_PATH', 
+                                'MASK_PATH', 
+                                'FLIP', 
+                                'OUTPUT_PATH', 
+                                'OUTPUT_FORMAT', 
+                                'OUTPUT_TYPE', 
+                                'VECTORS', 
+                                'SIGMA', 
+                                'RHO', 
+                                'N_CHUNK', 
+                                'POINT_MITRAL_VALVE', 
+                                'POINT_APEX', 
+                                'TEST', 
+                                'N_SLICE_TEST'
+                                ]
+         ]
 
     if not IS_TEST:
         is_already_done = True
@@ -300,7 +336,7 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
             
         
     print(f'\nCalculating helix/intrusion angle and fractional anisotropy:')
-        
+    
     if MULTIPROCESS and not IS_TEST:
         print(f'Using {mp.cpu_count()} CPU cores')
         with mp.Pool(processes=mp.cpu_count()) as pool:
@@ -308,7 +344,7 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
             with alive_bar(vec.shape[1], title="Processing slices (Multiprocess)", bar="smooth") as bar:
                 result = pool.starmap_async(
                     compute_slice_angles_and_anisotropy,
-                    [(z, vec[:, z, :, :], volume[z, :, :], np.around(center_line[z]), val[:, z, :, :], center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_TYPE, start_index, IS_TEST)
+                    [(z, vec[:, z, :, :], volume[z, :, :], np.around(center_line[z]), val[:, z, :, :], center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_FORMAT, OUTPUT_TYPE, start_index, IS_VECTORS, IS_TEST)
                     for z in range(vec.shape[1])],
                     callback=lambda _: bar(vec.shape[1])  # Update progress bar once all tasks are completed
                 )
@@ -329,22 +365,65 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
                     PT_MV,
                     PT_APEX,
                     OUTPUT_DIR,
+                    OUTPUT_FORMAT,
                     OUTPUT_TYPE,
                     start_index,
+                    IS_VECTORS,
                     IS_TEST
                 )
                 bar()  # Update the progress bar for each slice
 
-        return
+    # #Check images
+    # for idx in range(start_index, end_index):
+    #     ia_path = f"{OUTPUT_DIR}/IA/IA_{idx:06d}.tif"
+    #     ha_path = f"{OUTPUT_DIR}/HA/HA_{idx:06d}.tif"
+    #     fa_path = f"{OUTPUT_DIR}/FA/FA_{idx:06d}.tif"
+
+
+    #     # Validate IA image
+    #     if not is_tiff_image_valid(ia_path):
+    #         print(f"Invalid or corrupt IA image: {ia_path}")
+    #         if os.path.exists(ia_path):
+    #             os.remove(ia_path)
+    #         continue
+
+    #     # Validate HA image
+    #     if not is_tiff_image_valid(ha_path):
+    #         print(f"Invalid or corrupt HA image: {ha_path}")
+    #         if os.path.exists(ha_path):
+    #             os.remove(ha_path)
+    #         continue
+
+    #     # Validate FA image
+    #     if not is_tiff_image_valid(fa_path):
+    #         print(f"Invalid or corrupt FA image: {fa_path}")
+    #         if os.path.exists(fa_path):
+    #             os.remove(fa_path)
+    #         continue
+
+    #     print(f"Valid image set: {idx:06d}")
+    
 
 
 
-def compute_slice_angles_and_anisotropy (z, vector_field_slice, img_slice , center_point, eigen_val_slice, center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_TYPE, start_index, IS_TEST):
+    print(f"\n🤖 - Finished processing slices {start_index} - {end_index}")
+    print(f"---------------------------------\n\n")
+    
+    return
+
+
+
+def compute_slice_angles_and_anisotropy (z, vector_field_slice, img_slice , center_point, eigen_val_slice, center_vec, PT_MV, PT_APEX, OUTPUT_DIR, OUTPUT_FORMAT, OUTPUT_TYPE, start_index, IS_VECTORS, IS_TEST):
     # print(f"Processing image: {start_index + z}")
-    if os.path.exists(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif") and IS_TEST == False:
-        # print(f"File {(start_index + z):06d} already exist")
+    paths = [
+        f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",
+        f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
+        f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif"
+    ]
+    if not IS_TEST and all(os.path.exists(path) for path in paths):
+        # print(f"File {(start_index + z):06d} already exists")
         return
-        
+            
     img_FA = compute_fraction_anisotropy(eigen_val_slice)
     vector_field_slice_rotated = rotate_vectors_to_new_axis(vector_field_slice, center_vec)
     img_helix, img_intrusion = compute_helix_and_transverse_angles(vector_field_slice_rotated, center_point)
@@ -352,8 +431,9 @@ def compute_slice_angles_and_anisotropy (z, vector_field_slice, img_slice , cent
     if IS_TEST:
         plot_images(img_slice , img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX)
     else:
-        write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z)
-        write_vector_field(vector_field_slice,start_index, OUTPUT_DIR, z)
+        write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_FORMAT, OUTPUT_TYPE, z)
+        if IS_VECTORS: 
+            write_vector_field(vector_field_slice,start_index, OUTPUT_DIR, z)
 
 
 
