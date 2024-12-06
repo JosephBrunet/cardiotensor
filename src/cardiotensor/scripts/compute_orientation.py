@@ -79,19 +79,15 @@ def script():
     
     if not IS_TEST:
         # If REVERSE is True, run the loop in reverse order; otherwise, run normally        
-            
         if REVERSE:
-            for idx in range(end_index, start_index - N_CHUNK, -N_CHUNK):            
-                print(f"Processing slices {idx - N_CHUNK} to {idx}")
+            for idx in range(end_index, start_index, -N_CHUNK): 
                 start_time = time.time()
-                
-                compute_orientation(conf_file_path, idx - N_CHUNK, idx, use_gpu=use_gpu) 
+                compute_orientation(conf_file_path, start_index=max(idx - N_CHUNK, 0), end_index=idx, use_gpu=use_gpu) 
                 print("--- %s seconds ---" % (time.time() - start_time))
         else:
             for idx in range(start_index, end_index, N_CHUNK):
-                print(f"Processing slices {idx} to {min(idx + N_CHUNK, end_index)}")
                 start_time = time.time()
-                compute_orientation(conf_file_path, idx, min(idx + N_CHUNK, end_index), use_gpu=use_gpu)
+                compute_orientation(conf_file_path, start_index=idx, end_index=min(idx + N_CHUNK, end_index), use_gpu=use_gpu)
                 print("--- %s seconds ---" % (time.time() - start_time))
 
     else:
