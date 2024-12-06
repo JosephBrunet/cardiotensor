@@ -356,7 +356,7 @@ class Window(QWidget):
             img_mask = self.load_image(mask_list[int(self.N_slice / mask_bin_factor)])
             img_mask = cv2.resize(img_mask, (img64.shape[1], img64.shape[0]), interpolation = cv2.INTER_LINEAR)
             
-            assert img_mask.shape == img.shape, f"Mask shape {mask.shape} does not match volume shape {volume.shape}"           
+            assert img_mask.shape == img.shape, f"Mask shape {img_mask.shape} does not match volume shape {img.shape}"           
 
             img64[img_mask == 0] = np.nan       
         
