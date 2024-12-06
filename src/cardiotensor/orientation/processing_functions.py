@@ -10,6 +10,7 @@ import warnings
 from pathlib import Path
 import configparser
 import tifffile
+import glymur
 
 
 # Optional GPU support
@@ -397,7 +398,7 @@ def plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_A
 
 
 
-def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_TYPE, z):
+def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTPUT_FORMAT, OUTPUT_TYPE, z):
     """
     Write images to the specified output directory.
 
@@ -421,6 +422,9 @@ def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTP
         
     # print(f"Saving image: {z}")
     
+    
+    
+     
     if '8bit' in OUTPUT_TYPE:
         
         # Convert the float64 image to int8
@@ -428,9 +432,35 @@ def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTP
         img_intrusion = convert_to_8bit(img_intrusion, output_min=-90,  output_max=90)
         img_FA = convert_to_8bit(img_FA, output_min=0, output_max=1)
         
-        cv2.imwrite(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix)
-        cv2.imwrite(f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion)
-        cv2.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
+        if OUTPUT_FORMAT == 'jp2':
+            ratio_compression = 10
+            glymur.Jp2k(
+                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2", 
+                data=img_helix, 
+                cratios=[ratio_compression], 
+                numres=8, 
+                irreversible=True
+                )
+            glymur.Jp2k(
+                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2", 
+                data=img_intrusion, 
+                cratios=[ratio_compression], 
+                numres=8, 
+                irreversible=True
+                )
+            glymur.Jp2k(
+                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2", 
+                data=img_FA, 
+                cratios=[ratio_compression], 
+                numres=8, 
+                irreversible=True
+                )
+        elif OUTPUT_FORMAT == 'tif':
+            cv2.imwrite(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix)
+            cv2.imwrite(f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion)
+            cv2.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
+        else:
+            sys.exit(f"I don't reconise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
         
         
     elif 'rgb' in OUTPUT_TYPE:
@@ -443,13 +473,25 @@ def write_images(img_helix, img_intrusion, img_FA, start_index, OUTPUT_DIR, OUTP
             
             # cv2.imwrite(output_path, img)
             print(f"Writing image to {output_path}")
-            tifffile.imwrite(output_path, img)
-
-        write_img_rgb(img_helix,f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('hsv'))
-        write_img_rgb(img_intrusion,f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('hsv'))
-        write_img_rgb(img_FA,f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('inferno'))
-
-
+            if OUTPUT_FORMAT == 'jp2':
+                cv2.imwrite(output_path, img)
+            elif OUTPUT_FORMAT == 'tif':
+                tifffile.imwrite(output_path, img)
+            else:
+                sys.exit(f"I don't reconise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
+            
+            
+        if OUTPUT_FORMAT == 'jp2':
+            write_img_rgb(img_helix,f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2", cmap=plt.get_cmap('hsv'))
+            write_img_rgb(img_intrusion,f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2", cmap=plt.get_cmap('hsv'))
+            write_img_rgb(img_FA,f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2", cmap=plt.get_cmap('inferno'))
+        elif OUTPUT_FORMAT == 'tif':
+            write_img_rgb(img_helix,f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('hsv'))
+            write_img_rgb(img_intrusion,f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('hsv'))
+            write_img_rgb(img_FA,f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", cmap=plt.get_cmap('inferno'))
+        else:
+            sys.exit(f"I don't reconise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
+        
 
 
 
