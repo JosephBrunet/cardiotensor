@@ -2,10 +2,10 @@
 
 Utils for calculating the orientation of fibers in a heart. Godspeed
 
-
 ![Alt text](./example/result_slice.png)
 
 ## Overview
+
 **cardiotensor** is a comprehensive toolkit designed for quantifying 3D cardiomyocytes orientations in heart images.
 
 ## Installation
@@ -21,6 +21,12 @@ pip install .
 - Create a .conf file for your dataset (example in /param_files/parameters_template.conf)
 - Run `cardio-tensor` in the terminal
 - Select your conf file
+
+## Requirements
+
+- python > 3.10
+
+## Getting started
 
 ## More information
 
