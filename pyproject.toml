@@ -2,22 +2,23 @@
 build-backend = "setuptools.build_meta"
 requires = [
     "setuptools",
-    "setuptools-scm"
+    "setuptools-scm",
 ]
 
 [project]
-version = "1.0.0"
 authors = [
-    { email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet" }
+    {email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"},
 ]
 classifiers = [
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
-    "Typing :: Typed"
+    "Typing :: Typed",
 ]
 dependencies = [
+    "PyQt5",
+    "SimpleITK",
     "cupy-cuda12x",
     "dask",
     "dask-image",
@@ -28,56 +29,61 @@ dependencies = [
     "scikit-image",
     "structure-tensor>=0.3.0",
     "tifffile",
-    'SimpleITK',
-    'PyQt5',
 ]
 description = "Toolkit designed for quantifying 3D cardiomyocytes orientations in heart images"
 keywords = []
+license = {file = "LICENSE.md"}
 name = "cardiotensor"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE.md" }
+version = "1.0.0"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
 
 [project.scripts]
+cardio-amira = "cardiotensor.scripts.amira_writer:script"
+cardio-analyse = "cardiotensor.scripts.analysis_gui:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
-cardio-analyse = "cardiotensor.scripts.analysis_gui:script"
 cardio-vtk = "cardiotensor.scripts.vtk_writer:script"
-cardio-amira = "cardiotensor.scripts.amira_writer:script"
 
 [project.urls]
 homepage = "https://github.com/JosephBrunet/cardiotensor"
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ["py311"]
 
 [tool.mypy]
 plugins = [
-    "pydantic.mypy"
+    "pydantic.mypy",
 ]
 python_version = "3.11"
 strict = true
 
 [[tool.mypy.overrides]]
-module = "glymur.*"
 ignore_missing_imports = true
+module = "glymur.*"
+
+[tool.pytest.ini_options]
+addopts = "--cov=cardiotensor --cov-report=term-missing"
+testpaths = [
+    "tests",
+]
 
 [tool.ruff]
 fix = true
 force-exclude = true
-select = [
-    "F401",  # Remove unused imports
-    "I",  # Sort imports
-    "UP"  # Update Python syntax
-]
-target-version = "py311"
-
-mccabe.max-complexity = 18
-pep8-naming.classmethod-decorators = [
-    "classmethod",
-    "pydantic.validator"
-]
+lint.select = ["F", "I", "UP"]
+lint.mccabe.max-complexity = 10
+lint.pep8-naming.classmethod-decorators = ["classmethod", "pydantic.validator"]
 
 [tool.tomlsort]
 all = true
