@@ -18,7 +18,7 @@ def script():
     parser.add_argument(
         "--num_ini_points",
         type=int,
-        default=20000,
+        default=5000,
         help="Number of starting random points.",
     )
     parser.add_argument(
@@ -36,13 +36,13 @@ def script():
     parser.add_argument(
         "--angle_threshold",
         type=float,
-        default=60,
+        default=90,
         help="Maximum allowed angle change.",
     )
     parser.add_argument(
         "--segment_min_length_threshold",
         type=int,
-        default=30,
+        default=5,
         help="Minimum length of valid fibers.",
     )
 

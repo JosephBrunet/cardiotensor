@@ -164,33 +164,64 @@ def get_volume_shape(volume_path: str) -> tuple[int, int, int]:
 
 
 def load_volume(
-    file_list: list[Path], start_index: int = 0, end_index: int | None = None
+    file_list: list[Path], start_index: int = 0, end_index: int = 0
 ) -> np.ndarray:
     """
-    Loads a 3D volume from a list of files.
+    Loads the volume data from a list of file paths with a progress bar.
 
     Args:
-        file_list (List[Path]): List of file paths.
-        start_index (int): Starting index for loading. Default is 0.
-        end_index (Optional[int]): Ending index for loading. Default is None (loads all files).
+        file_list (list[Path]): List of file paths to load.
+        start_index (int): The starting index with padding.
+        end_index (int): The ending index with padding. If 0, loads the entire volume.
 
     Returns:
-        np.ndarray: The loaded 3D volume.
+        np.ndarray: The loaded volume data.
     """
-    end_index = end_index or len(file_list)
 
-    def read_image(file_path: Path) -> np.ndarray:
+    def custom_image_reader(file_path: Path) -> np.ndarray:
+        """
+        Reads an image from the given file path.
+
+        Args:
+            file_path (Path): The path to the image file.
+
+        Returns:
+            np.ndarray: The image data as a NumPy array.
+        """
         if file_path.suffix == ".npy":
             return np.load(file_path)
         return cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
 
-    with alive_bar(end_index - start_index, title="Loading Volume") as bar:
+    if end_index == 0:
+        end_index = len(file_list)
+
+    total_files = end_index - start_index
+    print(f"Loading {total_files} files...")
+
+    with alive_bar(total_files, title="Loading Volume", length=40) as bar:
+
+        def progress_bar_reader(file_path: Path) -> np.ndarray:
+            bar()  # Update the progress bar
+            return custom_image_reader(file_path)
+
         delayed_tasks = [
-            dask.delayed(lambda x: np.array(read_image(x)))(file)
-            for file in sorted(file_list[start_index:end_index])
+            dask.delayed(progress_bar_reader)(file_path)
+            for file_path in sorted(file_list[start_index:end_index])
         ]
-        volume = np.array(dask.compute(*delayed_tasks))
-        bar()
+
+        # Compute the volume
+        computed_data = dask.compute(*delayed_tasks)
+
+        # Validate shape consistency
+        first_shape = computed_data[0].shape
+        for idx, data in enumerate(computed_data):
+            if data.shape != first_shape:
+                raise ValueError(
+                    f"Inconsistent file shape at index {idx}: Expected {first_shape}, got {data.shape}"
+                )
+
+        # Combine into a NumPy array
+        volume = np.stack(computed_data, axis=0)
 
     return volume
 
