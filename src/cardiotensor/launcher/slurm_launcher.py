@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 
-from cardiotensor.orientation.orientation_computation_functions import (
+from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
 )
 from cardiotensor.utils.utils import (

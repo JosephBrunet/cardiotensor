@@ -73,7 +73,6 @@ ignore_missing_imports = true
 module = "glymur.*"
 
 [tool.pytest.ini_options]
-addopts = "--cov=cardiotensor --cov-report=term-missing"
 testpaths = [
     "tests",
 ]

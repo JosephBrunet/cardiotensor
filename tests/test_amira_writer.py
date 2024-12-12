@@ -7,7 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from alive_progress import alive_bar
-from cardiotensor.utils import (
+from cardiotensor.utils.utils import (
     convert_to_8bit,
     get_volume_shape,
     load_volume,
