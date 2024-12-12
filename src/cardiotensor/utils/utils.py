@@ -109,10 +109,13 @@ def get_image_list(directory: str | Path) -> tuple[list[Path], str]:
         ValueError: If no supported image files are found.
     """
     directory = Path(directory)
-    image_extensions = ["tif", "jp2", "png", "edf"]
+    image_extensions = ["tif", "tiff", "jp2", "png", "edf"]
 
     image_files = {ext: sorted(directory.glob(f"*.{ext}")) for ext in image_extensions}
     predominant_type, img_list = max(image_files.items(), key=lambda item: len(item[1]))
+    img_list = sorted(img_list)
+
+    for i in img_list: print(i)
 
     if not img_list:
         raise ValueError("No supported image files found in the specified directory.")
