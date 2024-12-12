@@ -254,11 +254,11 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
 
             assert kernel_size % 2 == 1, "Kernel size has to be an odd number"
 
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
-            mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations=1)
-        print(
-            f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]"
-        )
+        #     kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        #     mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations=1)
+        # print(
+        #     f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]"
+        # )
 
         mask = mask_resized
 
