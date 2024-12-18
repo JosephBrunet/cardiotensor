@@ -131,7 +131,7 @@ def adjust_start_end_index(
 
 
 def calculate_structure_tensor(
-    volume, SIGMA, RHO, device="", block_size="", use_gpu=False
+    volume, SIGMA, RHO, device="", block_size=200, use_gpu=False
 ):
     """
     Calculates the structure tensor for the given volume data.
@@ -161,8 +161,6 @@ def calculate_structure_tensor(
         print("GPU activated")
         if device == "":
             device = 16 * ["cuda:0"] + 16 * ["cuda:1"] + num_cpus * ["cpu"]
-        if block_size == "":
-            block_size = 400
 
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
@@ -180,6 +178,7 @@ def calculate_structure_tensor(
             SIGMA,
             RHO,
             devices=num_cpus * ["cpu"],
+            block_size=block_size,
             truncate=4.0,
             structure_tensor=np.float32,
         )  # vec has shape =(3,x,y,z) in the order of (z,y,x)
@@ -343,7 +342,7 @@ def compute_helix_and_transverse_angles(vector_field_2d, center_point):
     return helix_angle, transverse_angle
 
 
-def plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX):
+def plot_images(img, img_helix, img_intrusion, img_FA, center_point):
     """
     Plot images of the heart.
 
@@ -353,28 +352,52 @@ def plot_images(img, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_A
         img_intrusion (numpy.ndarray): The intrusion image of the heart.
         img_FA (numpy.ndarray): The FA (fractional anisotropy) image of the heart.
         center_point (tuple): The coordinates of the center point.
-        PT_MV (tuple): The coordinates of the mitral valve point.
-        PT_APEX (tuple): The coordinates of the apex point.
 
     Returns:
         None
     """
 
-    print("\nPlotting images...")
     img_vmin, img_vmax = np.nanpercentile(img, (5, 95))
     orig_map = plt.get_cmap("hsv")
-    # reversed_map = orig_map.reversed()
-    fig, axes = plt.subplots(2, 2, figsize=(8, 4))
+
+    # Create a figure and axes
+    fig, axes = plt.subplots(
+        2, 2, figsize=(10, 8)
+    )  # Adjust the size for better visibility
     ax = axes
+
+    # Original Image with Red Point
     ax[0, 0].imshow(img, vmin=img_vmin, vmax=img_vmax, cmap=plt.cm.gray)
-    # Draw a red point at the specified coordinate
     x, y = center_point[0:2]
-    ax[0, 0].scatter(x, y, c="red", s=50, marker="o")
-    # ax[0,0].scatter(PT_MV[0],PT_MV[1], c='green', s=50, marker='o')
-    # ax[0,0].scatter(PT_APEX[0],PT_APEX[1], c='blue', s=50, marker='o')
+    ax[0, 0].scatter(x, y, c="red", s=50, marker="o", label="Axis Point")
+    ax[0, 0].set_title("Original Image")
+    ax[0, 0].legend(loc="upper right")
+
+    # Helix Image
     tmp = ax[0, 1].imshow(img_helix, cmap=orig_map)
+    ax[0, 1].set_title("Helix Angle")
+
+    # Intrusion Image
     ax[1, 0].imshow(img_intrusion, cmap=orig_map)
-    fig.colorbar(tmp)
+    ax[1, 0].set_title("Intrusion Angle")
+
+    # FA Image
+    fa_plot = ax[1, 1].imshow(img_FA, cmap="inferno")
+    ax[1, 1].set_title("Fractional Anisotropy")
+
+    # Add colorbars for relevant subplots
+    cbar1 = fig.colorbar(tmp, ax=ax[0, 1], orientation="vertical")
+    cbar1.set_label("Helix Angle")
+    cbar2 = fig.colorbar(fa_plot, ax=ax[1, 1], orientation="vertical")
+    cbar2.set_label("Fractional Anisotropy")
+
+    # Set common labels
+    for axis in ax.flat:
+        axis.axis("off")  # Turn off axes if desired
+
+    # Adjust layout to prevent overlap
+    fig.tight_layout()
+
     plt.show()
 
 

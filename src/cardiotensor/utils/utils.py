@@ -24,6 +24,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     Raises:
         FileNotFoundError: If the configuration file does not exist.
+        ValueError: If expected numerical or array values are incorrectly formatted.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
@@ -31,37 +32,45 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     config = configparser.ConfigParser()
     config.read(file_path)
 
+    def parse_coordinates(section: str, option: str, fallback: str = "") -> np.ndarray:
+        """Parse a comma-separated coordinate string into a NumPy array."""
+        value = config.get(section, option, fallback=fallback).strip()
+        if value:
+            try:
+                return np.array([float(coord) for coord in value.split(",")])
+            except ValueError:
+                raise ValueError(
+                    f"Invalid coordinate format for {option} in [{section}]: {value}"
+                )
+        return np.array([])
+
     return {
+        # DATASET
         "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH", fallback="").strip(),
         "MASK_PATH": config.get("DATASET", "MASK_PATH", fallback="").strip(),
         "FLIP": config.getboolean("DATASET", "FLIP", fallback=True),
+        "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
+        # OUTPUT
         "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="").strip(),
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="").strip(),
         "VECTORS": config.getboolean("OUTPUT", "VECTORS", fallback=False),
+        # STRUCTURE TENSOR CALCULATION
         "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=1.0),
         "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
         "N_CHUNK": config.getint(
             "STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100
         ),
-        "POINT_MITRAL_VALVE": np.array(
-            [
-                float(value)
-                for value in config.get(
-                    "LV AXIS COORDINATES", "POINT_MITRAL_VALVE", fallback=""
-                ).split(",")
-            ]
+        # LV AXIS COORDINATES
+        "POINT_MITRAL_VALVE": parse_coordinates(
+            "LV AXIS COORDINATES", "POINT_MITRAL_VALVE"
         ),
-        "POINT_APEX": np.array(
-            [
-                float(value)
-                for value in config.get(
-                    "LV AXIS COORDINATES", "POINT_APEX", fallback=""
-                ).split(",")
-            ]
-        ),
+        "POINT_APEX": parse_coordinates("LV AXIS COORDINATES", "POINT_APEX"),
+        # RUN
         "REVERSE": config.getboolean("RUN", "REVERSE", fallback=False),
-        "TEST": config.getboolean("TEST", "TEST", fallback=True),
+        "MASK_REMOVAL": config.get("RUN", "MASK_REMOVAL", fallback="after").strip(),
+        # TEST
+        "TEST": config.getboolean("TEST", "TEST", fallback=False),
         "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
     }
 
@@ -133,6 +142,7 @@ def get_volume_shape(volume_path: str) -> tuple[int, int, int]:
     Raises:
         ValueError: If no valid files are found in the folder or the path is invalid.
     """
+
     if os.path.isfile(volume_path) and volume_path.endswith(".mhd"):
         image = sitk.ReadImage(volume_path)
         return image.GetSize()
@@ -159,7 +169,7 @@ def get_volume_shape(volume_path: str) -> tuple[int, int, int]:
 
     else:
         raise ValueError(
-            "Invalid volume path. Must be a .mhd file or folder containing slices."
+            "Invalid volume path. Must be a folder containing slices (tif or jp2) or a .mhd file"
         )
 
 
