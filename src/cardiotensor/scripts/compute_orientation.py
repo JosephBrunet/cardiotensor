@@ -23,6 +23,7 @@ def script():
             sys.exit("No file selected!")
         start_index = 0
         end_index = 0
+        use_gpu = True
 
     elif len(sys.argv) >= 2:
         parser = argparse.ArgumentParser(
