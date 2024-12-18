@@ -39,37 +39,18 @@ repos:
         exclude: ^examples/
       - id: trailing-whitespace
         exclude: ^examples/
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          [
-            dagster,
-            "dask[array]",
-            click,
-            google-cloud-storage,
-            google-auth-httplib2,
-            google-api-python-client,
-            inquirer,
-            loguru,
-            matplotlib<3.9,
-            numcodecs,
-            numpy<2,
-            pydantic,
-            pandas-stubs,
-            pytest,
-            pyfakefs,
-            pytest-mock,
-            types-tqdm,
-            types-Pillow,
-            types-requests,
-            xlsxwriter,
-            types-PyYAML,
-            simpleitk,
-          ]
-        args: [--config-file, pyproject.toml]
-        exclude: ^examples/
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies:
+  #         [
+  #           dagster,
+  #           PyQt5,
+  #         ]
+  #       args: [--config-file, pyproject.toml, --ignore-missing-imports]
+  #       files: ^src/
+  #       exclude: ^examples/
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:

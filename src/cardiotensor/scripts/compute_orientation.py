@@ -13,7 +13,7 @@ from cardiotensor.orientation.orientation_computation_pipeline import (
 from cardiotensor.utils.utils import get_volume_shape, read_conf_file
 
 
-def script():
+def script() -> None:
     if len(sys.argv) < 2:
         Tk().withdraw()
         conf_file_path = askopenfilename(
@@ -49,7 +49,8 @@ def script():
         params = read_conf_file(conf_file_path)
     except Exception as e:
         print(f"⚠️  Error reading parameter file: {conf_file_path}")
-        sys.exit(e)
+        print(f"\nError is {e}")
+        sys.exit()
 
     (
         VOLUME_PATH,
@@ -118,4 +119,4 @@ def script():
         compute_orientation(conf_file_path, start_index, end_index, use_gpu=use_gpu)
         print("--- %s seconds ---" % (time.time() - start_time))
 
-    print("FINISH ! ")
+    return None

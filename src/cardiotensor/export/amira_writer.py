@@ -46,7 +46,7 @@ def find_consecutive_points(
     num_steps: int = 4,
     segment_length: float = 10,
     angle_threshold: float = 60,
-) -> list[tuple[int, int, int]]:
+) -> list[tuple[float, float, float]]:
     """
     Finds consecutive points in the direction specified by the vector field.
 
@@ -58,15 +58,14 @@ def find_consecutive_points(
         angle_threshold (float): Threshold to stop when angle deviation exceeds.
 
     Returns:
-        List[Tuple[int, int, int]]: List of consecutive points.
+        List[Tuple[float, float, float]]: List of consecutive points.
     """
-    consecutive_points = [start_point]
-    current_point = start_point
+    consecutive_points = [tuple(float(coord) for coord in start_point)]
+    current_point = np.array(start_point, dtype=float)
     direction_vector_tmp = np.array([])
 
     for _ in range(num_steps):
-        # Get the vector at the current point
-        z, y, x = current_point
+        z, y, x = map(int, np.round(current_point))
 
         if (
             0 <= z < vector_field.shape[1]
@@ -77,27 +76,24 @@ def find_consecutive_points(
             if np.isnan(direction_vector).any():
                 break
             if direction_vector_tmp.any():
-                # print(f"Angle: {angle_between_vectors(direction_vector_tmp, direction_vector)}")
                 if (
                     angle_between_vectors(direction_vector_tmp, direction_vector)
                     > angle_threshold
                 ):
                     break
             # Calculate the next point by moving in the direction of the vector
-            next_point = (
-                int(np.round(z + direction_vector[0])),
-                int(np.round(y + direction_vector[1])),
-                int(np.round(x + direction_vector[2])),
-            )
+            next_point = current_point + direction_vector
 
             # Ensure the point is within bounds
+            next_point_int = tuple(map(int, np.round(next_point)))
             if (
-                0 <= next_point[0] < vector_field.shape[1]
-                and 0 <= next_point[1] < vector_field.shape[2]
-                and 0 <= next_point[2] < vector_field.shape[3]
+                0 <= next_point_int[0] < vector_field.shape[1]
+                and 0 <= next_point_int[1] < vector_field.shape[2]
+                and 0 <= next_point_int[2] < vector_field.shape[3]
             ):
-                consecutive_points.append(next_point)
-                current_point = next_point
+                if len(next_point) == 3:  # Ensure tuple has exactly three elements
+                    consecutive_points.append(tuple(next_point))
+                current_point = tuple(map(int, next_point))
             else:
                 break  # Stop if we go out of bounds
         else:
@@ -185,7 +181,6 @@ def write_am_file(
 
 def amira_writer(
     conf_file_path: str,
-    pixel_size_um: float,
     start_index: int | None = None,
     end_index: int | None = None,
     bin_factor: int | None = None,
@@ -200,7 +195,6 @@ def amira_writer(
 
     Args:
         conf_file_path (Path): Path to the configuration file.
-        pixel_size_um (float): Pixel size in micrometers.
         start_index (Optional[int]): Starting index for processing. Defaults to 0.
         end_index (Optional[int]): Ending index for processing. Defaults to the end of the volume.
         bin_factor (Optional[int]): Downsampling factor. If specified, downsampling will be applied.
@@ -224,6 +218,7 @@ def amira_writer(
 
     (
         VOLUME_PATH,
+        VOXEL_SIZE,
         MASK_PATH,
         IS_FLIP,
         OUTPUT_DIR,
@@ -241,6 +236,7 @@ def amira_writer(
         params[key]
         for key in [
             "IMAGES_PATH",
+            "VOXEL_SIZE",
             "MASK_PATH",
             "FLIP",
             "OUTPUT_PATH",
@@ -349,12 +345,12 @@ def amira_writer(
             z_angle.append(theta_degrees)
 
     if bin_factor:
-        pixel_size_um *= bin_factor
+        VOXEL_SIZE *= bin_factor
 
-    print(f"Voxel size: {pixel_size_um}um")
+    print(f"Voxel size: {VOXEL_SIZE}um")
 
     # Multiply each element by pixel size
-    consecutive_points_list = scale_points(consecutive_points_list, pixel_size_um)
+    consecutive_points_list = scale_points(consecutive_points_list, VOXEL_SIZE)
 
     # Reorder each point in each list from (z, y, x) to (x, y, z)
     consecutive_points_list = [
@@ -385,7 +381,8 @@ def scale_points(
 
     for point_list in consecutive_points:
         scaled_point_list = [
-            tuple(coord * pixel_size for coord in point) for point in point_list
+            (point[0] * pixel_size, point[1] * pixel_size, point[2] * pixel_size)
+            for point in point_list
         ]
         scaled_points.append(scaled_point_list)
 

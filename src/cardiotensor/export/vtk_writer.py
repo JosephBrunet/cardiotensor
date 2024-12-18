@@ -1,8 +1,8 @@
 import math
 import sys
 from pathlib import Path
+from typing import Any
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.measure import block_reduce
@@ -11,43 +11,25 @@ from cardiotensor.utils.utils import get_volume_shape, load_volume, read_conf_fi
 
 
 def writeStructuredVTK(
-    aspectRatio=[1.0, 1.0, 1.0],
-    origin=[0.0, 0.0, 0.0],
-    cellData={},
-    pointData={},
-    fileName="spam.vtk",
-):
-    """Write a plain text regular grid vtk from
+    aspectRatio: list[float] = [1.0, 1.0, 1.0],
+    origin: list[float] = [0.0, 0.0, 0.0],
+    cellData: dict[str, np.ndarray] = {},
+    pointData: dict[str, np.ndarray] = {},
+    fileName: str = "spam.vtk",
+) -> None:
+    """
+    Write a plain text regular grid VTK file from 3D or 4D arrays.
 
-    - 3D arrays for 3D scalar fields
-    - 4D arrays for 3D vector fields
+    Args:
+        aspectRatio (list[float]): Length between two nodes in every direction.
+            Default is [1.0, 1.0, 1.0].
+        origin (list[float]): Origin of the grid. Default is [0.0, 0.0, 0.0].
+        cellData (dict[str, np.ndarray]): Cell fields; 3D arrays for scalar fields, 4D arrays for vector fields.
+        pointData (dict[str, np.ndarray]): Nodal fields interpolated by Paraview.
+        fileName (str): Name of the output file. Default is 'spam.vtk'.
 
-    Parameters
-    ----------
-        aspectRatio : size 3 array, float
-            Length between two nodes in every direction `e.i.` size of a cell
-            Default = [1, 1, 1]
-
-        origin : size 3 array float
-            Origin of the grid
-            Default = [0, 0, 0]
-
-        cellData : dict ``{"field1name": field1, "field2name": field2, ...}``
-            Cell fields, not interpolated by paraview.
-            The field values are reshaped into a flat array in the lexicographic order.
-            ``field1`` and ``field2`` are ndimensional array
-                (3D arrays are scalar fields and 4D array are vector valued fields).
-
-        pointData : dict ``{"field1name": field1, "field2name": field2, ...}``
-            Nodal fields, interpolated by paraview. ``pointData`` has the same shape as ``cellData``.
-
-        fileName : string
-            Name of the output file.
-            Default = 'spam.vtk'
-
-    WARNING
-    -------
-        This function deals with structured mesh thus ``x`` and ``z`` axis are swapped **in python**.
+    Returns:
+        None
     """
 
     dimensions = []
@@ -55,7 +37,7 @@ def writeStructuredVTK(
     # Check dimensions
     if len(cellData) + len(pointData) == 0:
         print(f"spam.helpers.writeStructuredVTK() Empty files. Not writing {fileName}")
-        return 0
+        return
 
     if len(cellData):
         dimensionsCell = list(cellData.values())[0].shape[:3]
@@ -64,7 +46,7 @@ def writeStructuredVTK(
                 print(
                     f"spam.helpers.writeStructuredVTK() Inconsistent cell field sizes {dimensionsCell} != {v.shape[:3]}"
                 )
-                return 0
+                return
         dimensions = [n + 1 for n in dimensionsCell]
 
     if len(pointData):
@@ -74,7 +56,7 @@ def writeStructuredVTK(
                 print(
                     f"spam.helpers.writeStructuredVTK() Inconsistent point field sizes {dimensionsPoint} != {v.shape[:3]}"
                 )
-                return 0
+                return
         dimensions = dimensionsPoint
 
     if len(cellData) and len(pointData):
@@ -120,9 +102,17 @@ def writeStructuredVTK(
         f.write("\n")
 
 
-def _writeFieldInVtk(data, f, flat=False):
+def _writeFieldInVtk(data: dict[str, np.ndarray], f: Any, flat: bool = False) -> None:
     """
-    Private helper function for writing vtk fields
+    Helper function to write fields into a VTK file.
+
+    Args:
+        data (dict[str, np.ndarray]): Data fields to write.
+        f (Any): File object to write to.
+        flat (bool): Whether to flatten the data before writing. Default is False.
+
+    Returns:
+        None
     """
 
     for key in data:
@@ -183,7 +173,24 @@ def _writeFieldInVtk(data, f, flat=False):
                 )
 
 
-def vtk_writer(conf_file_path, bin_factor=1, start_index=None, end_index=None):
+def vtk_writer(
+    conf_file_path: str,
+    bin_factor: int = 1,
+    start_index: int | None = None,
+    end_index: int | None = None,
+) -> None:
+    """
+    Process volume data and write results to a VTK file.
+
+    Args:
+        conf_file_path (str): Path to the configuration file.
+        bin_factor (int, optional): Binning factor for data reduction. Default is 1.
+        start_index (Optional[int], optional): Starting index for processing. Default is None.
+        end_index (Optional[int], optional): Ending index for processing. Default is None.
+
+    Returns:
+        None
+    """
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
@@ -225,9 +232,9 @@ def vtk_writer(conf_file_path, bin_factor=1, start_index=None, end_index=None):
 
     w, h, N_img = get_volume_shape(VOLUME_PATH)
 
-    if start_index == None:
+    if start_index is None:
         start_index = 0
-    if end_index == None:
+    if end_index is None:
         end_index = N_img
 
     output_npy = OUTPUT_DIR / "eigen_vec"
@@ -322,9 +329,13 @@ def vtk_writer(conf_file_path, bin_factor=1, start_index=None, end_index=None):
     HA_volume = load_volume(HA_list[start_index:end_index])
     # mask_volume = np.where(HA_volume == 0, 0, 1)
 
-    # Define the block size for each axis
-    block_size = (bin_factor, bin_factor, bin_factor)
-    # block_size = (bin_factor, 1, 1)
+    # Define the block size for each axis based on dimensionality of data
+    if len(array[0].shape) == 2:  # For 2D data
+        block_size = (bin_factor, bin_factor)
+    elif len(array[0].shape) == 3:  # For 3D data
+        block_size = (bin_factor, bin_factor, bin_factor)
+    else:
+        raise ValueError(f"Unsupported data dimensions: {array[0].shape}")
 
     # Use block_reduce to bin the volume
     HA_volume = block_reduce(HA_volume, block_size=block_size, func=np.mean)
@@ -333,19 +344,6 @@ def vtk_writer(conf_file_path, bin_factor=1, start_index=None, end_index=None):
     # mask_volume = np.where(mask_volume < 0.5, 0, 1)
 
     # HA_volume = HA_volume *90/255 - 90
-
-    kernel = np.ones(
-        (3, 3), np.uint8
-    )  # A 3x3 kernel; adjust as needed for the erosion effect
-
-    # Initialize an empty array to store the eroded volume
-    eroded_volume = np.zeros_like(mask_volume)
-
-    # Perform erosion slice by slice along the chosen axis (e.g., the z-axis)
-    for i in range(mask_volume.shape[0]):  # Loop through each 2D slice
-        eroded_volume[i] = cv2.erode(mask_volume[i], kernel, iterations=1)
-
-    mask_volume = eroded_volume
 
     cellData = {}
     # cellData["eigenVectors"] = vector_field.reshape((shape[0], h, w, 3))
