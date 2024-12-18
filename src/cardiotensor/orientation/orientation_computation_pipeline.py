@@ -8,6 +8,7 @@ import cv2
 import dask_image.imread
 import numpy as np
 from alive_progress import alive_bar
+from scipy.ndimage import zoom
 
 from cardiotensor.orientation.orientation_computation_functions import (
     adjust_start_end_index,
@@ -218,8 +219,6 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
         mask = load_volume(mask_list, start_index_padded_mask, end_index_padded_mask)
         print(f"Mask volume loaded of shape {mask.shape}")
 
-        from scipy.ndimage import zoom
-
         mask = zoom(mask, binning_factor, order=0)
 
         # start_index_mask_upscaled = int(mask.shape[0]/2)-int(volume.shape[0]/2)
@@ -246,84 +245,47 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
                 interpolation=cv2.INTER_LINEAR,
             )
 
-            kernel_size = RHO
-            # Ensure kernel_size is odd
-            if kernel_size % 2 == 0:
-                kernel_size += 1
-            kernel_size = int(kernel_size)
-
-            assert kernel_size % 2 == 1, "Kernel size has to be an odd number"
-
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
-            mask_resized[i] = cv2.dilate(mask_resized[i], kernel, iterations=1)
-        print(
-            f"Applying a dilation to mask with kernel = [{kernel_size},{kernel_size}]"
-        )
-
         mask = mask_resized
+        del mask_resized
 
         assert (
             mask.shape == volume.shape
         ), f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
 
-        volume[mask == 0] = np.nan
+        volume[mask == 0] = 0
 
         print("Mask applied to image volume")
-        del mask_resized
-        del mask
-
-    # num_cpus= 64
-    # aa = ["num_cpus*['cpu']",
-    #       "32*['cuda:0'] + 32*['cuda:1'] + num_cpus*['cpu']",
-    #       "16*['cuda:0'] + 16*['cuda:1'] + num_cpus*['cpu']",
-    #       "8*['cuda:0'] + 8*['cuda:1'] + num_cpus*['cpu']",
-    #       "8*['cuda:0'] + num_cpus*['cpu']",
-    #       "16*['cuda:0'] + num_cpus*['cpu']",
-    #       "32*['cuda:0'] + num_cpus*['cpu']"]
-    # bb = [200,300,400]
-    # for a in aa:
-    #     for b in bb:
-
-    #         print(f"\n---------------------------------")
-    #         print(f'CALCULATING STRUCTURE TENSOR')
-    #         t1 = time.perf_counter()  # start time
-    #         s, val, vec  = calculate_structure_tensor(volume, SIGMA, RHO, USE_GPU,device=eval(a), block_size=b)
-    #         t2 = time.perf_counter()  # stop time
-    #         print(f'{t2 - t1} seconds - device: {a}, block_size: {b}')
-    #         time.sleep(2)
-
-    # sys.exit()
 
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time
     s, val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)
     print(f"Vector shape: {vec.shape}")
+
+    if is_mask:
+        volume[mask == 0] = np.nan
+        val[0, :, :, :][mask == 0] = np.nan
+        val[1, :, :, :][mask == 0] = np.nan
+        val[2, :, :, :][mask == 0] = np.nan
+        vec[0, :, :, :][mask == 0] = np.nan
+        vec[1, :, :, :][mask == 0] = np.nan
+        vec[2, :, :, :][mask == 0] = np.nan
+
+        print("Mask applied to image volume")
+
+        del mask
+
     volume, _, val, vec = remove_padding(
         volume, s, val, vec, padding_start, padding_end
     )
     del s
     print(f"Vector shape after removing padding: {vec.shape}")
 
-    # print( np.isnan(vec[1,0,:,:]).all())
-    # sys.exit()
-
-    center_line = center_line[
-        start_index_padded:end_index_padded
-    ]  # adjust the center line to the new start and end index
-
-    # # plt.imshow(vec[0,0, :, :]);plt.show()
-    # import pdb; pdb.set_trace()
+    center_line = center_line[start_index_padded:end_index_padded]
 
     # Putting all the vectors in positive direction
     # posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
-    vec_norm = np.linalg.norm(
-        vec, axis=0
-    )  # Compute the norm of the vectors along the first axis
-
-    # Use broadcasting to normalize the vectors
-    # vec = vec / (vec_norm * posdef)
-
+    vec_norm = np.linalg.norm(vec, axis=0)
     vec = vec / (vec_norm)
 
     # Check for negative z component and flip if necessary
@@ -333,14 +295,7 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
     t2 = time.perf_counter()  # stop time
     print(f"finished calculating structure tensors in {t2 - t1} seconds")
 
-    # if not IS_TEST:
-    #     if not os.path.exists(f"{OUTPUT_DIR + '/eigen_vec'}/eigen_vec_{start_index:06d}_{end_index:06d}.npy"):
-    #         print(f'\nSaving the eigen vectors')
-    #         os.makedirs(OUTPUT_DIR + '/eigen_vec',exist_ok=True)
-    #         np.save(f"{OUTPUT_DIR + '/eigen_vec'}/eigen_vec_{start_index:06d}_{end_index:06d}.npy", vec)
-
     print("\nCalculating helix/intrusion angle and fractional anisotropy:")
-
     if MULTIPROCESS and not IS_TEST:
         print(f"Using {mp.cpu_count()} CPU cores")
         with mp.Pool(processes=mp.cpu_count()) as pool:
@@ -470,9 +425,7 @@ def compute_slice_angles_and_anisotropy(
     )
 
     if IS_TEST:
-        plot_images(
-            img_slice, img_helix, img_intrusion, img_FA, center_point, PT_MV, PT_APEX
-        )
+        plot_images(img_slice, img_helix, img_intrusion, img_FA, center_point)
     else:
         write_images(
             img_helix,
