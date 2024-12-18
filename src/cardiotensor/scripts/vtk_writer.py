@@ -3,7 +3,7 @@ import argparse
 from cardiotensor.export.vtk_writer import vtk_writer
 
 
-def script():
+def script() -> None:
     parser = argparse.ArgumentParser(
         description="Convert images between tif and jpeg2000 formats."
     )

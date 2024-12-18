@@ -24,21 +24,19 @@ from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from cardiotensor.utils.utils import convert_to_8bit
 
 
-def interpolate_points(point1, point2, N_img):
+def interpolate_points(
+    point1: tuple[float, float, float], point2: tuple[float, float, float], N_img: int
+) -> np.ndarray:
     """
-    Generates interpolated points between two points.
+    Generates interpolated points between two 3D points.
 
-    Parameters:
-    - point1: tuple
-        The first point (x, y, z).
-    - point2: tuple
-        The second point (x, y, z).
-    - N_img: int
-        The number of images or points to interpolate.
+    Args:
+        point1 (Tuple[float, float, float]): The first point (x, y, z).
+        point2 (Tuple[float, float, float]): The second point (x, y, z).
+        N_img (int): The number of images or points to interpolate.
 
     Returns:
-    - np.array
-        Array of interpolated points.
+        np.ndarray: Array of interpolated points.
     """
     x1, y1, z1 = point1
     x2, y2, z2 = point2
@@ -53,19 +51,19 @@ def interpolate_points(point1, point2, N_img):
     return np.array(points)
 
 
-def calculate_center_vector(pt_mv, pt_apex, is_flip=True):
+def calculate_center_vector(
+    pt_mv: np.ndarray, pt_apex: np.ndarray, is_flip: bool = True
+) -> np.ndarray:
     """
-    Calculates the center vector between two points.
+    Calculates the center vector between two points in 3D space.
 
-    Parameters:
-    - pt_mv: numpy.ndarray
-        The mitral valve point.
-    - pt_apex: numpy.ndarray
-        The apex point.
+    Args:
+        pt_mv (np.ndarray): The mitral valve point (x, y, z).
+        pt_apex (np.ndarray): The apex point (x, y, z).
+        is_flip (bool): If True, inverts the z-component of the vector. Default is True.
 
     Returns:
-    - center_vec: numpy.ndarray
-        The normalized center vector.
+        np.ndarray: Normalized center vector.
     """
     # Calculate center vector
 
@@ -87,30 +85,28 @@ def calculate_center_vector(pt_mv, pt_apex, is_flip=True):
 
 
 def adjust_start_end_index(
-    start_index, end_index, N_img, padding_start, padding_end, is_test, n_slice
-):
+    start_index: int,
+    end_index: int,
+    N_img: int,
+    padding_start: int,
+    padding_end: int,
+    is_test: bool,
+    n_slice: int,
+) -> tuple[int, int]:
     """
-    Adjusts the start and end indices for processing.
+    Adjusts start and end indices for image processing, considering padding and test mode.
 
-    Parameters:
-    - start_index: int
-        The initial start index.
-    - end_index: int
-        The initial end index.
-    - N_img: int
-        Number of images in the volume data.
-    - padding_start: int
-        Padding to add at the start.
-    - padding_end: int
-        Padding to add at the end.
-    - is_test: bool
-        Flag to indicate if it is a test run.
+    Args:
+        start_index (int): The initial start index.
+        end_index (int): The initial end index.
+        N_img (int): Number of images in the volume data.
+        padding_start (int): Padding to add at the start.
+        padding_end (int): Padding to add at the end.
+        is_test (bool): Flag indicating whether in test mode.
+        n_slice (int): Test slice index.
 
     Returns:
-    - start_index_padded: int
-        The adjusted start index.
-    - end_index_padded: int
-        The adjusted end index.
+        Tuple[int, int]: Adjusted start and end indices.
     """
 
     # Adjust indices for test condition
@@ -131,42 +127,47 @@ def adjust_start_end_index(
 
 
 def calculate_structure_tensor(
-    volume, SIGMA, RHO, device="", block_size=200, use_gpu=False
-):
+    volume: np.ndarray,
+    SIGMA: float,
+    RHO: float,
+    devices: list[str] | None = None,
+    block_size: int = 200,
+    use_gpu: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Calculates the structure tensor for the given volume data.
+    Calculates the structure tensor of a volume.
 
-    Parameters:
-    - volume: numpy.ndarray
-        The volume data.
-    - SIGMA: float
-        Sigma value for structure tensor calculation.
-    - RHO: float
-        Rho value for structure tensor calculation.
-    - use_gpu: bool
-        Flag to use GPU if available.
+    Args:
+        volume (np.ndarray): The 3D volume data.
+        SIGMA (float): Sigma value for Gaussian smoothing.
+        RHO (float): Rho value for Gaussian smoothing.
+        devices (Optional[list[str]]): List of devices for parallel processing (e.g., ['cpu', 'cuda:0']).
+        block_size (int): Size of the blocks for processing. Default is 200.
+        use_gpu (bool): If True, uses GPU for calculations. Default is False.
 
     Returns:
-    - tuple: (s, val, vec)
-        The structure tensor (s), eigenvectors (vec), and eigenvalues (val).
+        Tuple[np.ndarray, np.ndarray, np.ndarray]: Structure tensor, eigenvalues, and eigenvectors.
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    num_cpus = os.cpu_count()
+    num_cpus = os.cpu_count() or 4  # Default to 4 if os.cpu_count() returns None
     num_cpus = max(num_cpus, 4)
     print(f"Number of CPUs used: {num_cpus}")
 
+    if devices is None:  # Initialize devices if not provided
+        devices = []
+
     if use_gpu:
         print("GPU activated")
-        if device == "":
-            device = 16 * ["cuda:0"] + 16 * ["cuda:1"] + num_cpus * ["cpu"]
+        if not devices:  # Assign default GPU and CPU devices if the list is empty
+            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"] + num_cpus * ["cpu"]
 
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
             SIGMA,
             RHO,
-            devices=device,
+            devices=devices,
             block_size=block_size,
             truncate=4.0,
             structure_tensor=np.float32,
@@ -186,27 +187,27 @@ def calculate_structure_tensor(
     return S, val, vec
 
 
-def remove_padding(volume, s, val, vec, padding_start, padding_end):
+def remove_padding(
+    volume: np.ndarray,
+    s: np.ndarray,
+    val: np.ndarray,
+    vec: np.ndarray,
+    padding_start: int,
+    padding_end: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Removes padding from the processed data.
+    Removes padding from the volume, structure tensor, eigenvalues, and eigenvectors.
 
-    Parameters:
-    - volume: numpy.ndarray
-        The volume data.
-    - s: numpy.ndarray
-        The structure tensor data.
-    - vec: numpy.ndarray
-        The eigenvectors.
-    - val: numpy.ndarray
-        The eigenvalues.
-    - padding_start: int
-        The start padding to remove.
-    - padding_end: int
-        The end padding to remove.
+    Args:
+        volume (np.ndarray): The 3D volume data.
+        s (np.ndarray): The structure tensor.
+        val (np.ndarray): The eigenvalues.
+        vec (np.ndarray): The eigenvectors.
+        padding_start (int): Padding at the start to remove.
+        padding_end (int): Padding at the end to remove.
 
     Returns:
-    - tuple: (volume, s, val, vec)
-        The adjusted data without padding.
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Adjusted data without padding.
     """
     array_end = vec.shape[1] - padding_end
     volume = volume[padding_start:array_end, :, :]
@@ -217,15 +218,15 @@ def remove_padding(volume, s, val, vec, padding_start, padding_end):
     return volume, s, val, vec
 
 
-def compute_fraction_anisotropy(eigenvalues_2d):
+def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:
     """
-    Calculates Fractional Anisotropy from eigenvalues of a structure tensor.
+    Computes Fractional Anisotropy (FA) from eigenvalues of a structure tensor.
 
-    Parameters:
-    - eigenvalues_2d (numpy.ndarray): Eigenvalues of a slice of the 3D volume (l1, l2, l3).
+    Args:
+        eigenvalues_2d (np.ndarray): 2D array of eigenvalues (l1, l2, l3).
 
     Returns:
-    - numpy.ndarray: An array of Fractional Anisotropy values.
+        np.ndarray: Fractional Anisotropy values.
     """
     l1 = eigenvalues_2d[0, :, :]
     l2 = eigenvalues_2d[1, :, :]
@@ -242,16 +243,18 @@ def compute_fraction_anisotropy(eigenvalues_2d):
     return img_FA
 
 
-def rotate_vectors_to_new_axis(vector_field_slice, new_axis_vec):
+def rotate_vectors_to_new_axis(
+    vector_field_slice: np.ndarray, new_axis_vec: np.ndarray
+) -> np.ndarray:
     """
-    Rotates vectors to align with a new axis.
+    Rotates a vector field slice to align with a new axis.
 
-    Parameters:
-    - vector_field_slice (numpy.ndarray): Array of vectors to be rotated.
-    - new_axis_vec (numpy.ndarray): The new axis to align the vectors with.
+    Args:
+        vector_field_slice (np.ndarray): Array of vectors to rotate.
+        new_axis_vec (np.ndarray): The new axis to align vectors with.
 
     Returns:
-    - numpy.ndarray: Rotated vectors aligned with the new axis.
+        np.ndarray: Rotated vectors aligned with the new axis.
     """
     # Ensure new_axis_vec is normalized
     new_axis_vec = new_axis_vec / np.linalg.norm(new_axis_vec)
@@ -287,17 +290,18 @@ def rotate_vectors_to_new_axis(vector_field_slice, new_axis_vec):
     return rotated_vecs
 
 
-def compute_helix_and_transverse_angles(vector_field_2d, center_point):
+def compute_helix_and_transverse_angles(
+    vector_field_2d: np.ndarray, center_point: tuple[int, int, int]
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Calculate the helix angles at each point of a 2D image using a vector field.
+    Computes helix and transverse angles from a 2D vector field.
 
-    Parameters:
-    - image (numpy.ndarray): The 2D image array.
-    - vector_field (numpy.ndarray): The 2D orientation vector field.
-    - center (tuple): The center point (x, y) of the image.
+    Args:
+        vector_field_2d (np.ndarray): 2D orientation vector field.
+        center_point (Tuple[int, int, int]): Coordinates of the center point.
 
     Returns:
-    - tuple of numpy.ndarray: Arrays containing the helix and transverse angles.
+        Tuple[np.ndarray, np.ndarray]: Helix and transverse angle arrays.
     """
     center = center_point[0:2]  # Replace with actual values
     rows, cols = vector_field_2d.shape[1:3]
@@ -342,16 +346,22 @@ def compute_helix_and_transverse_angles(vector_field_2d, center_point):
     return helix_angle, transverse_angle
 
 
-def plot_images(img, img_helix, img_intrusion, img_FA, center_point):
+def plot_images(
+    img: np.ndarray,
+    img_helix: np.ndarray,
+    img_intrusion: np.ndarray,
+    img_FA: np.ndarray,
+    center_point: tuple[int, int, int],
+) -> None:
     """
-    Plot images of the heart.
+    Plots images of the heart with helix, intrusion, and FA annotations.
 
     Args:
-        img (numpy.ndarray): The grayscale image of the heart.
-        img_helix (numpy.ndarray): The helix image of the heart.
-        img_intrusion (numpy.ndarray): The intrusion image of the heart.
-        img_FA (numpy.ndarray): The FA (fractional anisotropy) image of the heart.
-        center_point (tuple): The coordinates of the center point.
+        img (np.ndarray): Grayscale image of the heart.
+        img_helix (np.ndarray): Helix angle image.
+        img_intrusion (np.ndarray): Intrusion angle image.
+        img_FA (np.ndarray): Fractional Anisotropy (FA) image.
+        center_point (Tuple[int, int, int]): Coordinates of the center point.
 
     Returns:
         None
@@ -402,24 +412,27 @@ def plot_images(img, img_helix, img_intrusion, img_FA, center_point):
 
 
 def write_images(
-    img_helix,
-    img_intrusion,
-    img_FA,
-    start_index,
-    OUTPUT_DIR,
-    OUTPUT_FORMAT,
-    OUTPUT_TYPE,
-    z,
-):
+    img_helix: np.ndarray,
+    img_intrusion: np.ndarray,
+    img_FA: np.ndarray,
+    start_index: int,
+    OUTPUT_DIR: str,
+    OUTPUT_FORMAT: str,
+    OUTPUT_TYPE: str,
+    z: int,
+) -> None:
     """
-    Write images to the specified output directory.
+    Writes processed images to the specified directory.
 
     Args:
-        img_helix (numpy.ndarray): The image data for helix.
-        img_intrusion (numpy.ndarray): The image data for intrusion.
-        img_FA (numpy.ndarray): The image data for FA (False Alarm).
-        start_index (int): The starting index for the image filenames.
-        OUTPUT_DIR (str): The output directory to save the images.
+        img_helix (np.ndarray): Image data for helix angles.
+        img_intrusion (np.ndarray): Image data for intrusion angles.
+        img_FA (np.ndarray): Image data for fractional anisotropy.
+        start_index (int): Starting index for filenames.
+        OUTPUT_DIR (str): Directory to save the images.
+        OUTPUT_FORMAT (str): Format of the output files ('tif' or 'jp2').
+        OUTPUT_TYPE (str): Type of output ('8bit' or 'rgb').
+        z (int): Current slice index.
 
     Returns:
         None
@@ -474,10 +487,27 @@ def write_images(
 
     elif "rgb" in OUTPUT_TYPE:
 
-        def write_img_rgb(img, output_path, cmap=plt.get_cmap("hsv")):
+        def write_img_rgb(
+            img: np.ndarray,
+            output_path: str,
+            cmap: plt.Colormap | None = plt.get_cmap("hsv"),
+        ) -> None:
+            """
+            Writes an RGB image to the specified output path.
+
+            Args:
+                img (np.ndarray): The input image data to be converted and saved.
+                output_path (str): The path where the output image will be saved.
+                cmap (Optional[plt.Colormap]): The colormap to use for converting the image.
+                                            Default is the 'hsv' colormap.
+
+            Returns:
+                None
+            """
             minimum = np.nanmin(img)
             maximum = np.nanmax(img)
             img = (img + np.abs(minimum)) * (1 / (maximum - minimum))
+
             img = cmap(img)
             img = (img[:, :, :3] * 255).astype(np.uint8)
 
@@ -526,15 +556,17 @@ def write_images(
             sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
 
 
-def write_vector_field(vector_field_slice, start_index, output_dir, slice_idx):
+def write_vector_field(
+    vector_field_slice: np.ndarray, start_index: int, output_dir: str, slice_idx: int
+) -> None:
     """
-    Save the vector field slice to the specified directory in .npy format.
+    Saves a vector field slice to the specified directory in .npy format.
 
     Args:
-        vector_field_slice (numpy.ndarray): The vector field data slice.
-        start_index (int): Starting index for the slice filenames.
-        output_dir (str): Output directory to save the vector field slice.
-        slice_idx (int): Current slice index being saved.
+        vector_field_slice (np.ndarray): Vector field data slice.
+        start_index (int): Starting index for filenames.
+        output_dir (str): Directory to save the vector field.
+        slice_idx (int): Current slice index.
 
     Returns:
         None

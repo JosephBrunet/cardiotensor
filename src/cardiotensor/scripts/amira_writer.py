@@ -3,7 +3,7 @@ import argparse
 from cardiotensor.export.amira_writer import amira_writer
 
 
-def script():
+def script() -> None:
     parser = argparse.ArgumentParser(
         description="Convert images between tif and jpeg2000 formats"
     )
@@ -58,13 +58,8 @@ def script():
     angle_threshold = args.angle_threshold
     segment_min_length_threshold = args.segment_min_length_threshold
 
-    pixel_size_um = 128.16
-    pixel_size_um = 32.04
-    pixel_size_um = 8.01
-
     amira_writer(
         conf_file_path,
-        pixel_size_um,
         start_index,
         end_index,
         bin_factor,

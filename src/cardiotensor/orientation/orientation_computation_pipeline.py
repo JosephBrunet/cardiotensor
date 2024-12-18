@@ -34,8 +34,16 @@ from cardiotensor.utils.utils import (
 MULTIPROCESS = True
 
 
-def is_tiff_image_valid(image_path):
-    """Check if the TIFF image is readable and valid."""
+def is_tiff_image_valid(image_path: str) -> bool:
+    """
+    Check if the TIFF image is readable and valid.
+
+    Args:
+        image_path (str): Path to the TIFF image.
+
+    Returns:
+        bool: True if the image is valid, False otherwise.
+    """
 
     try:
         image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -49,8 +57,21 @@ def is_tiff_image_valid(image_path):
         return False
 
 
-def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=False):
-    # function to process data
+def compute_orientation(
+    conf_file_path: str, start_index: int = 0, end_index: int = 0, use_gpu: bool = False
+) -> None:
+    """
+    Compute the orientation for a volume dataset based on the configuration.
+
+    Args:
+        conf_file_path (str): Path to the configuration file.
+        start_index (int, optional): Start index for processing. Default is 0.
+        end_index (int, optional): End index for processing. Default is 0.
+        use_gpu (bool, optional): Whether to use GPU for calculations. Default is False.
+
+    Returns:
+        None
+    """
 
     print("\n---------------------------------")
     print(f"🤖 - Processing slices {start_index} to {end_index}")
@@ -313,8 +334,6 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
                             np.around(center_line[z]),
                             val[:, z, :, :],
                             center_vec,
-                            PT_MV,
-                            PT_APEX,
                             OUTPUT_DIR,
                             OUTPUT_FORMAT,
                             OUTPUT_TYPE,
@@ -344,8 +363,6 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
                     np.around(center_line[z]),
                     val[:, z, :, :],
                     center_vec,
-                    PT_MV,
-                    PT_APEX,
                     OUTPUT_DIR,
                     OUTPUT_FORMAT,
                     OUTPUT_TYPE,
@@ -391,21 +408,39 @@ def compute_orientation(conf_file_path, start_index=0, end_index=0, use_gpu=Fals
 
 
 def compute_slice_angles_and_anisotropy(
-    z,
-    vector_field_slice,
-    img_slice,
-    center_point,
-    eigen_val_slice,
-    center_vec,
-    PT_MV,
-    PT_APEX,
-    OUTPUT_DIR,
-    OUTPUT_FORMAT,
-    OUTPUT_TYPE,
-    start_index,
-    IS_VECTORS,
-    IS_TEST,
-):
+    z: int,
+    vector_field_slice: np.ndarray,
+    img_slice: np.ndarray,
+    center_point: np.ndarray,
+    eigen_val_slice: np.ndarray,
+    center_vec: np.ndarray,
+    OUTPUT_DIR: str,
+    OUTPUT_FORMAT: str,
+    OUTPUT_TYPE: str,
+    start_index: int,
+    IS_VECTORS: bool,
+    IS_TEST: bool,
+) -> None:
+    """
+    Compute helix angles, transverse angles, and fractional anisotropy for a slice.
+
+    Args:
+        z (int): Index of the slice.
+        vector_field_slice (np.ndarray): Vector field for the slice.
+        img_slice (np.ndarray): Image data for the slice.
+        center_point (np.ndarray): Center point for alignment.
+        eigen_val_slice (np.ndarray): Eigenvalues for the slice.
+        center_vec (np.ndarray): Center vector for alignment.
+        OUTPUT_DIR (str): Directory to save the output.
+        OUTPUT_FORMAT (str): Format for the output files (e.g., "tif").
+        OUTPUT_TYPE (str): Type of output (e.g., "HA", "IA").
+        start_index (int): Start index of the slice.
+        IS_VECTORS (bool): Whether to output vector fields.
+        IS_TEST (bool): Whether in test mode.
+
+    Returns:
+        None
+    """
     # print(f"Processing image: {start_index + z}")
     paths = [
         f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",

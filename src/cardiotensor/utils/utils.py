@@ -124,7 +124,8 @@ def get_image_list(directory: str | Path) -> tuple[list[Path], str]:
     predominant_type, img_list = max(image_files.items(), key=lambda item: len(item[1]))
     img_list = sorted(img_list)
 
-    for i in img_list: print(i)
+    for i in img_list:
+        print(i)
 
     if not img_list:
         raise ValueError("No supported image files found in the specified directory.")
@@ -239,90 +240,74 @@ def load_volume(
     return volume
 
 
-def read_mhd(filename: PathLike) -> dict[str, Any]:
+def read_mhd(filename: PathLike[str]) -> dict[str, Any]:
     """
-    Return a dictionary of meta data from MHD meta header file
+    Return a dictionary of meta data from an MHD meta header file.
 
-    :param filename: file of type .mhd that should be loaded
-    :returns: dictionary of meta data
+    Args:
+        filename (PathLike[str]): File path to the .mhd file.
+
+    Returns:
+        dict[str, Any]: A dictionary containing parsed metadata.
     """
-
-    # Define tags
-    meta_dict = {}
-    tag_set = []
-    tag_set.extend(
-        [
-            "ObjectType",
-            "NDims",
-            "DimSize",
-            "ElementType",
-            "ElementDataFile",
-            "ElementNumberOfChannels",
-        ]
-    )
-    tag_set.extend(
-        ["BinaryData", "BinaryDataByteOrderMSB", "CompressedData", "CompressedDataSize"]
-    )
-    tag_set.extend(
-        [
-            "Offset",
-            "CenterOfRotation",
-            "AnatomicalOrientation",
-            "ElementSpacing",
-            "TransformMatrix",
-        ]
-    )
-    tag_set.extend(
-        [
-            "Comment",
-            "SeriesDescription",
-            "AcquisitionDate",
-            "AcquisitionTime",
-            "StudyDate",
-            "StudyTime",
-        ]
-    )
-
-    tag_flag = [False] * len(tag_set)
+    meta_dict: dict[str, Any] = {}
+    tag_set = [
+        "ObjectType",
+        "NDims",
+        "DimSize",
+        "ElementType",
+        "ElementDataFile",
+        "ElementNumberOfChannels",
+        "BinaryData",
+        "BinaryDataByteOrderMSB",
+        "CompressedData",
+        "CompressedDataSize",
+        "Offset",
+        "CenterOfRotation",
+        "AnatomicalOrientation",
+        "ElementSpacing",
+        "TransformMatrix",
+        "Comment",
+        "SeriesDescription",
+        "AcquisitionDate",
+        "AcquisitionTime",
+        "StudyDate",
+        "StudyTime",
+    ]
 
     with open(filename) as fn:
-        line = fn.readline()
-        while line:
-            tags = str.split(line, "=")
-            # print(tags[0])
-            for i in range(len(tag_set)):
-                tag = tag_set[i]
-                if (str.strip(tags[0]) == tag) and (not tag_flag[i]):
-                    # print(tags[1])
-                    content = str.strip(tags[1])
-                    if tag in [
-                        "ElementSpacing",
-                        "Offset",
-                        "CenterOfRotation",
-                        "TransformMatrix",
-                    ]:
-                        meta_dict[tag] = [float(s) for s in content.split()]
-                    elif tag in ["NDims", "ElementNumberOfChannels"]:
-                        meta_dict[tag] = int(content)
-                    elif tag in ["DimSize"]:
-                        meta_dict[tag] = [int(s) for s in content.split()]
-                    elif tag in [
-                        "BinaryData",
-                        "BinaryDataByteOrderMSB",
-                        "CompressedData",
-                    ]:
-                        if content == "True":
-                            meta_dict[tag] = True
-                        else:
-                            meta_dict[tag] = False
-                    else:
-                        meta_dict[tag] = content
-                    tag_flag[i] = True
-            line = fn.readline()
+        for line in fn:
+            tags = line.split("=")
+            if len(tags) < 2:
+                continue
+            key, content = tags[0].strip(), tags[1].strip()
+            if key in tag_set:
+                if key in [
+                    "ElementSpacing",
+                    "Offset",
+                    "CenterOfRotation",
+                    "TransformMatrix",
+                ]:
+                    # Parse as a list of floats
+                    meta_dict[key] = [float(value) for value in content.split()]
+                elif key in ["NDims", "ElementNumberOfChannels"]:
+                    # Parse as an integer
+                    meta_dict[key] = int(content)
+                elif key == "DimSize":
+                    # Parse as a list of integers
+                    meta_dict[key] = [int(value) for value in content.split()]
+                elif key in ["BinaryData", "BinaryDataByteOrderMSB", "CompressedData"]:
+                    # Parse as a boolean
+                    meta_dict[key] = content.lower() == "true"
+                else:
+                    # Parse as a string
+                    meta_dict[key] = content
     return meta_dict
 
 
-def load_raw_data_with_mhd(filename: PathLike) -> tuple[np.ndarray, dict[str, Any]]:
+def load_raw_data_with_mhd(
+    filename: PathLike[str],
+) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Load a MHD file
 

@@ -30,12 +30,13 @@ def submit_job_to_slurm(
     """
     Submit a Slurm job and return its job ID.
 
-    Parameters:
-        executable (str): Path to the executable script.
-        folder_path (str): Directory path containing the images.
-        start_image (int): Index of the first image.
-        end_image (int): Index of the last image.
-        additional_args (str, optional): Additional arguments for the executable script.
+    Args:
+        executable_path (str): Path to the executable script.
+        conf_file_path (str): Path to the configuration file.
+        start_image (int): Index of the first image to process.
+        end_image (int): Index of the last image to process.
+        N_chunk (int, optional): Number of chunks for the job. Default is 10.
+        mem_needed (int, optional): Memory required in GB. Default is 64.
 
     Returns:
         int: The Slurm job ID.
@@ -54,14 +55,6 @@ def submit_job_to_slurm(
     total_images = end_image - start_image + 1
     IMAGES_PER_JOB = N_chunk
     N_jobs = math.ceil(total_images / IMAGES_PER_JOB)
-
-    # Limit N_jobs to 1000 and adjust IMAGES_PER_JOB if necessary
-    # if N_jobs > 1000:
-    #     print(f"Number of jobs ({N_jobs}) goes over the limit set by slurm (1000)")
-    #     N_jobs = 1000
-    #     IMAGES_PER_JOB = math.ceil(total_images / N_jobs)
-    #     print(f"Number of jobs set to 1000")
-    #     print(f"Image per job adjusted to {IMAGES_PER_JOB}")
 
     print(f"\nN_jobs = {N_jobs}, IMAGES_PER_JOB = {IMAGES_PER_JOB}")
 
@@ -117,7 +110,7 @@ cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
         )
         job_id = result.stdout.split()[-1]
         print(f"sbatch {job_id} - Index {start_image} to {end_image}")
-        return job_id
+        return int(job_id)
     except subprocess.CalledProcessError:
         print(f"⚠️ - Failed to submit Slurm job with script {job_filename}")
         sys.exit()
@@ -129,10 +122,13 @@ def monitor_job_output(
     """
     Monitor the output directory until all images are processed.
 
-    Parameters:
-        output_directory (str): Directory path to monitor for output images.
-        total_images (int): Total number of images expected.
-        file_extension (str): Extension of output files to look for.
+    Args:
+        output_directory (str): Path to the directory to monitor.
+        total_images (int): Total number of expected images.
+        file_extension (str): File extension to monitor for.
+
+    Returns:
+        None
     """
     time.sleep(1)
     tmp_count = len(glob.glob(f"{output_directory}/HA/*"))
@@ -156,7 +152,16 @@ def monitor_job_output(
         time.sleep(60)
 
 
-def slurm_launcher(conf_file_path):
+def slurm_launcher(conf_file_path: str) -> None:
+    """
+    Launch Slurm jobs for 3D data processing.
+
+    Args:
+        conf_file_path (str): Path to the configuration file.
+
+    Returns:
+        None
+    """
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
@@ -205,7 +210,18 @@ def slurm_launcher(conf_file_path):
 
     mem_needed = 128
 
-    def chunk_split(num_images, n):
+    def chunk_split(num_images: int, n: int) -> list[tuple[int, int]]:
+        """
+        Split a range of images into smaller intervals (chunks) for processing.
+
+        Args:
+            num_images (int): Total number of images.
+            n (int): Number of chunks to divide the images into.
+
+        Returns:
+            List[Tuple[int, int]]: List of tuples where each tuple represents
+                                    the start and end indices of a chunk.
+        """
         # Calculate the number of images per interval
         images_per_interval = num_images // n
 
@@ -216,9 +232,12 @@ def slurm_launcher(conf_file_path):
         start_index = 0
         while start_index < num_images:
             end_index = start_index + images_per_interval
-            intervals.append([start_index, end_index])
+            intervals.append((start_index, end_index))  # Use tuple here
             start_index = end_index
-        intervals[-1][1] = num_images
+        intervals[-1] = (
+            intervals[-1][0],
+            num_images,
+        )  # Ensure the last chunk ends at num_images
 
         return intervals
 
