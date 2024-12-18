@@ -2,7 +2,7 @@
 
 A Python package for calculating 3D cardiomyocyte orientations in heart images.
 
-![Example Result](./example/result_slice.png)
+![Example Result](./examples/result_HA_slice.png)
 
 ## Overview
 
@@ -19,7 +19,7 @@ A Python package for calculating 3D cardiomyocyte orientations in heart images.
 Clone the repository and install the package using pip:
 
 ```bash
-git clone https://github.com/yourusername/cardiotensor.git
+git clone https://github.com/JosephBrunet/cardiotensor.git
 cd cardiotensor
 pip install .
 ```
@@ -27,12 +27,6 @@ pip install .
 ## Requirements
 
 - Python 3.10 or newer
-
-Install dependencies using:
-
-```bash
-pip install -r requirements.txt
-```
 
 ## Getting Started
 
@@ -53,7 +47,7 @@ pip install -r requirements.txt
 
 ## More Information
 
-This package builds upon the functionality of the [Structure Tensor package](https://github.com/Skielex/structure-tensor), extending its capabilities for cardiac imaging.
+This package builds upon the [Structure Tensor package](https://github.com/Skielex/structure-tensor), extending its capabilities for cardiac imaging.
 
 ## License
 
@@ -70,7 +64,7 @@ For major changes, please discuss them in an issue first.
 
 ## Contact
 
-For questions, feedback, or support, please contact the maintainers at [your_email@example.com] (replace with actual contact information).
+For questions, feedback, or support, please contact the maintainers at [j.brunet@ucl.ac.uk].
 
 ---
 
