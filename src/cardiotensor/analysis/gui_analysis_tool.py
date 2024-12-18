@@ -220,28 +220,8 @@ class Window(QWidget):
         self.quit_shortcut = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.quit_shortcut.activated.connect(lambda: quit())
 
-        # self.undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
-        # self.undo_shortcut.activated.connect(self.undo)
-
         plot_profile_button.clicked.connect(self.plot_profile)
         save_profile_button.clicked.connect(self.save_profile)
-
-    # def undo(self):
-    #     if self.prev_mask is None:
-    #         print("No previous mask record")
-    #         return
-
-    #     self.color_idx -= 1
-
-    #     bg = Image.fromarray(self.current_img_rgb.astype("uint8"), "RGB")
-    #     mask = Image.fromarray(self.prev_mask.astype("uint8"), "RGB")
-    #     img = Image.blend(bg, mask, 0.2)
-
-    #     self.scene.removeItem(self.bg_img)
-    #     self.bg_img = self.scene.addPixmap(np2pixmap(np.array(img)))
-
-    #     self.mask_c = self.prev_mask
-    #     self.prev_mask = None
 
     def update_text(self):
         angle_range_text = self.input_angle_range.text()
@@ -364,12 +344,6 @@ class Window(QWidget):
             y_min_lim=self.y_min_lim,
         )
 
-        # bin_factor = 16
-        # current_img_bin = block_reduce(self.current_img, block_size=(bin_factor, bin_factor), func=np.mean)
-
-        # intensity_profiles = calculate_intensities(current_img_bin, start_point/bin_factor, end_point/bin_factor, self.angle_range, self.N_line)
-        # plot_intensity(intensity_profiles)
-
     def save_profile(self):
         if self.line_np is None or not self.line_np.any():
             print("No line drawn")
@@ -435,8 +409,6 @@ class Window(QWidget):
         current_img_bin = block_reduce(
             current_img, block_size=(self.bin_factor, self.bin_factor), func=np.mean
         )
-
-        # current_img_bin = current_img_bin.astype(float)
 
         minimum = np.nanmin(current_img_bin)
         maximum = np.nanmax(current_img_bin)
