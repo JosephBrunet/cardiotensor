@@ -1,10 +1,11 @@
 import argparse
 import sys
 
-from cardiotensor.analysis.analysis_gui import Window
 from PyQt5.QtWidgets import (
     QApplication,
 )
+
+from cardiotensor.analysis.gui_analysis_tool import Window
 
 # from cardiotensor.orientation import (
 #     interpolate_points,

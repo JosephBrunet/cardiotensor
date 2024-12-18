@@ -7,13 +7,14 @@ from pathlib import Path
 import cv2
 import numpy as np
 from alive_progress import alive_bar
+from skimage.measure import block_reduce
+
 from cardiotensor.utils.utils import (
     convert_to_8bit,
     get_volume_shape,
     load_volume,
     read_conf_file,
 )
-from skimage.measure import block_reduce
 
 
 def process_vector_block(block, bin_factor, h, w, output_dir, idx):
