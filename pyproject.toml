@@ -19,9 +19,11 @@ classifiers = [
 dependencies = [
     "PyQt5",
     "SimpleITK",
+    "alive_progress",
     "cupy-cuda12x",
     "dask",
     "dask-image",
+    "glymur",
     "matplotlib",
     "numpy",
     "opencv-python-headless",
