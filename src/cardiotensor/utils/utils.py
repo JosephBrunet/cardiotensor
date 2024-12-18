@@ -124,9 +124,6 @@ def get_image_list(directory: str | Path) -> tuple[list[Path], str]:
     predominant_type, img_list = max(image_files.items(), key=lambda item: len(item[1]))
     img_list = sorted(img_list)
 
-    for i in img_list:
-        print(i)
-
     if not img_list:
         raise ValueError("No supported image files found in the specified directory.")
 
