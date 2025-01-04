@@ -282,6 +282,5 @@ def slurm_launcher(conf_file_path: str) -> None:
         )
 
     monitor_job_output(OUTPUT_DIR, N_img, conf_file_path)
-    print("\n🤖 Beep beep boop! Binning complete, human! 🤖\n")
 
     return
