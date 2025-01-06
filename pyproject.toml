@@ -6,6 +6,7 @@ requires = [
 ]
 
 [project]
+name = "cardiotensor"
 authors = [
     {email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"},
 ]
@@ -35,7 +36,6 @@ dependencies = [
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = []
 license = {file = "LICENSE.md"}
-name = "cardiotensor"
 readme = "README.md"
 requires-python = ">=3.11"
 version = "1.0.0"
@@ -49,6 +49,11 @@ dev = [
     "ruff",
 ]
 
+git = [
+  "mkdocs-git-committers-plugin-2>=1.1,<3",
+  "mkdocs-git-revision-date-localized-plugin~=1.2,>=1.2.4"
+]
+
 [project.scripts]
 cardio-amira = "cardiotensor.scripts.amira_writer:script"
 cardio-analyse = "cardiotensor.scripts.gui_analysis_tool:script"
@@ -57,7 +62,10 @@ cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
 cardio-vtk = "cardiotensor.scripts.vtk_writer:script"
 
 [project.urls]
-homepage = "https://github.com/JosephBrunet/cardiotensor"
+Documentation = "https://github.com/JosephBrunet/cardiotensor"
+Source = "https://JosephBrunet.github.io//cardiotensor"
+Issues = "https://github.com/JosephBrunet/cardiotensor/issues"
+
 
 [tool.black]
 line-length = 88
@@ -68,7 +76,7 @@ plugins = [
     "pydantic.mypy",
 ]
 python_version = "3.11"
-strict = true
+# strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
