@@ -41,7 +41,7 @@ theme:
   features:
     # - announce.dismiss
     # - content.action.edit
-    - content.action.view
+    # - content.action.view
     - content.code.annotate
     - content.code.copy
     # - content.code.select
@@ -74,6 +74,13 @@ nav:
   - Getting Started: quickstart.md
 
 
+
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
 
 
 # Additional configuration
