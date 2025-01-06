@@ -6,7 +6,7 @@ A Python package for calculating 3D cardiomyocyte orientations in heart images.
 
 ## Overview
 
-**CardioTensor** is a powerful and user-friendly toolkit for analyzing the orientation of fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
+**cardiotensor** is a powerful and user-friendly toolkit for analyzing the orientation of cardiomyocites fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
 
 ## Features
 
