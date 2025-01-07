@@ -1,7 +1,3 @@
-"""
-3D_Data_Processing
-"""
-
 import glob
 import inspect
 import math

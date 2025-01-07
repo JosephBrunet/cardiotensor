@@ -5,11 +5,11 @@ import sys
 import time
 
 import cv2
-import dask_image.imread
 import numpy as np
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
 
+# from memory_profiler import profile
 from cardiotensor.orientation.orientation_computation_functions import (
     adjust_start_end_index,
     calculate_center_vector,
@@ -57,6 +57,7 @@ def is_tiff_image_valid(image_path: str) -> bool:
         return False
 
 
+# @profile
 def compute_orientation(
     conf_file_path: str, start_index: int = 0, end_index: int = 0, use_gpu: bool = False
 ) -> None:
@@ -160,10 +161,6 @@ def compute_orientation(
         N_img = len(img_list)
         print(f"{N_img} {img_type} files found\n")
 
-        print("Reading images with Dask...")
-        volume_dask = dask_image.imread.imread(f"{VOLUME_PATH}/*.{img_type}")
-        print(f"Dask volume: {volume_dask}")
-
     print(f"Number of slices: {N_img}")
 
     print("\n---------------------------------")
@@ -216,8 +213,6 @@ def compute_orientation(
         if len(mask_list) == 0:
             sys.exit("No mask images found - verify your path")
         print(f"{len(mask_list)} {mask_type} files found\n")
-        # mask_dask = dask_image.imread.imread(f'{MASK_PATH}/*.{mask_type}')
-        # print(f"Dask mask: {mask_dask}")
         N_mask = len(mask_list)
         binning_factor = N_img / N_mask
         print(f"Mask bining factor: {binning_factor}\n")
@@ -280,7 +275,7 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time
-    s, val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)
+    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)
     print(f"Vector shape: {vec.shape}")
 
     if is_mask:
@@ -296,18 +291,14 @@ def compute_orientation(
 
         del mask
 
-    volume, _, val, vec = remove_padding(
-        volume, s, val, vec, padding_start, padding_end
-    )
-    del s
+    volume, val, vec = remove_padding(volume, val, vec, padding_start, padding_end)
     print(f"Vector shape after removing padding: {vec.shape}")
 
     center_line = center_line[start_index_padded:end_index_padded]
 
     # Putting all the vectors in positive direction
     # posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
-    vec_norm = np.linalg.norm(vec, axis=0)
-    vec = vec / (vec_norm)
+    vec = vec / np.linalg.norm(vec, axis=0)
 
     # Check for negative z component and flip if necessary
     # negative_z = vec[2, :] < 0
