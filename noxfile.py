@@ -1,7 +1,7 @@
 import nox
 
 # Define default Python versions for testing
-PYTHON_VERSIONS = ["3.10", "3.11"]
+PYTHON_VERSIONS = ["3.10", "3.11", '3.12']
 
 # Locations to check for linting, formatting, and type checking
 PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "setup.py"]
