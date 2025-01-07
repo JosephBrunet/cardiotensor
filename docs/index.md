@@ -13,12 +13,16 @@
 
 ## Modules
 
-- Orientation : Main module of cardiotensor, it
+- Orientation : Main module of cardiotensor, it 
 
-!!! note
+```
+from cardiotensor
 
-    The structure tensor calculation is performed using the [`structure-tensor`](https://github.com/Skielex/structure-tensor) python package. This package allows GPU implementation using CUDA and [CuPy](https://github.com/cupy/cupy). 
 
+```
+
+- Analysis: GUI allowing to plot transmural profile of the result.
+- 3D visualization: 
 
 
 ## Table of Contents
