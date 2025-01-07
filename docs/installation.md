@@ -5,7 +5,6 @@ cardiotensor is a powerful and user-friendly toolkit for analyzing the orientati
 ## Prerequisites
 
 - Python 3.10 or higher
-- Required libraries (see `pyproject.toml`)
 
 ## Installing with pip <small>recommended</small>
 
