@@ -59,7 +59,7 @@ def is_tiff_image_valid(image_path: str) -> bool:
 
 # @profile
 def compute_orientation(
-    conf_file_path: str, start_index: int = 0, end_index: int = 0, use_gpu: bool = False
+    conf_file_path: str, start_index: int = 0, end_index: int | None = None, use_gpu: bool = False
 ) -> None:
     """
     Compute the orientation for a volume dataset based on the configuration.
@@ -67,7 +67,7 @@ def compute_orientation(
     Args:
         conf_file_path (str): Path to the configuration file.
         start_index (int, optional): Start index for processing. Default is 0.
-        end_index (int, optional): End index for processing. Default is 0.
+        end_index (int, optional): End index for processing. Default is None.
         use_gpu (bool, optional): Whether to use GPU for calculations. Default is False.
 
     Returns:
@@ -125,7 +125,7 @@ def compute_orientation(
 
     if not IS_TEST:
         is_already_done = True
-        if end_index == 0:
+        if end_index is None:
             is_already_done = False
         for idx in range(start_index, end_index):
             if (
@@ -271,6 +271,9 @@ def compute_orientation(
         volume[mask == 0] = 0
 
         print("Mask applied to image volume")
+
+
+
 
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")

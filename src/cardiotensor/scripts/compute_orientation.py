@@ -22,7 +22,7 @@ def script() -> None:
         if not conf_file_path:
             sys.exit("No file selected!")
         start_index = 0
-        end_index = 0
+        end_index = None
         use_gpu = True
 
     elif len(sys.argv) >= 2:
@@ -36,7 +36,7 @@ def script() -> None:
             "--start_index", type=int, default=0, help="Starting index for processing."
         )
         parser.add_argument(
-            "--end_index", type=int, default=0, help="Ending index for processing."
+            "--end_index", type=int, default=None, help="Ending index for processing."
         )
         parser.add_argument("--gpu", action="store_true", help="Activate the gpu")
         args = parser.parse_args()
@@ -88,7 +88,7 @@ def script() -> None:
     h, w, N_img = get_volume_shape(VOLUME_PATH)
 
     # Set end_index to total_images if it's zero
-    if end_index == 0:
+    if end_index is None:
         end_index = N_img
 
     if not IS_TEST:
