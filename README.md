@@ -1,9 +1,9 @@
+# CardioTensor
+
 [![Doc](https://img.shields.io/badge/docs-dev-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 ![Python Version](https://img.shields.io/badge/python->3.11-blue.svg)
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
-
-# CardioTensor
 
 A Python package for calculating 3D cardiomyocyte orientations in heart images.
 
@@ -46,7 +46,7 @@ pip install .
 
 ## More Information
 
-This package builds upon the [Structure Tensor package](https://github.com/Skielex/structure-tensor), extending its capabilities for cardiac imaging.
+This package builds upon the [structure-tensor](https://github.com/Skielex/structure-tensor) package, extending its capabilities for cardiac imaging.
 
 ## License
 
