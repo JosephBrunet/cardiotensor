@@ -7,17 +7,11 @@
 
 A Python package for calculating 3D cardiomyocyte orientations in heart images.
 
-![Example Result](./examples/result_HA_slice.png)
+![Example Result](./examples/result_HA_slice.jpeg)
 
 ## Overview
 
 **cardiotensor** is a powerful and user-friendly toolkit for analyzing the orientation of cardiomyocites fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
-
-## Features
-
-- **Automated Orientation Analysis**: Extract 3D orientations of cardiac fibers with ease.
-- **Configurable Workflow**: Customize the process using configuration files.
-- **Integration Ready**: Designed for seamless integration with downstream analysis tools.
 
 ## Installation
 
@@ -71,6 +65,19 @@ For major changes, please discuss them in an issue first.
 
 For questions, feedback, or support, please contact the maintainers at [j.brunet@ucl.ac.uk].
 
----
+## Reference
 
-Thank you for using **CardioTensor**! Your contributions and feedback are invaluable in improving the package.
+Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O’Leary, E., Bellier, A., et al. (2024). Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography. *Radiology, 312*(1), e232731. https://doi.org/10.1148/radiol.232731. [[PDF](https://pubs.rsna.org/doi/epdf/10.1148/radiol.232731)]
+
+```bibtex
+@article{brunet2024multidimensional,
+  title={Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography},
+  author={Brunet, Joseph and Cook, Andrew C and Walsh, Claire L and Cranley, James and Tafforeau, Paul and Engel, Klaus and Arthurs, Owen and Berruyer, Camille and Burke O’Leary, Emer and Bellier, Alexandre and others},
+  journal={Radiology},
+  volume={312},
+  number={1},
+  pages={e232731},
+  year={2024},
+  publisher={Radiological Society of North America}
+}
+```

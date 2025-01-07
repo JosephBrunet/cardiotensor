@@ -1,207 +1,81 @@
-### index.md
+# Contributing
 
-# CardioTensor
+Thank you for considering contributing to the **cardiotensor** project! We welcome contributions of all kinds, including bug fixes, feature suggestions, documentation improvements, and more. Follow the guidelines below to ensure a smooth contribution process.
 
-**CardioTensor** is a Python package designed to compute and analyze 3D cardiomyocyte orientations in high-resolution heart images. This documentation provides a detailed guide on installation, usage, and contributing to the project.
+## How to Contribute
 
-## Features
+1. **Fork the Repository**
+    - Go to the [GitHub repository](https://github.com/JosephBrunet/cardiotensor) and click the "Fork" button.
+    - Clone your fork locally:
+        ```bash
+        git clone https://github.com/<your-username>/cardiotensor.git
+        cd cardiotensor
+        ```
 
-- Automated orientation analysis
-- Configurable workflows with `.conf` files
-- Export support for visualization tools like Amira and VTK
-- GPU support for faster processing
+2. **Create a Branch**
+    - Create a new branch for your feature or bug fix:
+        ```bash
+        git checkout -b my-feature-branch
+        ```
 
----
+3. **Install Dependencies**
+    - Ensure you have all required dependencies installed. You can use the provided development dependencies:
+        ```bash
+        pip install -e .[dev]
+        ```
 
-### installation.md
+4. **Make Your Changes**
+    - Make your changes to the codebase, documentation, or both.
+    - Follow [PEP8](https://peps.python.org/pep-0008/) standards for Python code.
 
-# Installation
+5. **Run Tests**
+    - Ensure all tests pass and that your contribution does not introduce any issues:
+        ```bash
+        pytest
+        ```
+    - If you add new features, include corresponding tests.
 
-## Prerequisites
+6. **Commit Your Changes**
+    - Write clear and concise commit messages:
+        ```bash
+        git add .
+        git commit -m "Add feature: XYZ"
+        ```
 
-- Python 3.11 or newer
-- Required libraries (see `pyproject.toml`)
+7. **Push and Create a Pull Request**
+    - Push your branch to your fork:
+        ```bash
+        git push origin my-feature-branch
+        ```
+    - Go to the original repository and create a Pull Request (PR).
+    - Provide a clear description of your changes and why they are necessary.
 
-## Installation Steps
+## Coding Standards
 
-1. Clone the repository:
+To maintain a consistent and readable codebase, please adhere to the following guidelines:
 
-   ```bash
-   git clone https://github.com/JosephBrunet/cardiotensor.git
-   cd cardiotensor
-   ```
+- **PEP 8**: Follow [PEP8](https://peps.python.org/pep-0008/) coding style standards for Python code.
+- **Type Annotations**: Include type hints for function arguments and return values.
+- **Docstrings**: Provide clear docstrings for functions and classes. We recommend using the Google docstring style.
 
-2. Install the package:
+## Guidelines
 
-   ```bash
-   pip install .
-   ```
+- **Be Respectful**: Treat all contributors with respect and professionalism.
+- **Follow Standards**: Ensure your contributions align with the project's coding and documentation standards.
+- **Keep It Simple**: Focus on making the project easier to use and maintain.
+- **Documentation**: Update documentation if your changes affect the usage or functionality of the project.
 
-3. Verify installation:
+## Reporting Issues
 
-   ```bash
-   cardio-tensor --help
-   ```
+If you encounter a bug or have a suggestion, please [open an issue](https://github.com/JosephBrunet/cardiotensor/issues). Include as much detail as possible:
 
----
+- Steps to reproduce the issue.
+- Expected and actual results.
+- Your environment (e.g., Python version, OS).
 
-### usage/index.md
+## Contact
 
-# Usage
+For questions or further assistance, feel free to reach out to the project maintainers via the repository's [Discussions](https://github.com/JosephBrunet/cardiotensor/discussions) or email listed in the repository.
 
-This section explains the primary functionalities of the CardioTensor package.
-
-## Quick Start
-
-1. Prepare a configuration file (e.g., `parameters_example.conf`).
-2. Run the `cardio-tensor` script:
-   ```bash
-   cardio-tensor parameters_example.conf
-   ```
-3. Visualize results using the GUI or export them using `cardio-vtk` or `cardio-amira`.
-
----
-
-### usage/scripts.md
-
-# Command-Line Scripts
-
-## `cardio-tensor`
-
-Computes cardiomyocyte orientations.
-
-```bash
-cardio-tensor parameters_example.conf --gpu
-```
-
-### Options
-
-- `--start_index` / `--end_index`: Subset of the volume to process
-- `--gpu`: Use GPU for faster processing
-
-## `cardio-analysis`
-
-Launches the GUI for analyzing slices.
-
-```bash
-cardio-analysis parameters_example.conf 150
-```
-
-### Options
-
-- `--N_line`: Number of profile lines
-- `--angle_range`: Angle range in degrees
-- `--image_mode`: Output mode (HA, IA, FA)
-
-## `cardio-vtk`
-
-Exports results in VTK format.
-
-```bash
-cardio-vtk parameters_example.conf --start_index 0 --end_index 100
-```
-
-## `cardio-amira`
-
-Exports results in Amira-compatible format.
-
-```bash
-cardio-amira parameters_example.conf --num_steps 1000000
-```
-
----
-
-### usage/configuration.md
-
-# Configuration File
-
-Configuration files control the behavior of the package. Below is an example:
-
-```ini
-[IMAGES_PATH]
-VOLUME_PATH = ./data/volume/
-MASK_PATH = ./data/mask/
-
-[PROCESSING]
-FLIP = False
-OUTPUT_PATH = ./output/
-OUTPUT_TYPE = 8bit
-SIGMA = 1.0
-RHO = 2.0
-N_CHUNK = 100
-POINT_MITRAL_VALVE = (50, 50, 50)
-POINT_APEX = (150, 150, 150)
-TEST = False
-```
-
----
-
-### advanced.md
-
-# Advanced Features
-
-## GPU Support
-
-Ensure `cupy-cuda` is installed to enable GPU support.
-
-## Export Options
-
-- **VTK**: Use `cardio-vtk` for exporting results to VTK.
-- **Amira**: Use `cardio-amira` with customizable parameters (e.g., fiber length, angle thresholds).
-
----
-
-### development.md
-
-# Development Guide
-
-## Testing
-
-Run tests using `pytest`:
-
-```bash
-pytest
-```
-
-## Contributing
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Submit a pull request.
-
-Follow PEP8 guidelines and ensure tests pass before submission.
-
----
-
-### reference/index.md
-
-# API Reference
-
-Refer to the individual modules for detailed information about the functions and classes provided.
-
----
-
-### reference/orientation\_computation.md
-
-# `orientation_computation_functions.py`
-
-### Functions
-
-- `interpolate_points`: Generates interpolated points between two 3D points.
-- `calculate_structure_tensor`: Computes the structure tensor for a 3D volume.
-- `compute_fraction_anisotropy`: Computes Fractional Anisotropy from eigenvalues.
-
-### Example
-
-```python
-from cardiotensor.orientation.orientation_computation_functions import (
-    calculate_structure_tensor
-)
-
-tensor, eigenvalues, eigenvectors = calculate_structure_tensor(volume, sigma=1.0, rho=2.0)
-```
-
----
-
-This structure divides the documentation logically, providing clarity and accessibility for different user groups. Copy each file's content into a respective `.md` file for your MkDocs documentation.
+We appreciate your contributions and support in making cardiotensor better!
 

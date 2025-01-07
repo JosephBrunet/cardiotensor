@@ -23,7 +23,7 @@ theme:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: deep purple
-      accent: purple  
+      accent: purple
       toggle:
         icon: material/toggle-switch-off
         name: Switch to system preference
@@ -66,14 +66,6 @@ theme:
     - search.suggest
     - toc.follow
     # - toc.integrate
-
-# Page tree
-nav:
-  - Introduction: introduction.md
-  - Installation: installation.md
-  - Getting Started: quickstart.md
-
-
 
 
 plugins:
@@ -149,3 +141,16 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+
+
+
+
+
+# Page tree
+nav:
+  - Installation: installation.md
+  - Examples: examples.md
+  - Configuration file: configuration.md
+  - Contributing: contributing.md
+  - Citing: citing.md
+
