@@ -1,8 +1,6 @@
 import os
 import sys
 import warnings
-
-import cv2
 import glymur
 import matplotlib.pyplot as plt
 import numpy as np
@@ -133,6 +131,7 @@ def calculate_structure_tensor(
     devices: list[str] | None = None,
     block_size: int = 200,
     use_gpu: bool = False,
+    dtype: type = np.float32,  # Default to np.float64
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculates the structure tensor of a volume.
@@ -170,7 +169,9 @@ def calculate_structure_tensor(
             devices=devices,
             block_size=block_size,
             truncate=4.0,
-            structure_tensor=np.float32,
+            structure_tensor=None,
+            eigenvectors=dtype,
+            eigenvalues=dtype,
         )
     else:
         print("GPU not activated")
@@ -181,26 +182,26 @@ def calculate_structure_tensor(
             devices=num_cpus * ["cpu"],
             block_size=block_size,
             truncate=4.0,
-            structure_tensor=np.float32,
+            structure_tensor=None,
+            eigenvectors=dtype,
+            eigenvalues=dtype,
         )  # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
-    return S, val, vec
+    return val, vec
 
 
 def remove_padding(
     volume: np.ndarray,
-    s: np.ndarray,
     val: np.ndarray,
     vec: np.ndarray,
     padding_start: int,
     padding_end: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Removes padding from the volume, structure tensor, eigenvalues, and eigenvectors.
+    Removes padding from the volume, eigenvalues, and eigenvectors.
 
     Args:
         volume (np.ndarray): The 3D volume data.
-        s (np.ndarray): The structure tensor.
         val (np.ndarray): The eigenvalues.
         vec (np.ndarray): The eigenvectors.
         padding_start (int): Padding at the start to remove.
@@ -211,11 +212,10 @@ def remove_padding(
     """
     array_end = vec.shape[1] - padding_end
     volume = volume[padding_start:array_end, :, :]
-    s = s[:, padding_start:array_end, :, :]
     vec = vec[:, padding_start:array_end, :, :]
     val = val[:, padding_start:array_end, :, :]
 
-    return volume, s, val, vec
+    return volume, val, vec
 
 
 def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:
@@ -477,11 +477,18 @@ def write_images(
                 irreversible=True,
             )
         elif OUTPUT_FORMAT == "tif":
-            cv2.imwrite(f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix)
-            cv2.imwrite(
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion
-            )
-            cv2.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
+            tifffile.imwrite(
+                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", 
+                img_helix
+                )
+            tifffile.imwrite(
+                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", 
+                img_intrusion
+                )
+            tifffile.imwrite(
+                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", 
+                img_FA
+                )
         else:
             sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
 
@@ -511,10 +518,15 @@ def write_images(
             img = cmap(img)
             img = (img[:, :, :3] * 255).astype(np.uint8)
 
-            # cv2.imwrite(output_path, img)
             print(f"Writing image to {output_path}")
             if OUTPUT_FORMAT == "jp2":
-                cv2.imwrite(output_path, img)
+                glymur.Jp2k(
+                output_path,
+                data=img,
+                cratios=[ratio_compression],
+                numres=8,
+                irreversible=True,
+            )
             elif OUTPUT_FORMAT == "tif":
                 tifffile.imwrite(output_path, img)
             else:

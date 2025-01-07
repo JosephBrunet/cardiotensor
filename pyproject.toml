@@ -6,41 +6,45 @@ requires = [
 ]
 
 [project]
-name = "cardiotensor"
 authors = [
     {email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"},
 ]
 classifiers = [
-    "Operating System :: POSIX",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.10",
     "Typing :: Typed",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
 ]
 dependencies = [
+    "numpy>=1.20",
+    'pandas',
+    "scikit-image",
+    "structure-tensor>=0.3.0",
+    "matplotlib",
     "PyQt5",
     "SimpleITK",
     "alive_progress",
-    "cupy-cuda12x",
     "dask",
-    "dask-image",
     "glymur",
-    "matplotlib",
-    "numpy",
     "opencv-python-headless",
-    "pillow",
-    "scikit-image",
-    "structure-tensor>=0.3.0",
     "tifffile",
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = []
 license = {file = "LICENSE.md"}
+name = "cardiotensor"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 version = "1.0.0"
 
 [project.optional-dependencies]
+cupy = ["cupy>=8"]
 dev = [
     "black",
     "pre-commit",
@@ -48,10 +52,9 @@ dev = [
     "pytest-cov",
     "ruff",
 ]
-
 git = [
-  "mkdocs-git-committers-plugin-2>=1.1,<3",
-  "mkdocs-git-revision-date-localized-plugin~=1.2,>=1.2.4"
+    "mkdocs-git-committers-plugin-2>=1.1,<3",
+    "mkdocs-git-revision-date-localized-plugin~=1.2,>=1.2.4",
 ]
 
 [project.scripts]
@@ -63,9 +66,8 @@ cardio-vtk = "cardiotensor.scripts.vtk_writer:script"
 
 [project.urls]
 Documentation = "https://github.com/JosephBrunet/cardiotensor"
-Source = "https://JosephBrunet.github.io//cardiotensor"
 Issues = "https://github.com/JosephBrunet/cardiotensor/issues"
-
+Source = "https://JosephBrunet.github.io//cardiotensor"
 
 [tool.black]
 line-length = 88
@@ -75,8 +77,6 @@ target-version = ["py311"]
 plugins = [
     "pydantic.mypy",
 ]
-python_version = "3.11"
-# strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true

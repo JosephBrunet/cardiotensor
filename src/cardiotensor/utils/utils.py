@@ -28,6 +28,8 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
+    if not file_path[-5:] == ".conf":
+        raise FileNotFoundError("The file is not a .conf file")
 
     config = configparser.ConfigParser()
     config.read(file_path)
