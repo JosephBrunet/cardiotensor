@@ -13,7 +13,7 @@
 
 ## Modules
 
-- Orientation : Main module of cardiotensor, it 
+- Orientation : Main module of cardiotensor, it
 
 ```
 from cardiotensor
@@ -22,7 +22,7 @@ from cardiotensor
 ```
 
 - Analysis: GUI allowing to plot transmural profile of the result.
-- 3D visualization: 
+- 3D visualization:
 
 
 ## Table of Contents

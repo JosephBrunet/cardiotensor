@@ -1,6 +1,7 @@
 import configparser
 import os
 from typing import Any
+
 import numpy as np
 
 
@@ -18,7 +19,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         FileNotFoundError: If the configuration file does not exist.
         ValueError: If expected numerical or array values are incorrectly formatted.
     """
-    
+
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
     if not file_path[-5:] == ".conf":

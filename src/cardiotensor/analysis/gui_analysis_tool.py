@@ -3,10 +3,8 @@ import sys
 from pathlib import Path
 
 import cv2
-from skimage.measure import block_reduce
 import matplotlib.pyplot as plt
 import numpy as np
-
 from PyQt5.QtGui import (
     QBrush,
     QColor,
@@ -40,6 +38,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from skimage.measure import block_reduce
 
 from cardiotensor.analysis.analysis_functions import (
     calculate_intensities,

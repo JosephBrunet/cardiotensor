@@ -10,8 +10,8 @@ from tkinter.filedialog import askopenfilename
 from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
 )
-from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.utils import read_conf_file
 
 
 def script() -> None:
