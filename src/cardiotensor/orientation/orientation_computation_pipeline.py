@@ -56,12 +56,6 @@ def is_tiff_image_valid(image_path: str) -> bool:
 
 
 
-
-
-
-
-
-
 # @profile
 def compute_orientation(
     conf_file_path: str, start_index: int = 0, end_index: int | None = None, use_gpu: bool = False
@@ -158,13 +152,12 @@ def compute_orientation(
     print(f"Volume path: {VOLUME_PATH}")
     
     data_reader = DataReader(VOLUME_PATH)
-    volume_shape = data_reader.shape
     
-    print(f"Number of slices: {volume_shape[0]}")
+    print(f"Number of slices: {data_reader.shape[0]}")
 
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
-    center_line = interpolate_points(PT_MV, PT_APEX, volume_shape[0])
+    center_line = interpolate_points(PT_MV, PT_APEX, data_reader.shape[0])
     center_vec = calculate_center_vector(PT_MV, PT_APEX, IS_FLIP)
     print(f"Center vector: {center_vec}")
 
@@ -175,15 +168,15 @@ def compute_orientation(
     if not IS_TEST:
         if padding_start > start_index:
             padding_start = start_index
-        if padding_end > (volume_shape[0] - end_index):
-            padding_end = volume_shape[0] - end_index
+        if padding_end > (data_reader.shape[0] - end_index):
+            padding_end = data_reader.shape[0] - end_index
     if IS_TEST:
-        if N_SLICE_TEST > volume_shape[0]:
+        if N_SLICE_TEST > data_reader.shape[0]:
             sys.exit("Error: N_SLICE_TEST > number of images")
 
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(
-        start_index, end_index, volume_shape[0], padding_start, padding_end, IS_TEST, N_SLICE_TEST
+        start_index, end_index, data_reader.shape[0], padding_start, padding_end, IS_TEST, N_SLICE_TEST
     )
     print(
         f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}"
@@ -197,11 +190,9 @@ def compute_orientation(
     print(f"Loaded volume shape {volume.shape}")
 
     if is_mask:
-        # volume, mask = read_and_apply_mask(MASK_PATH, volume, volume_shape_ini, start_index_padded, end_index_padded)
         mask_reader = DataReader(MASK_PATH)
-        mask_shape = mask_reader.shape
         
-        mask = mask_reader.load_volume(start_index_padded, end_index_padded, unbinned_shape=volume_shape).astype(
+        mask = mask_reader.load_volume(start_index_padded, end_index_padded, unbinned_shape=data_reader.shape).astype(
             "float32"
         )
         
