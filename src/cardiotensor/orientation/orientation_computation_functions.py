@@ -1,12 +1,11 @@
 import os
 import sys
 import warnings
+
 import glymur
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
-from scipy.ndimage import zoom
-import cv2
 
 # Optional GPU support
 try:
@@ -124,7 +123,6 @@ def adjust_start_end_index(
         end_index_padded = min(end_index + padding_end, N_img)
 
     return start_index_padded, end_index_padded
-
 
 
 def calculate_structure_tensor(
@@ -481,17 +479,12 @@ def write_images(
             )
         elif OUTPUT_FORMAT == "tif":
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", 
-                img_helix
-                )
+                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix
+            )
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", 
-                img_intrusion
-                )
-            tifffile.imwrite(
-                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", 
-                img_FA
-                )
+                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion
+            )
+            tifffile.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
         else:
             sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
 
@@ -524,12 +517,12 @@ def write_images(
             print(f"Writing image to {output_path}")
             if OUTPUT_FORMAT == "jp2":
                 glymur.Jp2k(
-                output_path,
-                data=img,
-                cratios=[ratio_compression],
-                numres=8,
-                irreversible=True,
-            )
+                    output_path,
+                    data=img,
+                    cratios=[ratio_compression],
+                    numres=8,
+                    irreversible=True,
+                )
             elif OUTPUT_FORMAT == "tif":
                 tifffile.imwrite(output_path, img)
             else:

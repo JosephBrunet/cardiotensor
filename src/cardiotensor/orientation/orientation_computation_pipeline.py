@@ -22,9 +22,8 @@ from cardiotensor.orientation.orientation_computation_functions import (
     write_images,
     write_vector_field,
 )
-from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.utils.DataReader import DataReader
-
+from cardiotensor.utils.utils import read_conf_file
 
 MULTIPROCESS = True
 
@@ -52,13 +51,12 @@ def is_tiff_image_valid(image_path: str) -> bool:
         return False
 
 
-
-
-
-
 # @profile
 def compute_orientation(
-    conf_file_path: str, start_index: int = 0, end_index: int | None = None, use_gpu: bool = False
+    conf_file_path: str,
+    start_index: int = 0,
+    end_index: int | None = None,
+    use_gpu: bool = False,
 ) -> None:
     """
     Compute the orientation for a volume dataset based on the configuration.
@@ -122,7 +120,7 @@ def compute_orientation(
         ]
     )
 
-    #Check if alreayd done the processing
+    # Check if already done the processing
     if not IS_TEST:
         is_already_done = True
         if end_index is None:
@@ -150,9 +148,9 @@ def compute_orientation(
     print("\n---------------------------------")
     print("READING VOLUME INFORMATION\n")
     print(f"Volume path: {VOLUME_PATH}")
-    
+
     data_reader = DataReader(VOLUME_PATH)
-    
+
     print(f"Number of slices: {data_reader.shape[0]}")
 
     print("\n---------------------------------")
@@ -176,7 +174,13 @@ def compute_orientation(
 
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(
-        start_index, end_index, data_reader.shape[0], padding_start, padding_end, IS_TEST, N_SLICE_TEST
+        start_index,
+        end_index,
+        data_reader.shape[0],
+        padding_start,
+        padding_end,
+        IS_TEST,
+        N_SLICE_TEST,
     )
     print(
         f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}"
@@ -191,18 +195,17 @@ def compute_orientation(
 
     if is_mask:
         mask_reader = DataReader(MASK_PATH)
-        
-        mask = mask_reader.load_volume(start_index_padded, end_index_padded, unbinned_shape=data_reader.shape).astype(
-            "float32"
-        )
-        
+
+        mask = mask_reader.load_volume(
+            start_index_padded, end_index_padded, unbinned_shape=data_reader.shape
+        ).astype("float32")
+
         assert (
             mask.shape == volume.shape
         ), f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
-        
+
         volume[mask == 0] = 0
 
-        
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time

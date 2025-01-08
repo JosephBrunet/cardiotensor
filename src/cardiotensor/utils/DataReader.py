@@ -1,7 +1,7 @@
 import sys
 from os import PathLike
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import Any
 
 import cv2
 import dask
@@ -9,7 +9,6 @@ import numpy as np
 import SimpleITK as sitk
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
-
 
 
 class DataReader:
@@ -24,7 +23,9 @@ class DataReader:
         self.supported_extensions = ["tif", "tiff", "jp2", "png"]
         self.volume_info = self._get_volume_info()
         self.shape = self._get_volume_shape()
-        self.file_list = self.volume_info["file_list"] if self.volume_info["stack"] else None
+        self.file_list = (
+            self.volume_info["file_list"] if self.volume_info["stack"] else None
+        )
 
     def _get_volume_info(self) -> dict:
         """
@@ -50,7 +51,9 @@ class DataReader:
             volume_info["file_list"] = sorted(volume_info["file_list"])
 
             if not volume_info["file_list"]:
-                raise ValueError("No supported image files found in the specified directory.")
+                raise ValueError(
+                    "No supported image files found in the specified directory."
+                )
 
         elif self.path.is_file() and self.path.suffix == ".mhd":
             volume_info["type"] = "mhd"
@@ -60,7 +63,7 @@ class DataReader:
 
         return volume_info
 
-    def _get_volume_shape(self) -> Tuple[int, int, int]:
+    def _get_volume_shape(self) -> tuple[int, int, int]:
         """
         Retrieves the size (dimensions) of the volume.
 
@@ -73,7 +76,9 @@ class DataReader:
                 return tuple(reversed(image.GetSize()))  # Return (z, y, x)
 
         elif self.volume_info["stack"]:  # Stack of images
-            first_image = cv2.imread(str(self.volume_info["file_list"][0]), cv2.IMREAD_UNCHANGED)
+            first_image = cv2.imread(
+                str(self.volume_info["file_list"][0]), cv2.IMREAD_UNCHANGED
+            )
             return (
                 len(self.volume_info["file_list"]),
                 first_image.shape[0],
@@ -82,12 +87,11 @@ class DataReader:
 
         raise ValueError("Unable to determine volume dimensions.")
 
-
     def load_volume(
         self,
         start_index: int = 0,
         end_index: int | None = None,
-        unbinned_shape: Tuple[int, int, int] | None = None,
+        unbinned_shape: tuple[int, int, int] | None = None,
     ) -> np.ndarray:
         """
         Loads the volume data based on the detected volume type.
@@ -105,23 +109,19 @@ class DataReader:
         if unbinned_shape is not None:
             binning_factor = unbinned_shape[0] / self.shape[0]
             print(f"Mask bining factor: {binning_factor}\n")
-        
+
         if binning_factor != 1.0:
-            start_index_bin = int(
-                (start_index / binning_factor) - 1
-            )
+            start_index_bin = int((start_index / binning_factor) - 1)
             if start_index_bin < 0:
                 start_index_bin = 0
-            end_index_bin = int(
-                (end_index / binning_factor) + 1
-            )  
+            end_index_bin = int((end_index / binning_factor) + 1)
             if end_index_bin > self.shape[0]:
                 end_index_bin = self.shape[0]
 
             print(
                 f"Mask start index padded: {start_index_bin} - Mask end index padded : {end_index_bin}"
             )
-        
+
         if self.volume_info["stack"] == False:
             if self.volume_info["type"] == "mhd":
                 volume = load_raw_data_with_mhd(self.path)
@@ -132,14 +132,13 @@ class DataReader:
         else:
             raise ValueError("Unsupported volume type.")
 
-
         if binning_factor != 1.0:
             volume = zoom(
                 volume,
                 zoom=binning_factor,
                 order=0,
             )
-            
+
             start_index_bin_upscaled = int(
                 np.abs(start_index_bin * binning_factor - start_index)
             )
@@ -152,7 +151,7 @@ class DataReader:
 
             volume = volume[start_index_bin_upscaled:end_index_bin_upscaled, :]
 
-            volume_resized = np.empty_like(volume)            
+            volume_resized = np.empty_like(volume)
             for i in range(volume.shape[0]):
                 # Resize the slice to match the corresponding slice of the volume
                 volume_resized[i] = cv2.resize(
@@ -160,12 +159,11 @@ class DataReader:
                     (unbinned_shape[2], unbinned_shape[1]),
                     interpolation=cv2.INTER_LINEAR,
                 )
-                    
+
         return volume
 
-
     def _load_image_stack(
-        self, file_list: List[Path], start_index: int, end_index: int
+        self, file_list: list[Path], start_index: int, end_index: int
     ) -> np.ndarray:
         """
         Loads a stack of images into a 3D NumPy array.
@@ -224,7 +222,6 @@ class DataReader:
             volume = np.stack(computed_data, axis=0)
 
         return volume
-    
 
 
 def read_mhd(filename: PathLike[str]) -> dict[str, Any]:
