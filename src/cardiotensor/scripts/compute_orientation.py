@@ -10,7 +10,8 @@ from tkinter.filedialog import askopenfilename
 from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
 )
-from cardiotensor.utils.utils import get_volume_shape, read_conf_file
+from cardiotensor.utils.utils import read_conf_file
+from cardiotensor.utils.DataReader import DataReader
 
 
 def script() -> None:
@@ -85,11 +86,12 @@ def script() -> None:
         ]
     )
 
-    h, w, N_img = get_volume_shape(VOLUME_PATH)
+    data_reader = DataReader(VOLUME_PATH)
+    volume_shape = data_reader.shape
 
     # Set end_index to total_images if it's zero
     if end_index is None:
-        end_index = N_img
+        end_index = volume_shape[0]
 
     if not IS_TEST:
         # If REVERSE is True, run the loop in reverse order; otherwise, run normally
