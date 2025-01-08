@@ -5,6 +5,8 @@ import glymur
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
+from scipy.ndimage import zoom
+import cv2
 
 # Optional GPU support
 try:
@@ -122,6 +124,7 @@ def adjust_start_end_index(
         end_index_padded = min(end_index + padding_end, N_img)
 
     return start_index_padded, end_index_padded
+
 
 
 def calculate_structure_tensor(
