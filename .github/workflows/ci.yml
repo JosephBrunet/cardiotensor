@@ -22,11 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install everything, run the tests, produce the .coverage file
+      - name: Install everything
         run: 
           pip install .[dev]
           pip install pytest
-          python -m pytest tests/ # This is the part where you put your own test command
+
+      - name: Install everything, run the tests, produce the .coverage file
+        run:
+          pytest --cov-branch --cov-report=xml # This is the part where you put your own test command
 
       - name: Coverage comment
         id: coverage_comment
