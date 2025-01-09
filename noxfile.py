@@ -20,7 +20,7 @@ def tests(session):
 
     # Run pytest with coverage tracking
     session.run(
-        "coverage", "run", "--source=src", "-m", "pytest", "-sv", *session.posargs
+        "coverage", "run", "--source=src", "-m", "pytest", "-s", *session.posargs
     )
 
     # Generate coverage reports
