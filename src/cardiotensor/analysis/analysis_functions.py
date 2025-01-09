@@ -33,7 +33,6 @@ def _calculate_angle_line(
 
     return angle_deg
 
-
 def find_end_points(
     start_point: tuple[float, float],
     end_point: tuple[float, float],
