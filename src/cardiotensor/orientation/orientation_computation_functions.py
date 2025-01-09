@@ -133,7 +133,7 @@ def calculate_structure_tensor(
     block_size: int = 200,
     use_gpu: bool = False,
     dtype: type = np.float32,  # Default to np.float64
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculates the structure tensor of a volume.
 
@@ -197,7 +197,7 @@ def remove_padding(
     vec: np.ndarray,
     padding_start: int,
     padding_end: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Removes padding from the volume, eigenvalues, and eigenvectors.
 
@@ -511,7 +511,8 @@ def write_images(
             maximum = np.nanmax(img)
             img = (img + np.abs(minimum)) * (1 / (maximum - minimum))
 
-            img = cmap(img)
+            if cmap is not None:
+                img = cmap(img)
             img = (img[:, :, :3] * 255).astype(np.uint8)
 
             print(f"Writing image to {output_path}")

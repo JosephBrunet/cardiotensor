@@ -64,7 +64,7 @@ def compute_orientation(
     Args:
         conf_file_path (str): Path to the configuration file.
         start_index (int, optional): Start index for processing. Default is 0.
-        end_index (int, optional): End index for processing. Default is None.
+        end_index (int | None): End index for processing. Default is None.
         use_gpu (bool, optional): Whether to use GPU for calculations. Default is False.
 
     Returns:
@@ -120,6 +120,17 @@ def compute_orientation(
         ]
     )
 
+    print("\n---------------------------------")
+    print("READING VOLUME INFORMATION\n")
+    print(f"Volume path: {VOLUME_PATH}")
+
+    data_reader = DataReader(VOLUME_PATH)
+
+    if end_index is None:
+        end_index = data_reader.shape[0]
+
+    print(f"Number of slices: {data_reader.shape[0]}")
+
     # Check if already done the processing
     if not IS_TEST:
         is_already_done = True
@@ -144,14 +155,6 @@ def compute_orientation(
     else:
         print("Mask path not provided")
         is_mask = False
-
-    print("\n---------------------------------")
-    print("READING VOLUME INFORMATION\n")
-    print(f"Volume path: {VOLUME_PATH}")
-
-    data_reader = DataReader(VOLUME_PATH)
-
-    print(f"Number of slices: {data_reader.shape[0]}")
 
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")

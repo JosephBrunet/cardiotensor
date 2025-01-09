@@ -75,8 +75,8 @@ def convert_to_8bit(
     img: np.ndarray,
     perc_min: int = 0,
     perc_max: int = 100,
-    output_min: float | None = None,
-    output_max: float | None = None,
+    min_value: float | None = None,
+    max_value: float | None = None,
 ) -> np.ndarray:
     """
     Converts a NumPy array to an 8-bit image.
@@ -85,16 +85,27 @@ def convert_to_8bit(
         img (np.ndarray): Input image array.
         perc_min (int): Minimum percentile for normalization. Default is 0.
         perc_max (int): Maximum percentile for normalization. Default is 100.
-        output_min (Optional[float]): Optional explicit minimum value.
-        output_max (Optional[float]): Optional explicit maximum value.
+        min_value (Optional[float]): Optional explicit minimum value.
+        max_value (Optional[float]): Optional explicit maximum value.
 
     Returns:
         np.ndarray: 8-bit converted image.
     """
+    # Compute percentiles
     minimum, maximum = np.nanpercentile(img, (perc_min, perc_max))
 
-    if output_min is not None and output_max is not None:
-        minimum, maximum = output_min, output_max
+    # Override percentiles with explicit min/max if provided
+    if min_value is not None and max_value is not None:
+        minimum, maximum = min_value, max_value
 
-    img_normalized = (img + abs(minimum)) * (255 / (maximum - minimum))
-    return img_normalized.astype(np.uint8)
+    # Avoid division by zero
+    if maximum == minimum:
+        return np.zeros_like(img, dtype=np.uint8)
+
+    # Normalize and scale to 8-bit range
+    img_normalized = (img - minimum) / (maximum - minimum) * 255
+
+    # Clip values to ensure they are in 8-bit range
+    img_clipped = np.clip(img_normalized, 0, 255)
+
+    return img_clipped.astype(np.uint8)

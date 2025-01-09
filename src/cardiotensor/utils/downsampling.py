@@ -86,7 +86,8 @@ def downsample_vector_volume(
                 )
                 for task in tasks
             ]
-            [result.wait() for result in results]
+            for result in results:
+                result.wait()  # Wait for the task to complete
 
 
 def process_image_block(
@@ -164,4 +165,5 @@ def downsample_volume(
                 )
                 for task in tasks
             ]
-            [result.wait() for result in results]
+            for result in results:
+                result.wait()  # Wait for the task to complete

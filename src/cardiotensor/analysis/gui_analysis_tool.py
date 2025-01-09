@@ -46,8 +46,8 @@ from cardiotensor.analysis.analysis_functions import (
     plot_intensity,
     save_intensity,
 )
+from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import (
-    get_image_list,
     read_conf_file,
 )
 
@@ -78,7 +78,7 @@ class Window(QWidget):
         self.point_size = self.half_point_size * 2
         self.start_point: QGraphicsEllipseItem | None = None
         self.end_point: QGraphicsEllipseItem | None = None
-        self.start_pos: tuple[float, float] = None
+        self.start_pos: tuple[float, float] | None = None
         self.end_points: np.ndarray | None = None
 
         self.N_slice = N_slice
@@ -145,32 +145,23 @@ class Window(QWidget):
         elif not FA_path.exists():
             sys.exit(f"No FA folder ({FA_path})")
 
-        # Select the appropriate image list based on the output mode
         if self.image_mode == "HA":
-            self.img_list, img_type = get_image_list(HA_path)
+            self.data_reader = DataReader(HA_path)
         elif self.image_mode == "IA":
-            self.img_list, img_type = get_image_list(IA_path)
+            self.data_reader = DataReader(IA_path)
         elif self.image_mode == "FA":
-            self.img_list, img_type = get_image_list(FA_path)
+            self.data_reader = DataReader(FA_path)
         else:
             sys.exit(
                 f"Invalid output mode: {self.image_mode}. Must be 'HA', 'IA', or 'FA'."
             )
 
-        if self.N_slice > len(self.img_list):
+        if self.N_slice > self.data_reader.shape[0]:
             raise IndexError(
                 "The image selected is superior to the number of images present in the result directory"
             )
 
-        # Load the selected slice
-        slice_path = self.img_list[self.N_slice]
-        if not slice_path.exists():
-            print(f"File {slice_path} doesn't exist")
-            return
-        else:
-            print(f"Slice found ({slice_path})")
-
-        self.current_img = self.load_image(str(slice_path), self.MASK_PATH)
+        self.current_img = self.load_image(self.N_slice)
 
         self.load_image_to_gui(self.current_img)
 
@@ -391,26 +382,25 @@ class Window(QWidget):
                 save_path += ".csv"
             save_intensity(self.intensity_profiles, save_path)
 
-    def load_image(
-        self, file_path: str, mask_path: str = "", bin_factor: int | None = None
-    ) -> np.ndarray:
-        img = cv2.imread(str(file_path), -1)
+    def load_image(self, N_slice: int, bin_factor: int | None = None) -> np.ndarray:
+        img = self.data_reader.load_volume(start_index=N_slice, end_index=N_slice + 1)
         if bin_factor:
             img = block_reduce(img, block_size=(bin_factor, bin_factor), func=np.mean)
 
         img64 = img.astype(float)
 
-        if mask_path:
+        if self.MASK_PATH != "":
             print("\n---------------------------------")
-            print(f"READING MASK INFORMATION FROM {mask_path}...\n")
-            mask_list, mask_type = get_image_list(mask_path)
-            N_mask = len(mask_list)
-            mask_bin_factor = len(self.img_list) / N_mask
+            print(f"READING MASK INFORMATION FROM {self.MASK_PATH}...\n")
+            data_reader_mask = DataReader(self.MASK_PATH)
+            mask_bin_factor = self.data_reader.shape[0] / data_reader_mask.shape[0]
             print(f"Mask bining factor: {mask_bin_factor}\n")
 
-            img_mask = self.load_image(
-                str(mask_list[int(self.N_slice / mask_bin_factor)])
-            )
+            img_mask = data_reader_mask.load_volume(
+                start_index=int(self.N_slice / mask_bin_factor),
+                end_index=int(self.N_slice / mask_bin_factor) + 1,
+            ).astype(float)
+
             img_mask = cv2.resize(
                 img_mask,
                 (img64.shape[1], img64.shape[0]),
@@ -470,9 +460,9 @@ class Window(QWidget):
         self.scene.setSceneRect(0, 0, W, H)
         self.view.setScene(self.scene)
 
-        self.scene.mousePressEvent = self.mouse_press
-        self.scene.mouseMoveEvent = self.mouse_move
-        self.scene.mouseReleaseEvent = self.mouse_release
+        self.scene.mousePressEvent = self.mouse_press  # type: ignore
+        self.scene.mouseMoveEvent = self.mouse_move  # type: ignore
+        self.scene.mouseReleaseEvent = self.mouse_release  # type: ignore
 
     def mouse_press(self, event: QGraphicsSceneMouseEvent | None) -> None:
         if event is not None:
@@ -515,9 +505,11 @@ class Window(QWidget):
             brush=QBrush(QColor("black")),
         )
 
+        if self.start_pos is None:
+            return
         sx, sy = self.start_pos
         self.end_points = find_end_points(
-            [sy, sx], [y, x], float(self.angle_range), int(self.N_line)
+            (sy, sx), (y, x), float(self.angle_range), int(self.N_line)
         )
 
         if self.lines:
@@ -541,6 +533,8 @@ class Window(QWidget):
             return
 
         x, y = event.scenePos().x(), event.scenePos().y()
+        if self.start_pos is None:
+            return
         sx, sy = self.start_pos
 
         self.is_mouse_down = False
@@ -556,7 +550,7 @@ class Window(QWidget):
 
         self.spin_box = QSpinBox()
         self.spin_box.setMinimum(0)
-        self.spin_box.setMaximum(len(self.img_list) - 1)
+        self.spin_box.setMaximum(self.data_reader.shape[0] - 1)
         self.spin_box.setValue(self.N_slice)
         layout.addWidget(self.spin_box)
 
@@ -569,10 +563,7 @@ class Window(QWidget):
 
     def change_slice(self) -> None:
         self.N_slice = self.spin_box.value()
-        slice_path = self.img_list[self.N_slice]
-        self.current_img = self.load_image(str(slice_path), self.MASK_PATH).astype(
-            float
-        )
+        self.current_img = self.load_image(self.N_slice).astype(float)
         self.load_image_to_gui(self.current_img)
         self.dialog.close()
 
@@ -709,18 +700,21 @@ class Window(QWidget):
 
         # Reload the images based on the selected mode
         if self.image_mode == "HA":
-            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "HA")
+            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "HA")
         elif self.image_mode == "IA":
-            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "IA")
+            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "IA")
         elif self.image_mode == "FA":
-            self.img_list, img_type = get_image_list(Path(self.OUTPUT_DIR) / "FA")
+            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "FA")
         else:
             print("Invalid image mode")
 
-        # Load the first slice in the new mode
-        self.current_img = self.load_image(
-            str(self.img_list[self.N_slice]), self.MASK_PATH
-        )
+        if self.N_slice > self.data_reader.shape[0]:
+            raise IndexError(
+                "The image selected is superior to the number of images present in the result directory"
+            )
+
+        self.current_img = self.load_image(self.N_slice)
+
         self.load_image_to_gui(self.current_img)
 
         # Close the dialog
