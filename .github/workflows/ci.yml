@@ -27,9 +27,8 @@ jobs:
           pip install .[dev]
           pip install pytest pytest-cov
 
-      - name: Install everything, run the tests, produce the .coverage file
-        run: 
-          pytest --cov-branch --cov-report=xml # This is the part where you put your own test command
+      - name: Run tests
+        run: pytest --cov-branch --cov-report=xml
 
       - name: Coverage comment
         id: coverage_comment
