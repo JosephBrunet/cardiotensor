@@ -27,15 +27,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Install dependencies
-      - name: Install dependencies
+      # Install Nox
+      - name: Install Nox
         run: |
           python -m pip install --upgrade pip
           pip install nox
-          pip install setuptools wheel
-          nox --install-only
 
-      # Run Nox sessions
+      # Run Nox
       - name: Run Nox
         run: nox
 
@@ -43,18 +41,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Set up Python
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      - name: Install dependencies
+      # Install Nox
+      - name: Install Nox
         run: |
           python -m pip install --upgrade pip
-          pip install safety
+          pip install nox
 
-      - name: Run safety check
-        run: safety check --full-report
+      # Run Safety Check
+      - name: Run Safety
+        run: nox -s safety
