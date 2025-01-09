@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,9 +27,11 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run tests
-        run: pytest --cov-branch --cov-report=xml
+        run:
+          pytest --cov-branch --cov-report=xml
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+

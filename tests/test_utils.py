@@ -1,7 +1,9 @@
 import os
 import tempfile
+
 import numpy as np
-from cardiotensor.utils.utils import read_conf_file, convert_to_8bit
+
+from cardiotensor.utils.utils import convert_to_8bit, read_conf_file
 
 
 def test_read_conf_file():
