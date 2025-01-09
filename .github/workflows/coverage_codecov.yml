@@ -1,23 +1,42 @@
-name: CodeCov
+name: Workflow for Codecov example-python
 on: [push, pull_request]
 jobs:
   run:
     runs-on: ubuntu-latest
-    env:
-      OS: ubuntu-latest
-      PYTHON: '3.9'
+    permissions:
+      id-token: write
     steps:
-    - uses: checkout@v2
-      with:
-        fetch-depth: ‘2’
-
-    - name: Setup Python
-      uses: actions/setup-python@master
-      with:
-        python-version: 3.7
-    - name: Generate Report
-      run: |
-        pip install coverage
-        coverage run -m unittest
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install .[dev]
+      - name: Run tests and collect coverage
+        run: pytest --cov src
+      - name: Upload coverage to Codecov (arg token)
+        uses: codecov/codecov-action@main
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+      - name: Upload coverage to Codecov (env token)
+        uses: codecov/codecov-action@main
+        with:
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov (no token)
+        uses: codecov/codecov-action@main
+        with:
+          fail_ci_if_error: true
+          verbose: true
+      - name: Upload coverage to Codecov (oidc)
+        uses: codecov/codecov-action@main
+        with:
+          fail_ci_if_error: true
+          use_oidc: true
+          verbose: true
