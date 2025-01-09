@@ -7,7 +7,6 @@ import time
 import cv2
 import numpy as np
 from alive_progress import alive_bar
-from scipy.ndimage import zoom
 
 # from memory_profiler import profile
 from cardiotensor.orientation.orientation_computation_functions import (
@@ -23,13 +22,8 @@ from cardiotensor.orientation.orientation_computation_functions import (
     write_images,
     write_vector_field,
 )
-from cardiotensor.utils.utils import (
-    get_image_list,
-    load_raw_data_with_mhd,
-    load_volume,
-    read_conf_file,
-    read_mhd,
-)
+from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.utils import read_conf_file
 
 MULTIPROCESS = True
 
@@ -59,7 +53,10 @@ def is_tiff_image_valid(image_path: str) -> bool:
 
 # @profile
 def compute_orientation(
-    conf_file_path: str, start_index: int = 0, end_index: int | None = None, use_gpu: bool = False
+    conf_file_path: str,
+    start_index: int = 0,
+    end_index: int | None = None,
+    use_gpu: bool = False,
 ) -> None:
     """
     Compute the orientation for a volume dataset based on the configuration.
@@ -67,7 +64,7 @@ def compute_orientation(
     Args:
         conf_file_path (str): Path to the configuration file.
         start_index (int, optional): Start index for processing. Default is 0.
-        end_index (int, optional): End index for processing. Default is None.
+        end_index (int | None): End index for processing. Default is None.
         use_gpu (bool, optional): Whether to use GPU for calculations. Default is False.
 
     Returns:
@@ -123,6 +120,18 @@ def compute_orientation(
         ]
     )
 
+    print("\n---------------------------------")
+    print("READING VOLUME INFORMATION\n")
+    print(f"Volume path: {VOLUME_PATH}")
+
+    data_reader = DataReader(VOLUME_PATH)
+
+    if end_index is None:
+        end_index = data_reader.shape[0]
+
+    print(f"Number of slices: {data_reader.shape[0]}")
+
+    # Check if already done the processing
     if not IS_TEST:
         is_already_done = True
         if end_index is None:
@@ -148,24 +157,8 @@ def compute_orientation(
         is_mask = False
 
     print("\n---------------------------------")
-    print("READING VOLUME INFORMATION\n")
-    print(f"Volume path: {VOLUME_PATH}")
-
-    if VOLUME_PATH[-4:] == ".mhd":
-        img_type = "mhd"
-        meta_dict = read_mhd(VOLUME_PATH)
-        N_img = meta_dict["DimSize"][2]
-
-    elif os.path.isdir(VOLUME_PATH):
-        img_list, img_type = get_image_list(VOLUME_PATH)
-        N_img = len(img_list)
-        print(f"{N_img} {img_type} files found\n")
-
-    print(f"Number of slices: {N_img}")
-
-    print("\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
-    center_line = interpolate_points(PT_MV, PT_APEX, N_img)
+    center_line = interpolate_points(PT_MV, PT_APEX, data_reader.shape[0])
     center_vec = calculate_center_vector(PT_MV, PT_APEX, IS_FLIP)
     print(f"Center vector: {center_vec}")
 
@@ -176,15 +169,21 @@ def compute_orientation(
     if not IS_TEST:
         if padding_start > start_index:
             padding_start = start_index
-        if padding_end > (N_img - end_index):
-            padding_end = N_img - end_index
+        if padding_end > (data_reader.shape[0] - end_index):
+            padding_end = data_reader.shape[0] - end_index
     if IS_TEST:
-        if N_SLICE_TEST > N_img:
+        if N_SLICE_TEST > data_reader.shape[0]:
             sys.exit("Error: N_SLICE_TEST > number of images")
 
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(
-        start_index, end_index, N_img, padding_start, padding_end, IS_TEST, N_SLICE_TEST
+        start_index,
+        end_index,
+        data_reader.shape[0],
+        padding_start,
+        padding_end,
+        IS_TEST,
+        N_SLICE_TEST,
     )
     print(
         f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}"
@@ -192,88 +191,23 @@ def compute_orientation(
 
     print("\n---------------------------------")
     print("LOAD DATASET\n")
-    if VOLUME_PATH[-4:] == ".mhd":
-        # Read the binary data from the .raw file
-        volume, _ = load_raw_data_with_mhd(VOLUME_PATH)
-        volume = volume[start_index_padded:end_index_padded, :, :].astype("float32")
-
-    elif os.path.isdir(VOLUME_PATH):
-        volume = load_volume(img_list, start_index_padded, end_index_padded).astype(
-            "float32"
-        )
-
+    volume = data_reader.load_volume(start_index_padded, end_index_padded).astype(
+        "float32"
+    )
     print(f"Loaded volume shape {volume.shape}")
 
     if is_mask:
-        print("\n---------------------------------")
-        print("LOADING MASK\n")
-        print(f"Reading mask info from {MASK_PATH}...")
+        mask_reader = DataReader(MASK_PATH)
 
-        mask_list, mask_type = get_image_list(MASK_PATH)
-        if len(mask_list) == 0:
-            sys.exit("No mask images found - verify your path")
-        print(f"{len(mask_list)} {mask_type} files found\n")
-        N_mask = len(mask_list)
-        binning_factor = N_img / N_mask
-        print(f"Mask bining factor: {binning_factor}\n")
-
-        start_index_padded_mask = int(
-            (start_index_padded / binning_factor) - 1
-        )  # -binning_factor/2)
-        if start_index_padded_mask < 0:
-            start_index_padded_mask = 0
-        end_index_padded_mask = int(
-            (end_index_padded / binning_factor) + 1
-        )  # +binning_factor/2)
-        if end_index_padded_mask > N_mask:
-            end_index_padded_mask = N_mask
-
-        print(
-            f"Mask start index padded: {start_index_padded_mask} - Mask end index padded : {end_index_padded_mask}"
-        )
-
-        mask = load_volume(mask_list, start_index_padded_mask, end_index_padded_mask)
-        print(f"Mask volume loaded of shape {mask.shape}")
-
-        mask = zoom(mask, binning_factor, order=0)
-
-        # start_index_mask_upscaled = int(mask.shape[0]/2)-int(volume.shape[0]/2)
-        # end_index_mask_upscaled = start_index_mask_upscaled+volume.shape[0]
-
-        start_index_mask_upscaled = int(
-            np.abs(start_index_padded_mask * binning_factor - start_index_padded)
-        )
-        end_index_mask_upscaled = start_index_mask_upscaled + volume.shape[0]
-
-        if start_index_mask_upscaled < 0:
-            start_index_mask_upscaled = 0
-        if end_index_mask_upscaled > mask.shape[0]:
-            end_index_mask_upscaled = mask.shape[0]
-
-        mask = mask[start_index_mask_upscaled:end_index_mask_upscaled, :]
-
-        mask_resized = np.empty_like(volume)
-        for i in range(mask.shape[0]):
-            # Resize the slice to match the corresponding slice of the volume
-            mask_resized[i] = cv2.resize(
-                mask[i],
-                (volume.shape[2], volume.shape[1]),
-                interpolation=cv2.INTER_LINEAR,
-            )
-
-        mask = mask_resized
-        del mask_resized
+        mask = mask_reader.load_volume(
+            start_index_padded, end_index_padded, unbinned_shape=data_reader.shape
+        ).astype("float32")
 
         assert (
             mask.shape == volume.shape
         ), f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
 
         volume[mask == 0] = 0
-
-        print("Mask applied to image volume")
-
-
-
 
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")

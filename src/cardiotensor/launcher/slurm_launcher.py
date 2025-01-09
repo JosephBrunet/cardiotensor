@@ -9,8 +9,8 @@ import time
 from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
 )
+from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import (
-    get_volume_shape,
     read_conf_file,
 )
 
@@ -202,7 +202,7 @@ def slurm_launcher(conf_file_path: str) -> None:
             "Test mode activated, run directly 3D_processing.py or deactivate test mode in the parameter file"
         )
 
-    w, h, N_img = get_volume_shape(VOLUME_PATH)
+    data_reader = DataReader(VOLUME_PATH)
 
     mem_needed = 128
 
@@ -237,9 +237,9 @@ def slurm_launcher(conf_file_path: str) -> None:
 
         return intervals
 
-    n_jobs = math.ceil(N_img / N_CHUNK)
+    n_jobs = math.ceil(data_reader.shape[0] / N_CHUNK)
 
-    index_intervals = chunk_split(N_img, n_jobs)
+    index_intervals = chunk_split(data_reader.shape[0], n_jobs)
 
     print(
         f"Splitting data into {n_jobs} chunks of {N_CHUNK} slices each for processing"
@@ -277,6 +277,6 @@ def slurm_launcher(conf_file_path: str) -> None:
             f"Submitted job for batch starting at {start} and ending at {end} (job ID: {job_id})"
         )
 
-    monitor_job_output(OUTPUT_DIR, N_img, conf_file_path)
+    monitor_job_output(OUTPUT_DIR, data_reader.shape[0], conf_file_path)
 
     return

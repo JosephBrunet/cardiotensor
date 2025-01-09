@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+
 import glymur
 import matplotlib.pyplot as plt
 import numpy as np
@@ -132,7 +133,7 @@ def calculate_structure_tensor(
     block_size: int = 200,
     use_gpu: bool = False,
     dtype: type = np.float32,  # Default to np.float64
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculates the structure tensor of a volume.
 
@@ -196,7 +197,7 @@ def remove_padding(
     vec: np.ndarray,
     padding_start: int,
     padding_end: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Removes padding from the volume, eigenvalues, and eigenvectors.
 
@@ -449,9 +450,9 @@ def write_images(
 
     if "8bit" in OUTPUT_TYPE:
         # Convert the float64 image to int8
-        img_helix = convert_to_8bit(img_helix, output_min=-90, output_max=90)
-        img_intrusion = convert_to_8bit(img_intrusion, output_min=-90, output_max=90)
-        img_FA = convert_to_8bit(img_FA, output_min=0, output_max=1)
+        img_helix = convert_to_8bit(img_helix, min_value=-90, max_value=90)
+        img_intrusion = convert_to_8bit(img_intrusion, min_value=-90, max_value=90)
+        img_FA = convert_to_8bit(img_FA, min_value=0, max_value=1)
 
         if OUTPUT_FORMAT == "jp2":
             ratio_compression = 10
@@ -478,17 +479,12 @@ def write_images(
             )
         elif OUTPUT_FORMAT == "tif":
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", 
-                img_helix
-                )
+                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix
+            )
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", 
-                img_intrusion
-                )
-            tifffile.imwrite(
-                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", 
-                img_FA
-                )
+                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion
+            )
+            tifffile.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
         else:
             sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
 
@@ -515,18 +511,19 @@ def write_images(
             maximum = np.nanmax(img)
             img = (img + np.abs(minimum)) * (1 / (maximum - minimum))
 
-            img = cmap(img)
+            if cmap is not None:
+                img = cmap(img)
             img = (img[:, :, :3] * 255).astype(np.uint8)
 
             print(f"Writing image to {output_path}")
             if OUTPUT_FORMAT == "jp2":
                 glymur.Jp2k(
-                output_path,
-                data=img,
-                cratios=[ratio_compression],
-                numres=8,
-                irreversible=True,
-            )
+                    output_path,
+                    data=img,
+                    cratios=[ratio_compression],
+                    numres=8,
+                    irreversible=True,
+                )
             elif OUTPUT_FORMAT == "tif":
                 tifffile.imwrite(output_path, img)
             else:

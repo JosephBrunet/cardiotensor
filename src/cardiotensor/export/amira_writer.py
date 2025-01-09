@@ -4,13 +4,12 @@ from pathlib import Path
 import numpy as np
 from alive_progress import alive_bar
 
+from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import (
     downsample_vector_volume,
     downsample_volume,
 )
 from cardiotensor.utils.utils import (
-    get_volume_shape,
-    load_volume,
     read_conf_file,
 )
 
@@ -46,7 +45,7 @@ def find_consecutive_points(
     num_steps: int = 4,
     segment_length: float = 10,
     angle_threshold: float = 60,
-) -> list[tuple[float, float, float]]:
+) -> list[tuple]:
     """
     Finds consecutive points in the direction specified by the vector field.
 
@@ -254,10 +253,11 @@ def amira_writer(
     )
 
     OUTPUT_DIR = Path(OUTPUT_DIR)
-    w, h, N_img = get_volume_shape(VOLUME_PATH)
+
+    data_reader_volume = DataReader(VOLUME_PATH)
 
     if end_index is None:
-        end_index = N_img
+        end_index = data_reader_volume.shape[0]
 
     output_npy = OUTPUT_DIR / "eigen_vec"
     output_HA = OUTPUT_DIR / "HA"
@@ -272,9 +272,14 @@ def amira_writer(
         start_index = int(start_index / bin_factor)
         end_index = int(end_index / bin_factor)
 
-    npy_list = sorted(list(output_npy.glob("*.npy")))
+    # npy_list = sorted(list(output_npy.glob("*.npy")))
 
-    vector_field = load_volume(npy_list, start_index=start_index, end_index=end_index)
+    data_reader_vector = DataReader(output_npy)
+    vector_field = data_reader_vector.load_volume(
+        start_index=start_index, end_index=end_index
+    )
+
+    # vector_field = load_volume(npy_list, start_index=start_index, end_index=end_index)
     vector_field = np.moveaxis(vector_field, 0, 1)
 
     print("\nAlign vectors in same direction")
@@ -317,10 +322,8 @@ def amira_writer(
                 consecutive_points_list.append(consecutive_points)
             bar()
 
-    HA_list = sorted(list(output_HA.glob("*.tif"))) + sorted(
-        list(output_HA.glob("*.jp2"))
-    )
-    HA_volume = load_volume(HA_list, start_index=start_index, end_index=end_index)
+    data_reader_HA = DataReader(output_HA)
+    HA_volume = data_reader_HA.load_volume(start_index=start_index, end_index=end_index)
     # HA_volume = HA_volume *90/255 - 90
 
     print(f"{len(consecutive_points_list)}")

@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.measure import block_reduce
 
-from cardiotensor.utils.utils import get_volume_shape, load_volume, read_conf_file
+from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.utils import read_conf_file
 
 
 def writeStructuredVTK(
@@ -230,12 +231,14 @@ def vtk_writer(
 
     OUTPUT_DIR = Path(OUTPUT_DIR)
 
-    w, h, N_img = get_volume_shape(VOLUME_PATH)
+    data_reader_volume = DataReader(VOLUME_PATH)
+
+    _, h, w = data_reader_volume.shape
 
     if start_index is None:
         start_index = 0
     if end_index is None:
-        end_index = N_img
+        end_index = data_reader_volume.shape[0]
 
     output_npy = OUTPUT_DIR / "eigen_vec"
     npy_list = sorted(list(output_npy.glob("*.npy")))[start_index:end_index]
@@ -264,17 +267,17 @@ def vtk_writer(
         array = array.mean(axis=1)
 
         # Define the block size for each axis
-        block_size = (bin_factor, bin_factor)
+        block_size_vec = (bin_factor, bin_factor)
 
         # Use block_reduce to bin the volume
         bin_array[0, i, :, :] = block_reduce(
-            array[0, :, :], block_size=block_size, func=np.mean
+            array[0, :, :], block_size=block_size_vec, func=np.mean
         )
         bin_array[1, i, :, :] = block_reduce(
-            array[1, :, :], block_size=block_size, func=np.mean
+            array[1, :, :], block_size=block_size_vec, func=np.mean
         )
         bin_array[2, i, :, :] = block_reduce(
-            array[2, :, :], block_size=block_size, func=np.mean
+            array[2, :, :], block_size=block_size_vec, func=np.mean
         )
 
         # bin_array[:,i,:,:] = array[:,0,:,:]
@@ -323,19 +326,11 @@ def vtk_writer(
     # HA
 
     output_HA = OUTPUT_DIR / "HA"
-    HA_list = sorted(list(output_HA.glob("*.tif"))) + sorted(
-        list(output_HA.glob("*.jp2"))
-    )
-    HA_volume = load_volume(HA_list[start_index:end_index])
+    data_reader_HA = DataReader(output_HA)
+    HA_volume = data_reader_HA.load_volume(start_index=start_index, end_index=end_index)
     # mask_volume = np.where(HA_volume == 0, 0, 1)
 
-    # Define the block size for each axis based on dimensionality of data
-    if len(array[0].shape) == 2:  # For 2D data
-        block_size = (bin_factor, bin_factor)
-    elif len(array[0].shape) == 3:  # For 3D data
-        block_size = (bin_factor, bin_factor, bin_factor)
-    else:
-        raise ValueError(f"Unsupported data dimensions: {array[0].shape}")
+    block_size = (bin_factor, bin_factor, bin_factor)
 
     # Use block_reduce to bin the volume
     HA_volume = block_reduce(HA_volume, block_size=block_size, func=np.mean)
@@ -376,7 +371,7 @@ def vtk_writer(
             plt.show()
 
     except:
-        print("\n/!\ C'ant plot graph\n")
+        print("\n⚠ C'ant plot graph\n")
 
     vtf_name = OUTPUT_DIR / "paraview.vtk"
     print(f"Writing the .vtk file: {vtf_name}")
