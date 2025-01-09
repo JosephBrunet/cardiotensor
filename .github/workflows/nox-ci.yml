@@ -39,4 +39,4 @@ jobs:
 
       # Run Nox sessions
       - name: Run Nox
-        run: nox
+        run: nox --python ${{ matrix.python-version }}
