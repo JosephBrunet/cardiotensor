@@ -20,12 +20,9 @@ class DataReader:
             path (str | Path): Path to the volume directory or file.
         """
         self.path = Path(path)
-        self.supported_extensions = ["tif", "tiff", "jp2", "png"]
+        self.supported_extensions = ["tif", "tiff", "jp2", "png", "npy"]
         self.volume_info = self._get_volume_info()
         self.shape = self._get_volume_shape()
-        self.file_list = (
-            self.volume_info["file_list"] if self.volume_info["stack"] else None
-        )
 
     def _get_volume_info(self) -> dict:
         """
@@ -34,7 +31,11 @@ class DataReader:
         Returns:
             dict: Volume information containing type, stack status, and file list (if applicable).
         """
-        volume_info = {"type": None, "stack": False, "file_list": None}
+        volume_info: dict[str, str | bool | list[Path]] = {
+            "type": "",
+            "stack": False,
+            "file_list": [],
+        }
 
         if not self.path.exists():
             raise ValueError(f"The path does not exist: {self.path}")
@@ -48,17 +49,21 @@ class DataReader:
             volume_info["type"], volume_info["file_list"] = max(
                 image_files.items(), key=lambda item: len(item[1])
             )
-            volume_info["file_list"] = sorted(volume_info["file_list"])
+
+            assert isinstance(
+                volume_info["file_list"], list
+            )  # Runtime check for type safety
 
             if not volume_info["file_list"]:
                 raise ValueError(
                     "No supported image files found in the specified directory."
                 )
+            volume_info["file_list"] = sorted(volume_info["file_list"])
 
         elif self.path.is_file() and self.path.suffix == ".mhd":
             volume_info["type"] = "mhd"
 
-        if volume_info["type"] is None:
+        if volume_info["type"] == "":
             raise ValueError(f"Unsupported volume type for path: {self.path}")
 
         return volume_info
@@ -73,7 +78,7 @@ class DataReader:
         if not self.volume_info["stack"]:  # Single file (e.g., .mhd)
             if self.volume_info["type"] == "mhd":
                 image = sitk.ReadImage(str(self.path))
-                return tuple(reversed(image.GetSize()))  # Return (z, y, x)
+                return tuple(image.GetSize())  # Return (z, y, x)
 
         elif self.volume_info["stack"]:  # Stack of images
             first_image = cv2.imread(
@@ -105,34 +110,42 @@ class DataReader:
             np.ndarray: Loaded volume data.
         """
 
+        if end_index is None:
+            end_index = self.shape[0]
+
         binning_factor = 1.0
         if unbinned_shape is not None:
             binning_factor = unbinned_shape[0] / self.shape[0]
             print(f"Mask bining factor: {binning_factor}\n")
 
         if binning_factor != 1.0:
-            start_index_bin = int((start_index / binning_factor) - 1)
-            if start_index_bin < 0:
-                start_index_bin = 0
-            end_index_bin = int((end_index / binning_factor) + 1)
-            if end_index_bin > self.shape[0]:
-                end_index_bin = self.shape[0]
+            start_index_ini = start_index
+            end_index_ini = end_index
+            start_index = int((start_index_ini / binning_factor) - 1)
+            if start_index < 0:
+                start_index = 0
+            end_index = int((end_index_ini / binning_factor) + 1)
+            if end_index > self.shape[0]:
+                end_index = self.shape[0]
 
             print(
-                f"Mask start index padded: {start_index_bin} - Mask end index padded : {end_index_bin}"
+                f"Mask start index padded: {start_index} - Mask end index padded : {end_index}"
             )
 
         if self.volume_info["stack"] == False:
             if self.volume_info["type"] == "mhd":
-                volume = load_raw_data_with_mhd(self.path)
+                volume, _ = load_raw_data_with_mhd(self.path)
+                volume = volume[start_index:end_index, :, :]
         elif self.volume_info["stack"] == True:
             if end_index is None:
-                end_index = len(self.file_list)
-            volume = self._load_image_stack(self.file_list, start_index, end_index)
+                end_index = len(self.volume_info["file_list"])
+            volume = self._load_image_stack(
+                self.volume_info["file_list"], start_index, end_index
+            )
         else:
             raise ValueError("Unsupported volume type.")
 
-        if binning_factor != 1.0:
+        if binning_factor != 1.0 and unbinned_shape is not None:
             volume = zoom(
                 volume,
                 zoom=binning_factor,
@@ -140,7 +153,7 @@ class DataReader:
             )
 
             start_index_bin_upscaled = int(
-                np.abs(start_index_bin * binning_factor - start_index)
+                np.abs(start_index * binning_factor - start_index_ini)
             )
             end_index_bin_upscaled = start_index_bin_upscaled + volume.shape[0]
 
@@ -347,7 +360,7 @@ def load_raw_data_with_mhd(
             data = data.byteswap()
 
     # Begin 3D fix
-    arr.reverse()
+    # arr.reverse()
     if element_channels > 1:
         data = data.reshape(arr + [element_channels])
     else:
