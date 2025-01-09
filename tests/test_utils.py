@@ -3,6 +3,7 @@ import tempfile
 import numpy as np
 from cardiotensor.utils.utils import read_conf_file, convert_to_8bit
 
+
 def test_read_conf_file():
     """Test the read_conf_file function."""
     # Create a temporary .conf file for testing

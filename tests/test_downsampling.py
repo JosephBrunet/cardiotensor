@@ -6,10 +6,11 @@ import cv2
 
 from cardiotensor.utils.DataReader import DataReader
 
+
 def create_test_stack(directory: Path, num_images: int, shape: tuple[int, int]):
     """
     Create a test image stack in the given directory.
-    
+
     Args:
         directory (Path): Directory to create the images in.
         num_images (int): Number of images to create.
@@ -22,10 +23,12 @@ def create_test_stack(directory: Path, num_images: int, shape: tuple[int, int]):
         cv2.imwrite(str(img_path), img)
 
 
-def create_test_mhd(directory: Path, shape: tuple[int, int, int], element_type="MET_UCHAR"):
+def create_test_mhd(
+    directory: Path, shape: tuple[int, int, int], element_type="MET_UCHAR"
+):
     """
     Create a test .mhd file and its corresponding raw data file.
-    
+
     Args:
         directory (Path): Directory to create the .mhd and .raw files in.
         shape (tuple[int, int, int]): Shape of the volume (z, y, x).
@@ -53,13 +56,13 @@ def test_datareader_with_stack():
         temp_dir = Path(temp_dir)
         stack_dir = temp_dir / "stack"
         create_test_stack(stack_dir, num_images=10, shape=(128, 128))
-        
+
         # Initialize DataReader and validate volume info
         reader = DataReader(stack_dir)
         assert reader.volume_info["type"] == "tif"
         assert len(reader.volume_info["file_list"]) == 10
         assert reader.shape == (10, 128, 128)
-        
+
         # Load the volume
         volume = reader.load_volume()
         assert volume.shape == (10, 128, 128)
@@ -72,12 +75,12 @@ def test_datareader_with_mhd():
         temp_dir = Path(temp_dir)
         mhd_dir = temp_dir / "mhd"
         create_test_mhd(mhd_dir, shape=(10, 128, 128))
-        
+
         # Initialize DataReader and validate volume info
         reader = DataReader(mhd_dir / "test.mhd")
         assert reader.volume_info["type"] == "mhd"
         assert reader.shape == (10, 128, 128)
-        
+
         # Load the volume
         volume = reader.load_volume()
         assert volume.shape == (10, 128, 128)
