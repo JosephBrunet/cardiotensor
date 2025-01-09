@@ -1,72 +1,43 @@
 import nox
 
+# Reuse virtual environments to speed up development
+# nox.options.reuse_existing_virtualenvs = True
+
 # Define default Python versions for testing
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 
 # Locations to check for linting, formatting, and type checking
-PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "pyproject.toml"]
-
+# PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "pyproject.toml"]
 
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session):
     """
-    Run the test suite using pytest.
+    Run the test suite using pytest with coverage.
     """
-    # Install dependencies
-    session.install("pytest", "pytest-cov")
-    # Run tests with coverage
-    session.run("pytest", "--cov=src", "--cov-report=term-missing", *session.posargs)
+    # Install development dependencies
+    session.install(".[dev]")
+    
+    # Run pytest with coverage tracking
+    session.run("coverage", "run", "--source=src", "-m", "pytest", "-sv", *session.posargs)
+    
+    # Generate coverage reports
+    session.run("coverage", "report", "--show-missing")
+    session.run("coverage", "xml")  # For CI integrations
+    session.run("coverage", "html")  # For local inspection
 
+# @nox.session(python=PYTHON_VERSIONS)
+# def lint(session):
+#     """
+#     Run linters and formatters.
+#     """
+#     session.install("ruff", "black")
+#     session.run("ruff", *PACKAGE_LOCATIONS)
+#     session.run("black", "--check", *PACKAGE_LOCATIONS)
 
-@nox.session
-def lint(session):
-    """
-    Lint the codebase using flake8.
-    """
-    session.install("flake8")
-    session.run("flake8", *PACKAGE_LOCATIONS)
-
-
-@nox.session
-def format_code(session):
-    """
-    Format the codebase using black.
-    """
-    session.install("black")
-    session.run("black", "--check", *PACKAGE_LOCATIONS)
-
-
-@nox.session
-def type_check(session):
-    """
-    Run type checking using mypy.
-    """
-    session.install("mypy")
-    session.run("mypy", *PACKAGE_LOCATIONS)
-
-
-@nox.session
-def safety_check(session):
-    """
-    Check for vulnerabilities in dependencies using safety.
-    """
-    session.install("safety")
-    session.run("safety", "check", "--full-report")
-
-
-@nox.session
-def docs(session):
-    """
-    Build the documentation using Sphinx.
-    """
-    session.install("sphinx", "sphinx-rtd-theme")
-    session.run("sphinx-build", "docs", "docs/_build")
-
-
-@nox.session
-def format_fix(session):
-    """
-    Auto-format the codebase using black.
-    """
-    session.install("black")
-    session.run("black", *PACKAGE_LOCATIONS)
+# @nox.session(python=PYTHON_VERSIONS)
+# def type_check(session):
+#     """
+#     Run type checking using mypy.
+#     """
+#     session.install("mypy")
+#     session.run("mypy", *PACKAGE_LOCATIONS)

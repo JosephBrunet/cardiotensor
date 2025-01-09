@@ -101,4 +101,11 @@ trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
 
 
+[tool.coverage.run]
+branch = true
+source = ["src/cardiotensor"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
 
