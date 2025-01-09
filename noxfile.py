@@ -9,6 +9,7 @@ PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 # Locations to check for linting, formatting, and type checking
 PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "pyproject.toml"]
 
+
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session):
     """
@@ -16,14 +17,17 @@ def tests(session):
     """
     # Install development dependencies
     session.install(".[dev]")
-    
+
     # Run pytest with coverage tracking
-    session.run("coverage", "run", "--source=src", "-m", "pytest", "-sv", *session.posargs)
-    
+    session.run(
+        "coverage", "run", "--source=src", "-m", "pytest", "-sv", *session.posargs
+    )
+
     # Generate coverage reports
     session.run("coverage", "report", "--show-missing")
     session.run("coverage", "xml")  # For CI integrations
     session.run("coverage", "html")  # For local inspection
+
 
 # @nox.session(python=PYTHON_VERSIONS)
 # def lint(session):
