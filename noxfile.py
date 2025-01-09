@@ -4,7 +4,7 @@ import nox
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
 
 # Locations to check for linting, formatting, and type checking
-PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "setup.py"]
+PACKAGE_LOCATIONS = ["src", "tests", "noxfile.py", "pyproject.toml"]
 
 
 @nox.session(python=PYTHON_VERSIONS)
