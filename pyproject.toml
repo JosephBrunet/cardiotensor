@@ -99,7 +99,6 @@ all = true
 spaces_indent_inline_array = 4
 trailing_comma_inline_array = true
 overrides."project.classifiers".inline_arrays = false
-overrides."tool.coverage.paths.source".inline_arrays = false
 
 
 
