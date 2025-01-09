@@ -22,18 +22,18 @@ classifiers = [
     "Natural Language :: English",
 ]
 dependencies = [
-    "numpy>=1.20",
-    'pandas',
-    "scikit-image",
-    "structure-tensor>=0.3.0",
-    "matplotlib",
     "PyQt5",
     "SimpleITK",
     "alive_progress",
     "dask",
     "glymur",
+    "matplotlib",
+    "numpy>=1.20",
     "opencv-python-headless",
+    "scikit-image",
+    "structure-tensor>=0.3.0",
     "tifffile",
+    'pandas',
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = []

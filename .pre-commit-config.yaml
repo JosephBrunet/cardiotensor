@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
+    rev: v0.8.6
     hooks:
       - id: ruff
         args: [--fix]
@@ -13,7 +13,7 @@ repos:
       - id: forbid-tabs
         exclude: ^examples/
   - repo: https://github.com/pappasam/toml-sort
-    rev: v0.23.1
+    rev: v0.24.2
     hooks:
       - id: toml-sort-fix
         exclude: ^examples/
@@ -24,7 +24,7 @@ repos:
         files: ^src/
         exclude: ^examples/
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-case-conflict
         exclude: ^examples/
@@ -39,20 +39,24 @@ repos:
         exclude: ^examples/
       - id: trailing-whitespace
         exclude: ^examples/
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.8.0
-  #   hooks:
-  #     - id: mypy
-  #       additional_dependencies:
-  #         [
-  #           dagster,
-  #           PyQt5,
-  #         ]
-  #       args: [--config-file, pyproject.toml, --ignore-missing-imports]
-  #       files: ^src/
-  #       exclude: ^examples/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          [
+            dagster,
+            PyQt5,
+          ]
+        args: [--config-file, pyproject.toml, --ignore-missing-imports]
+        files: ^src/
+        exclude: ^examples/
+  -   repo: https://github.com/psf/black
+      rev: 24.10.0
+      hooks:
+      - id: black
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         args: [--write-changes, --skip, "*.log"]
