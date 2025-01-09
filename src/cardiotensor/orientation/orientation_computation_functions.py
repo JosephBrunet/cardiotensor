@@ -450,9 +450,9 @@ def write_images(
 
     if "8bit" in OUTPUT_TYPE:
         # Convert the float64 image to int8
-        img_helix = convert_to_8bit(img_helix, output_min=-90, output_max=90)
-        img_intrusion = convert_to_8bit(img_intrusion, output_min=-90, output_max=90)
-        img_FA = convert_to_8bit(img_FA, output_min=0, output_max=1)
+        img_helix = convert_to_8bit(img_helix, min_value=-90, max_value=90)
+        img_intrusion = convert_to_8bit(img_intrusion, min_value=-90, max_value=90)
+        img_FA = convert_to_8bit(img_FA, min_value=0, max_value=1)
 
         if OUTPUT_FORMAT == "jp2":
             ratio_compression = 10
