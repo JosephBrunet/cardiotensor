@@ -1,8 +1,8 @@
-import os
 import tempfile
 from pathlib import Path
-import numpy as np
+
 import cv2
+import numpy as np
 
 from cardiotensor.utils.DataReader import DataReader
 

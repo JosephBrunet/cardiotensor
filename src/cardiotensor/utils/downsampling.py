@@ -127,7 +127,7 @@ def process_image_block(
 
     block_size = (bin_factor, bin_factor)
     bin_array[:, :] = block_reduce(array[:, :], block_size=block_size, func=np.mean)
-    bin_array = convert_to_8bit(bin_array, output_min=-90, output_max=90)
+    bin_array = convert_to_8bit(bin_array, min_value=-90, max_value=90)
 
     cv2.imwrite(str(output_file), bin_array)
     print(f"Saved block {idx} to {output_file}")
