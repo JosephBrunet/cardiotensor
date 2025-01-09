@@ -1,16 +1,17 @@
 import tempfile
-import numpy as np
 from pathlib import Path
-from cardiotensor.utils.utils import convert_to_8bit
+
+import numpy as np
+
 from cardiotensor.orientation.orientation_computation_functions import (  # Adjust the import to match the actual module name
-    interpolate_points,
-    calculate_center_vector,
     adjust_start_end_index,
+    calculate_center_vector,
     calculate_structure_tensor,
-    remove_padding,
     compute_fraction_anisotropy,
-    rotate_vectors_to_new_axis,
     compute_helix_and_transverse_angles,
+    interpolate_points,
+    remove_padding,
+    rotate_vectors_to_new_axis,
     write_images,
     write_vector_field,
 )
