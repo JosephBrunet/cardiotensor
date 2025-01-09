@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install tools
+        run: pip install pytest
+
       - name: Install everything, run the tests, produce the .coverage file
         run: python -m pytest tests/ # This is the part where you put your own test command
 
