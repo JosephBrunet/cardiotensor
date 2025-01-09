@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install everything, run the tests, produce the .coverage file
-        run: make test # This is the part where you put your own test command
+        run: python -m pytest tests/ # This is the part where you put your own test command
 
       - name: Coverage comment
         id: coverage_comment
