@@ -109,7 +109,9 @@ def test_write_vector_field():
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)
         vector_field_slice = np.random.rand(3, 50, 50)
-        write_vector_field(vector_field_slice, start_index=0, output_dir=str(temp_dir), slice_idx=0)
+        write_vector_field(
+            vector_field_slice, start_index=0, output_dir=str(temp_dir), slice_idx=0
+        )
         assert (temp_dir / "eigen_vec/eigen_vec_000000.npy").exists()
         print("test_write_vector_field passed.")
 
