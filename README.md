@@ -2,7 +2,7 @@
 
 <p align="center">A Python package for calculating 3D cardiomyocyte orientations in heart images.</p>
 
-[![CI](https://github.com/JosephBrunet/cardiotensor/actions/workflows/nox-ci.yml/badge.svg)](https://github.com/JosephBrunet/cardiotensor/actions/workflows/nox-ci.yml)
+[![CI](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml)
 [![Doc](https://img.shields.io/badge/docs-dev-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 ![Python Version](https://img.shields.io/badge/python->3.10-blue.svg)
