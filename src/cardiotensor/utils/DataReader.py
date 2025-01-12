@@ -172,8 +172,7 @@ class DataReader:
                 )
 
         return volume
-    
-    
+
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
         Reads an image from the given file path.
@@ -187,7 +186,6 @@ class DataReader:
         if file_path.suffix == ".npy":
             return np.load(file_path)
         return cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
-
 
     def _load_image_stack(
         self, file_list: list[Path], start_index: int, end_index: int

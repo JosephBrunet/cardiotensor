@@ -383,7 +383,9 @@ class Window(QWidget):
             save_intensity(self.intensity_profiles, save_path)
 
     def load_image(self, N_slice: int, bin_factor: int | None = None) -> np.ndarray:
-        img = self.data_reader.load_volume(start_index=N_slice, end_index=N_slice + 1)[0]
+        img = self.data_reader.load_volume(start_index=N_slice, end_index=N_slice + 1)[
+            0
+        ]
 
         if bin_factor:
             img = block_reduce(img, block_size=(bin_factor, bin_factor), func=np.mean)
@@ -407,7 +409,6 @@ class Window(QWidget):
                 (img64.shape[1], img64.shape[0]),
                 interpolation=cv2.INTER_LINEAR,
             )
-
 
             assert (
                 img_mask.shape == img.shape

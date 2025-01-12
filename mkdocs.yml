@@ -54,7 +54,7 @@ theme:
   logo: assets/favicon.png
   favicon: assets/favicon.png
   icon:
-    repo: fontawesome/brands/github 
+    repo: fontawesome/brands/github
   features:
     - navigation.path
     - navigation.instant
@@ -158,7 +158,7 @@ plugins:
             signature_crossrefs: true
             summary: true
 
-            
+
 validation:
   omitted_files: warn
   absolute_links: warn

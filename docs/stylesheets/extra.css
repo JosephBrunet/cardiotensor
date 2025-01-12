@@ -118,7 +118,7 @@ because the nav is in a hamburger menu anyway
       font-weight: bold;
       font-size: 0.85rem;
   }
-  /* Reducing spacing between nav items to fit more content 
+  /* Reducing spacing between nav items to fit more content
   First, disable `nav__link` spacing then use `nav__item` to enforce margins this reduces inconsistencies in the spacing. */
   .md-nav--primary .md-nav__link {
     margin: 0;
@@ -130,28 +130,28 @@ because the nav is in a hamburger menu anyway
   .md-nav--primary .md-nav__item--section {
     margin-bottom: 0.75em;
     margin-top: 1em;
-  } 
-  /* Increase the size of the first nav item to match the sections 
+  }
+  /* Increase the size of the first nav item to match the sections
   It has no children, so it is not considered a section */
   .md-nav--primary > .md-nav__list > .md-nav__item:first-of-type {
     font-weight: bold;
     font-size: 0.85rem;
-    margin-bottom: 0.75em; 
-  
+    margin-bottom: 0.75em;
+
   }
 
   /* Increase the size of the last nav item */
   .md-nav--primary > .md-nav__list > .md-nav__item:last-of-type {
     font-weight: bold;
     font-size: 0.85rem;
-    margin-bottom: 0.75em; 
+    margin-bottom: 0.75em;
   }
 
   /* Increase the size of the second-to-last nav item */
   .md-nav--primary > .md-nav__list > .md-nav__item:nth-last-of-type(2) {
     font-weight: bold;
     font-size: 0.85rem;
-    margin-bottom: 0.75em; 
+    margin-bottom: 0.75em;
   }
 }
 

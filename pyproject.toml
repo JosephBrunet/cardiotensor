@@ -47,16 +47,16 @@ version = "1.0.0"
 cupy = ["cupy>=8"]
 dev = [
     "black",
+    "mkdocs",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-material",
+    "mkdocs-section-index",
+    "mkdocstrings[python]",
     "pre-commit",
     "pytest",
     "pytest-cov",
     "ruff",
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings['python']",
-    "mkdocs-gen-files" ,
-    "mkdocs-literate-nav",
-    "mkdocs-section-index",
 ]
 git = [
     "mkdocs-git-committers-plugin-2>=1.1,<3",
