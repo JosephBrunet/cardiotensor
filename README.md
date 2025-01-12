@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
 
 <p align="center">
-    <img src="assets/images/result_HA_slice.jpeg" alt="Example Result" width="300">
+    <img src="assets/images/result_HA_slice.jpeg" alt="Example Slice">
     <!-- <br>
     <em>Figure: Image caption</em> -->
 </p>
