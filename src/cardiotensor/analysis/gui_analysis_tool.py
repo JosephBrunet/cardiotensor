@@ -158,7 +158,7 @@ class Window(QWidget):
 
         if self.N_slice > self.data_reader.shape[0]:
             raise IndexError(
-                "The image selected is superior to the number of images present in the result directory"
+                f"The image selected is superior to the number of images present in the result directory (Number of images: {self.data_reader.shape[0]})"
             )
 
         self.current_img = self.load_image(self.N_slice)
@@ -383,7 +383,8 @@ class Window(QWidget):
             save_intensity(self.intensity_profiles, save_path)
 
     def load_image(self, N_slice: int, bin_factor: int | None = None) -> np.ndarray:
-        img = self.data_reader.load_volume(start_index=N_slice, end_index=N_slice + 1)
+        img = self.data_reader.load_volume(start_index=N_slice, end_index=N_slice + 1)[0]
+
         if bin_factor:
             img = block_reduce(img, block_size=(bin_factor, bin_factor), func=np.mean)
 
@@ -399,13 +400,14 @@ class Window(QWidget):
             img_mask = data_reader_mask.load_volume(
                 start_index=int(self.N_slice / mask_bin_factor),
                 end_index=int(self.N_slice / mask_bin_factor) + 1,
-            ).astype(float)
+            )[0].astype(float)
 
             img_mask = cv2.resize(
                 img_mask,
                 (img64.shape[1], img64.shape[0]),
                 interpolation=cv2.INTER_LINEAR,
             )
+
 
             assert (
                 img_mask.shape == img.shape
@@ -710,7 +712,7 @@ class Window(QWidget):
 
         if self.N_slice > self.data_reader.shape[0]:
             raise IndexError(
-                "The image selected is superior to the number of images present in the result directory"
+                f"The image selected is superior to the number of images present in the result directory (Number of images: {self.data_reader.shape[0]})"
             )
 
         self.current_img = self.load_image(self.N_slice)
