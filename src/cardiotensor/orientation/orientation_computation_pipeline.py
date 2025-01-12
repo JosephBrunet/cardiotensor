@@ -375,6 +375,9 @@ def compute_slice_angles_and_anisotropy(
         f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
         f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif",
     ]
+    if IS_VECTORS:
+        paths.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
+        
     if not IS_TEST and all(os.path.exists(path) for path in paths):
         # print(f"File {(start_index + z):06d} already exists")
         return

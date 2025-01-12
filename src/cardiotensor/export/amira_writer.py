@@ -262,6 +262,14 @@ def amira_writer(
     output_npy = OUTPUT_DIR / "eigen_vec"
     output_HA = OUTPUT_DIR / "HA"
 
+    if not list(output_npy.glob("*.npy")):
+        print(f"⚠️  No eigen vector files found in {output_npy}.")
+        print("Steps to resolve:")
+        print("1. Ensure the 'VECTORS' option is enabled in your .conf file.")
+        print("2. Run the orientation computation step to generate these files.")
+        print("3. Verify the output directory for the expected .npy files.")
+        sys.exit("Exiting due to missing eigen vector files.")
+            
     if bin_factor:
         downsample_vector_volume(output_npy, bin_factor, OUTPUT_DIR)
         output_npy = OUTPUT_DIR / f"bin{bin_factor}/eigen_vec"
@@ -332,13 +340,13 @@ def amira_writer(
     for point_list in consecutive_points_list:
         for point in point_list:
             HA_angle.append(
-                float(HA_volume[point[0] - start_index, point[1], point[2]])
+                float(HA_volume[int(point[0] - start_index), int(point[1]), int(point[2])])
             )
 
     z_angle = []
     for point_list in consecutive_points_list:
         for point in point_list:
-            vector = vector_field[:, point[0] - start_index, point[1], point[2]]
+            vector = vector_field[:, int(point[0] - start_index), int(point[1]), int(point[2])]
 
             # Calculate the angle in radians
             theta = np.arccos(abs(vector[0]) / np.linalg.norm(vector))
