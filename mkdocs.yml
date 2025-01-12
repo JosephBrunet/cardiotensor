@@ -13,66 +13,63 @@ edit_uri: edit/main/docs/
 # Copyright
 copyright: Copyright &copy; 2024 - 2025 - Joseph Brunet
 
+
+
+# Page tree
+nav:
+  - Introduction: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - First steps: getting-started/first-steps.md
+    - Example: getting-started/examples.md
+  - Reference:
+    - reference/index.md
+    - Commands: reference/cli.md
+    - Configuration file: reference/configuration.md
+    - API: reference/api.md
+  - Contributing: contributing.md
+  - Citing: citing.md
+
+
+
+
 theme:
   name: material
   palette:
-    # - media: "(prefers-color-scheme)"
-    #   toggle:
-    #     icon: material/link
-    #     name: Switch to light mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: deep purple
-      accent: purple
+      scheme: astral-dark
       toggle:
         icon: material/toggle-switch-off
-        name: Switch to system preference
+        name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: black
-      accent: indigo
+      scheme: astral-light
       toggle:
         icon: material/toggle-switch
-        name: Switch to dark mode
+        name: Switch to system preferences
   logo: assets/favicon.png
   favicon: assets/favicon.png
   icon:
-    repo: fontawesome/brands/github # (1)!
+    repo: fontawesome/brands/github 
   features:
-    # - announce.dismiss
-    # - content.action.edit
-    # - content.action.view
-    - content.code.annotate
-    - content.code.copy
-    # - content.code.select
-    # - content.footnote.tooltips
-    # - content.tabs.link
-    - content.tooltips
-    # - header.autohide
-    # - navigation.expand
-    - navigation.footer
-    - navigation.indexes
-    # - navigation.instant
-    # - navigation.instant.prefetch
-    # - navigation.instant.progress
-    # - navigation.prune
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
     - navigation.sections
-    # - navigation.tabs
-    # - navigation.tabs.sticky
-    # - navigation.top
-    # - navigation.tracking
-    - search.highlight
-    # - search.share
-    - search.suggest
+    - navigation.indexes
+    - navigation.tracking
+    - content.code.annotate
     - toc.follow
-    # - toc.integrate
+    - navigation.footer
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
 
-
-plugins:
-  - search
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
 
 
 # Additional configuration
@@ -91,59 +88,78 @@ extra:
     - icon: fontawesome/brands/x-twitter
       link: https://x.com/Joseph__Brunet
 
+extra_css:
+  - stylesheets/extra.css
+  - stylesheets/mkdocstrings.css
 
-# Extensions
+extra_javascript:
+  - javascripts/extra.js
+
+
 markdown_extensions:
-  - abbr
   - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
   - pymdownx.details
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.mark
-  - pymdownx.smartsymbols
   - pymdownx.snippets:
-      auto_append:
-        - includes/mkdocs.md
+  - pymdownx.magiclink:
+  - attr_list:
+  - toc:
+      anchorlink: true
+      anchorlink_class: "toclink"
+  - md_in_html:
+  - pymdownx.inlinehilite:
   - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-      combine_header_slug: true
-      slugify: !!python/object/apply:pymdownx.slugs.slugify
-        kwds:
-          case: lower
+  - markdown.extensions.attr_list:
+  - pymdownx.keys:
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.tilde
-  - mkdocstrings
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
 
 
 
+plugins:
+  - search
+  - autorefs
+  # - gen-files:
+  #     scripts:
+  #     - docs/gen_ref_pages.py
+  # - literate-nav:
+  #     nav_file: SUMMARY.md
+  - section-index
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_root_heading: yes
+          paths: [src]
+          options:
+            show_submodules: true
+            allow_inspection: true
+            show_bases: true
+            docstring_section_style: list
+            filters: ["!^_"]
+            heading_level: 1
+            inherited_members: true
+            merge_init_into_class: true
+            parameter_headings: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
 
-
-# Page tree
-nav:
-  - Installation: installation.md
-  - Examples: examples.md
-  - Configuration file: configuration.md
-  - Contributing: contributing.md
-  - Citing: citing.md
-
+            
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn

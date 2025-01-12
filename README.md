@@ -8,11 +8,13 @@
 ![Python Version](https://img.shields.io/badge/python->3.10-blue.svg)
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
 
-![Example Result](./examples/result_HA_slice.jpeg)
+<figure markdown="span">
+![Example Result](assets/images/result_HA_slice.jpeg)
+<!-- { width="300" } -->
+<!-- <figcaption>Image caption</figcaption> -->
+</figure>
 
-## Overview
-
-**cardiotensor** is a powerful and user-friendly toolkit for analyzing the orientation of cardiomyocites fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
+**Cardiotensor** is a powerful and user-friendly toolkit for analyzing the orientation of cardiomyocites fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
 
 ## Installation
 
