@@ -1,4 +1,11 @@
-<h1 align="center">CardioTensor</h1>
+<h1 align="center">Cardiotensor</h1>
+
+<p align="center">
+    <img src="assets/logos/heart_logo_dark.png" alt="Example Slice" style="max-width: 200px; width: 100%;">
+    <!-- <br>
+    <em>Figure: Image caption</em> -->
+</p>
+<br />
 
 <p align="center">A Python package for calculating 3D cardiomyocyte orientations in heart images.</p>
 
@@ -7,6 +14,8 @@
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 ![Python Version](https://img.shields.io/badge/python->3.10-blue.svg)
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
+
+
 
 <p align="center">
     <img src="assets/images/result_HA_slice.jpeg" alt="Example Slice">
