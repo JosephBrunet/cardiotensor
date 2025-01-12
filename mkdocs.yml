@@ -51,7 +51,7 @@ theme:
       toggle:
         icon: material/toggle-switch
         name: Switch to system preferences
-  logo: assets/favicon.png
+  logo: assets/logos/heart_logo_dark.png
   favicon: assets/favicon.png
   icon:
     repo: fontawesome/brands/github
