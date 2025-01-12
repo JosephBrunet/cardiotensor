@@ -1,92 +1,125 @@
-import tempfile
-from pathlib import Path
-
-import cv2
+import pytest
 import numpy as np
+import cv2
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+from cardiotensor.utils.downsampling import (
+    downsample_vector_volume,
+    downsample_volume,
+    process_vector_block,
+    process_image_block,
+)
 
-from cardiotensor.utils.DataReader import DataReader
 
-
-def create_test_stack(directory: Path, num_images: int, shape: tuple[int, int]):
+@pytest.fixture
+def mock_vector_files(tmp_path):
     """
-    Create a test image stack in the given directory.
-
-    Args:
-        directory (Path): Directory to create the images in.
-        num_images (int): Number of images to create.
-        shape (tuple[int, int]): Shape of each image (height, width).
+    Create mock .npy files for testing vector downsampling.
     """
-    directory.mkdir(exist_ok=True)
-    for i in range(num_images):
-        img = (np.random.rand(*shape) * 255).astype(np.uint8)
-        img_path = directory / f"image_{i:03d}.tif"
-        cv2.imwrite(str(img_path), img)
+    vector_dir = tmp_path / "vectors"
+    vector_dir.mkdir()
+    for i in range(10):  # Create 10 mock files
+        np.save(vector_dir / f"eigen_vec_{i:06d}.npy", np.random.rand(3, 100, 100))
+    return vector_dir
 
 
-def create_test_mhd(
-    directory: Path, shape: tuple[int, int, int], element_type="MET_UCHAR"
-):
+@pytest.fixture
+def mock_image_files(tmp_path):
     """
-    Create a test .mhd file and its corresponding raw data file.
-
-    Args:
-        directory (Path): Directory to create the .mhd and .raw files in.
-        shape (tuple[int, int, int]): Shape of the volume (z, y, x).
-        element_type (str): The data type for the .mhd file.
+    Create mock image files for testing image downsampling.
     """
-    directory.mkdir(exist_ok=True)
-    volume = (np.random.rand(*shape) * 255).astype(np.uint8)
-    raw_file = directory / "test.raw"
-    volume.tofile(raw_file)
-
-    mhd_content = f"""ObjectType = Image
-NDims = 3
-DimSize = {' '.join(map(str, shape))}
-ElementType = {element_type}
-ElementSpacing = 1 1 1
-ElementDataFile = {raw_file.name}
-"""
-    mhd_file = directory / "test.mhd"
-    mhd_file.write_text(mhd_content)
+    image_dir = tmp_path / "images"
+    image_dir.mkdir()
+    for i in range(10):  # Create 10 mock files
+        img = (np.random.rand(100, 100) * 255).astype(np.uint8)
+        cv2.imwrite(str(image_dir / f"HA_{i:06d}.tif"), img)
+    return image_dir
 
 
-def test_datareader_with_stack():
-    """Test DataReader with an image stack."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir = Path(temp_dir)
-        stack_dir = temp_dir / "stack"
-        create_test_stack(stack_dir, num_images=10, shape=(128, 128))
 
-        # Initialize DataReader and validate volume info
-        reader = DataReader(stack_dir)
-        assert reader.volume_info["type"] == "tif"
-        assert len(reader.volume_info["file_list"]) == 10
-        assert reader.shape == (10, 128, 128)
+def test_process_vector_block(tmp_path, mock_vector_files):
+    """
+    Test the process_vector_block function.
+    """
+    bin_factor = 2
+    output_dir = tmp_path / f"output/bin{bin_factor}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    block = sorted(mock_vector_files.glob("*.npy"))[0:bin_factor] 
+    
+    process_vector_block(
+        block=block,
+        bin_factor=bin_factor,
+        h=100,
+        w=100,
+        output_dir=output_dir,
+        idx=0,
+    )
 
-        # Load the volume
-        volume = reader.load_volume()
-        assert volume.shape == (10, 128, 128)
-        print("Stack test passed.")
+    # Check that the downsampled file exists
+    output_file = output_dir / "eigen_vec/eigen_vec_000000.npy"
+    assert output_file.exists()
 
-
-def test_datareader_with_mhd():
-    """Test DataReader with an MHD file."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir = Path(temp_dir)
-        mhd_dir = temp_dir / "mhd"
-        create_test_mhd(mhd_dir, shape=(10, 128, 128))
-
-        # Initialize DataReader and validate volume info
-        reader = DataReader(mhd_dir / "test.mhd")
-        assert reader.volume_info["type"] == "mhd"
-        assert reader.shape == (10, 128, 128)
-
-        # Load the volume
-        volume = reader.load_volume()
-        assert volume.shape == (10, 128, 128)
-        print("MHD test passed.")
+    # Verify the shape of the output
+    data = np.load(output_file)
+    assert data.shape == (3, 50, 50)  # Original (100x100) downsampled by a factor of 2
 
 
-if __name__ == "__main__":
-    test_datareader_with_stack()
-    test_datareader_with_mhd()
+def test_downsample_vector_volume(tmp_path, mock_vector_files):
+    """
+    Test the downsample_vector_volume function.
+    """
+    output_dir = tmp_path / "output"
+    downsample_vector_volume(mock_vector_files, bin_factor=2, output_dir=output_dir)
+
+    # Check that output directory exists
+    assert (output_dir / "bin2/eigen_vec").exists()
+
+    # Verify that all blocks are processed
+    files = list((output_dir / "bin2/eigen_vec").glob("*.npy"))
+    assert len(files) == 5  # 10 original files processed in blocks of 2
+
+
+def test_process_image_block(tmp_path, mock_image_files):
+    """
+    Test the process_image_block function.
+    """
+    bin_factor = 2
+    output_dir = tmp_path / f"output/bin{bin_factor}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    block = sorted(mock_image_files.glob("*.tif"))[0:bin_factor] 
+    process_image_block(
+        block=block,
+        bin_factor=2,
+        h=100,
+        w=100,
+        output_dir=output_dir,
+        idx=0,
+    )
+
+    # Check that the downsampled file exists
+    output_file = output_dir / "HA/HA_000000.tif"
+    assert output_file.exists()
+
+    # Verify the shape of the output
+    img = cv2.imread(str(output_file), cv2.IMREAD_UNCHANGED)
+    assert img.shape == (50, 50)  # Original (100x100) downsampled by a factor of 2
+
+
+def test_downsample_volume(tmp_path, mock_image_files):
+    """
+    Test the downsample_volume function.
+    """
+    output_dir = tmp_path / "output"
+    downsample_volume(
+        input_path=mock_image_files,
+        bin_factor=2,
+        output_dir=output_dir,
+        file_format="tif",
+    )
+
+    # Check that output directory exists
+    assert (output_dir / "bin2/HA").exists()
+
+    # Verify that all blocks are processed
+    files = list((output_dir / "bin2/HA").glob("*.tif"))
+    assert len(files) == 5  # 10 original files processed in blocks of 2

@@ -36,7 +36,7 @@ class DataReader:
             "stack": False,
             "file_list": [],
         }
-
+        
         if not self.path.exists():
             raise ValueError(f"The path does not exist: {self.path}")
 
