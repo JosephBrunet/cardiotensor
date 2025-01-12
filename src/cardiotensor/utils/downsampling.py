@@ -33,7 +33,7 @@ def process_vector_block(
     # print(f"Processing block: {idx}")
     output_file = output_dir / f"eigen_vec/eigen_vec_{idx:06d}.npy"
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    
+
     if output_file.exists():
         # print(f"Skipping block {idx}, file already exists.")
         return
@@ -52,9 +52,10 @@ def process_vector_block(
         bin_array[i, :, :] = block_reduce(
             array[i, :, :], block_size=block_size, func=np.mean
         )
-    
+
     np.save(output_file, bin_array.astype(np.float32))
     print(f"Saved block {idx} to {output_file}")
+
 
 def downsample_vector_volume(
     input_npy: Path, bin_factor: int, output_dir: Path

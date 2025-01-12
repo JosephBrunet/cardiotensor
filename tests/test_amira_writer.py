@@ -1,13 +1,13 @@
-import pytest
-import numpy as np
+import warnings
 from pathlib import Path
+
+import numpy as np
+import pytest
 import tifffile
 
-import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from cardiotensor.export.amira_writer import amira_writer, write_am_file
-from cardiotensor.utils.utils import read_conf_file
 
 
 @pytest.fixture
@@ -18,8 +18,12 @@ def mock_data(tmp_path):
     data_dir = tmp_path / "data/volume"
     data_dir.mkdir(parents=True, exist_ok=True)
     for i in range(5):
-        tifffile.imwrite(str(data_dir / f"slice_{i:06d}.tif"), np.random.rand(50, 50).astype(np.uint8))
+        tifffile.imwrite(
+            str(data_dir / f"slice_{i:06d}.tif"),
+            np.random.rand(50, 50).astype(np.uint8),
+        )
     return data_dir
+
 
 @pytest.fixture
 def mock_mask(tmp_path):
@@ -29,8 +33,12 @@ def mock_mask(tmp_path):
     mask_dir = tmp_path / "data/mask"
     mask_dir.mkdir(parents=True, exist_ok=True)
     for i in range(5):
-        tifffile.imwrite(str(mask_dir / f"mask_{i:06d}.tif"), (np.random.rand(50, 50) * 255).astype(np.uint8))
+        tifffile.imwrite(
+            str(mask_dir / f"mask_{i:06d}.tif"),
+            (np.random.rand(50, 50) * 255).astype(np.uint8),
+        )
     return mask_dir
+
 
 @pytest.fixture
 def mock_vector_field(tmp_path):
@@ -56,6 +64,7 @@ def mock_helix_angles(tmp_path):
 
     return helix_dir
 
+
 @pytest.fixture
 def mock_configuration_file(tmp_path, mock_data, mock_mask, mock_vector_field):
     """
@@ -70,13 +79,13 @@ def mock_configuration_file(tmp_path, mock_data, mock_mask, mock_vector_field):
             VOXEL_SIZE = 1.0
             MASK_PATH = {mock_mask}
             FLIP = False
-            
+
             [OUTPUT]
             OUTPUT_PATH = {mock_vector_field.parent}
             OUTPUT_FORMAT = tif
             OUTPUT_TYPE = 8bit
             VECTORS = True
-            
+
             [RUN]
             TEST = False
             N_SLICE_TEST = 0
@@ -86,7 +95,12 @@ def mock_configuration_file(tmp_path, mock_data, mock_mask, mock_vector_field):
 
 
 def test_amira_writer_valid_input(
-    mock_configuration_file, mock_data, mock_mask, mock_vector_field, mock_helix_angles, tmp_path
+    mock_configuration_file,
+    mock_data,
+    mock_mask,
+    mock_vector_field,
+    mock_helix_angles,
+    tmp_path,
 ):
     """
     Test amira_writer with valid input.
@@ -124,7 +138,7 @@ def test_amira_writer_write_am_file():
 
     write_am_file(consecutive_points_list, HA_angle, z_angle, output_file)
 
-    with open(output_file, "r") as f:
+    with open(output_file) as f:
         content = f.read()
         assert "AmiraMesh 3D ASCII 3.0" in content
         assert "define VERTEX 4" in content
