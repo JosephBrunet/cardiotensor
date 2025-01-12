@@ -81,9 +81,7 @@ class DataReader:
                 return tuple(image.GetSize())  # Return (z, y, x)
 
         elif self.volume_info["stack"]:  # Stack of images
-            first_image = cv2.imread(
-                str(self.volume_info["file_list"][0]), cv2.IMREAD_UNCHANGED
-            )
+            first_image = self._custom_image_reader(self.volume_info["file_list"][0])
             return (
                 len(self.volume_info["file_list"]),
                 first_image.shape[0],
@@ -104,7 +102,7 @@ class DataReader:
         Args:
             start_index (int): Start index for slicing (for stacks).
             end_index (int): End index for slicing (for stacks). If 0, loads the entire stack.
-            binning_factor (float): Factor to downsample the volume. Default is 1.0 (no binning).
+            unbinned_shape (tuple): Shape of the volume without downsampling. Default is None (no binning).
 
         Returns:
             np.ndarray: Loaded volume data.
@@ -134,11 +132,11 @@ class DataReader:
 
         if self.volume_info["stack"] == False:
             if self.volume_info["type"] == "mhd":
-                volume, _ = load_raw_data_with_mhd(self.path)
+                volume, _ = _load_raw_data_with_mhd(self.path)
                 volume = volume[start_index:end_index, :, :]
         elif self.volume_info["stack"] == True:
-            if end_index is None:
-                end_index = len(self.volume_info["file_list"])
+            # if end_index is None:
+            #     end_index = len(self.volume_info["file_list"])
             volume = self._load_image_stack(
                 self.volume_info["file_list"], start_index, end_index
             )
@@ -174,6 +172,22 @@ class DataReader:
                 )
 
         return volume
+    
+    
+    def _custom_image_reader(self, file_path: Path) -> np.ndarray:
+        """
+        Reads an image from the given file path.
+
+        Args:
+            file_path (Path): Path to the image file.
+
+        Returns:
+            np.ndarray: Image data as a NumPy array.
+        """
+        if file_path.suffix == ".npy":
+            return np.load(file_path)
+        return cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
+
 
     def _load_image_stack(
         self, file_list: list[Path], start_index: int, end_index: int
@@ -197,23 +211,9 @@ class DataReader:
 
         with alive_bar(total_files, title="Loading Volume", length=40) as bar:
 
-            def custom_image_reader(file_path: Path) -> np.ndarray:
-                """
-                Reads an image from the given file path.
-
-                Args:
-                    file_path (Path): Path to the image file.
-
-                Returns:
-                    np.ndarray: Image data as a NumPy array.
-                """
-                if file_path.suffix == ".npy":
-                    return np.load(file_path)
-                return cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
-
             def progress_bar_reader(file_path: Path) -> np.ndarray:
                 bar()  # Update the progress bar
-                return custom_image_reader(file_path)
+                return self._custom_image_reader(file_path)
 
             delayed_tasks = [
                 dask.delayed(progress_bar_reader)(file_path)
@@ -237,7 +237,7 @@ class DataReader:
         return volume
 
 
-def read_mhd(filename: PathLike[str]) -> dict[str, Any]:
+def _read_mhd(filename: PathLike[str]) -> dict[str, Any]:
     """
     Return a dictionary of meta data from an MHD meta header file.
 
@@ -302,7 +302,7 @@ def read_mhd(filename: PathLike[str]) -> dict[str, Any]:
     return meta_dict
 
 
-def load_raw_data_with_mhd(
+def _load_raw_data_with_mhd(
     filename: PathLike[str],
 ) -> tuple[np.ndarray, dict[str, Any]]:
     """
@@ -311,7 +311,7 @@ def load_raw_data_with_mhd(
     :param filename: file of type .mhd that should be loaded
     :returns: tuple with raw data and dictionary of meta data
     """
-    meta_dict = read_mhd(filename)
+    meta_dict = _read_mhd(filename)
     dim = int(meta_dict["NDims"])
     if "ElementNumberOfChannels" in meta_dict:
         element_channels = int(meta_dict["ElementNumberOfChannels"])
