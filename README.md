@@ -1,7 +1,7 @@
 <h1 align="center">Cardiotensor</h1>
 
 <p align="center">
-    <img src="assets/logos/heart_logo_dark.png" alt="Example Slice" width="200px" style="max-width: 200px; width: 100%;">
+    <img src="assets/logos/heart_logo_dark.png" alt="Example Slice" width="200px" style="max-width: 200px; max-width: 100%;">
     <!-- <br>
     <em>Figure: Image caption</em> -->
 </p>
