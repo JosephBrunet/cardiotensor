@@ -1,6 +1,4 @@
 import argparse
-
-# from line_profiler import LineProfiler
 import os
 import sys
 import time
@@ -15,31 +13,65 @@ from cardiotensor.utils.utils import read_conf_file
 
 
 def script() -> None:
+    """
+    Executes the main pipeline for computing orientation using configuration parameters.
+
+    This function supports two modes of operation:
+    1. Interactive mode: Opens a file dialog to select a configuration file if no arguments are provided.
+    2. Command-line mode: Parses command-line arguments to specify the configuration file, start and end indices,
+       and whether to use GPU for computations.
+
+    Returns:
+        None
+    """
+    # Set up the argument parser with a description
+    parser = argparse.ArgumentParser(
+        description=(
+            "This script computes orientation for a 3D volume based on the provided configuration file. "
+            "You can run it in interactive mode (no arguments) or provide the configuration file path "
+            "and other options as command-line arguments. It supports GPU acceleration and chunk-based processing."
+        )
+    )
+
+    # Add arguments to the parser
+    parser.add_argument(
+        "conf_file_path",
+        type=str,
+        nargs="?",
+        help="Path to the configuration file (optional in interactive mode).",
+    )
+    parser.add_argument(
+        "--start_index",
+        type=int,
+        default=0,
+        help="Starting index for processing (default: 0).",
+    )
+    parser.add_argument(
+        "--end_index",
+        type=int,
+        default=None,
+        help="Ending index for processing (default: None, processes all data).",
+    )
+    parser.add_argument(
+        "--gpu",
+        action="store_true",
+        help="Activate GPU acceleration for computations.",
+    )
+
+    # Print help and exit if no arguments are provided
     if len(sys.argv) < 2:
+        parser.print_help()
         Tk().withdraw()
         conf_file_path = askopenfilename(
             initialdir=f"{os.getcwd()}/param_files", title="Select file"
-        )  # show an "Open" dialog box and return the path to the selected file
+        )
         if not conf_file_path:
             sys.exit("No file selected!")
         start_index = 0
         end_index = None
         use_gpu = True
 
-    elif len(sys.argv) >= 2:
-        parser = argparse.ArgumentParser(
-            description="Convert images between tif and jpeg2000 formats."
-        )
-        parser.add_argument(
-            "conf_file_path", type=str, help="Path to the input text file."
-        )
-        parser.add_argument(
-            "--start_index", type=int, default=0, help="Starting index for processing."
-        )
-        parser.add_argument(
-            "--end_index", type=int, default=None, help="Ending index for processing."
-        )
-        parser.add_argument("--gpu", action="store_true", help="Activate the gpu")
+    else:
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
         start_index = args.start_index
