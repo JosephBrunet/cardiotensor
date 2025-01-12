@@ -118,7 +118,7 @@ N_SLICE_TEST = 155
 
 !!! note
 
-    The structure tensor calculation is performed using the [`structure-tensor`](https://github.com/Skielex/structure-tensor) python package. This package allows GPU computation using CUDA and [CuPy](https://github.com/cupy/cupy). 
+    The structure tensor calculation is performed using the [`structure-tensor`](https://github.com/Skielex/structure-tensor) python package. This package allows GPU computation using CUDA and [CuPy](https://github.com/cupy/cupy).
 
 ### `[LV AXIS COORDINATES]`
 - **`POINT_MITRAL_VALVE`**: (X, Y, Z) coordinates of the mitral valve.

@@ -377,7 +377,7 @@ def compute_slice_angles_and_anisotropy(
     ]
     if IS_VECTORS:
         paths.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
-        
+
     if not IS_TEST and all(os.path.exists(path) for path in paths):
         # print(f"File {(start_index + z):06d} already exists")
         return

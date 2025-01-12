@@ -31,13 +31,13 @@ For LaTeX users, please include the following BibTeX entry to reference `cardiot
 
 ## **Citation Examples in Various Formats**
 
-1. **MLA Format**  
+1. **MLA Format**
    Brunet, Joseph, et al. "Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography." *Radiology*, vol. 312, no. 1, 2024, p. e232731.
 
-2. **Chicago Style**  
+2. **Chicago Style**
    Brunet, Joseph, Andrew C. Cook, Claire L. Walsh, James Cranley, Paul Tafforeau, Klaus Engel, Owen Arthurs, Camille Berruyer, Emer Burke O’Leary, Alexandre Bellier, et al. 2024. "Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography." *Radiology* 312 (1): e232731.
 
-3. **Harvard Format**  
+3. **Harvard Format**
    Brunet, J., Cook, A.C., Walsh, C.L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O’Leary, E., Bellier, A., et al., 2024. Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography. *Radiology*, 312(1), p.e232731.
 
 ---
