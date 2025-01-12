@@ -310,7 +310,7 @@ def amira_writer(
         random_points = valid_indices[
             np.random.choice(valid_indices.shape[0], num_ini_points, replace=False)
         ]
-        
+
     consecutive_points_list = []
     with alive_bar(len(random_points), title="Processing Points") as bar:
         for point in random_points:

@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
+
 from cardiotensor.analysis.analysis_functions import (
     _calculate_angle_line,
-    find_end_points,
     calculate_intensities,
-    plot_intensity,
+    find_end_points,
     save_intensity,
 )
 
@@ -76,7 +76,7 @@ def test_save_intensity(tmp_path):
     assert save_path.exists()
 
     # Verify the file content
-    with open(save_path, "r") as f:
+    with open(save_path) as f:
         content = f.read()
         assert "Profile 1" in content
         assert "Profile 2" in content

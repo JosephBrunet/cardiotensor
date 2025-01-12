@@ -1,13 +1,12 @@
-import pytest
-import numpy as np
 import cv2
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+import numpy as np
+import pytest
+
 from cardiotensor.utils.downsampling import (
     downsample_vector_volume,
     downsample_volume,
-    process_vector_block,
     process_image_block,
+    process_vector_block,
 )
 
 
@@ -36,7 +35,6 @@ def mock_image_files(tmp_path):
     return image_dir
 
 
-
 def test_process_vector_block(tmp_path, mock_vector_files):
     """
     Test the process_vector_block function.
@@ -44,8 +42,8 @@ def test_process_vector_block(tmp_path, mock_vector_files):
     bin_factor = 2
     output_dir = tmp_path / f"output/bin{bin_factor}"
     output_dir.mkdir(parents=True, exist_ok=True)
-    block = sorted(mock_vector_files.glob("*.npy"))[0:bin_factor] 
-    
+    block = sorted(mock_vector_files.glob("*.npy"))[0:bin_factor]
+
     process_vector_block(
         block=block,
         bin_factor=bin_factor,
@@ -86,7 +84,7 @@ def test_process_image_block(tmp_path, mock_image_files):
     bin_factor = 2
     output_dir = tmp_path / f"output/bin{bin_factor}"
     output_dir.mkdir(parents=True, exist_ok=True)
-    block = sorted(mock_image_files.glob("*.tif"))[0:bin_factor] 
+    block = sorted(mock_image_files.glob("*.tif"))[0:bin_factor]
     process_image_block(
         block=block,
         bin_factor=2,
