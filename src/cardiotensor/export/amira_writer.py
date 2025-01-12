@@ -305,11 +305,12 @@ def amira_writer(
         print(
             "Not enough points with mask value 1. Adjust the number of points or check mask_volume."
         )
+        sys.exit("Exiting due to insufficient valid points in the mask.")
     else:
         random_points = valid_indices[
             np.random.choice(valid_indices.shape[0], num_ini_points, replace=False)
         ]
-
+        
     consecutive_points_list = []
     with alive_bar(len(random_points), title="Processing Points") as bar:
         for point in random_points:

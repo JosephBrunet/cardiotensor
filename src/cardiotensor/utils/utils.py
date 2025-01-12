@@ -42,17 +42,17 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     return {
         # DATASET
-        "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH", fallback="").strip(),
+        "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH").strip(),
         "MASK_PATH": config.get("DATASET", "MASK_PATH", fallback="").strip(),
         "FLIP": config.getboolean("DATASET", "FLIP", fallback=True),
         "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
         # OUTPUT
-        "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="").strip(),
+        "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="./output").strip(),
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
-        "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="").strip(),
+        "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
         "VECTORS": config.getboolean("OUTPUT", "VECTORS", fallback=False),
         # STRUCTURE TENSOR CALCULATION
-        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=1.0),
+        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
         "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
         "N_CHUNK": config.getint(
             "STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100
