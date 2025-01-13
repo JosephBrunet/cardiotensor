@@ -11,6 +11,7 @@
 
 [![CI](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml)
 [![Doc](https://img.shields.io/badge/docs-dev-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/b0e80972e3104ffa890532738882f42e)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 ![Python Version](https://img.shields.io/badge/python->3.10-blue.svg)
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
