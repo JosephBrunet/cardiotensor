@@ -24,7 +24,7 @@
     <em>Figure: Image caption</em> -->
 </p>
 
-**Cardiotensor** is a powerful and user-friendly toolkit for analyzing the orientation of cardiomyocites fibers in the heart. This package leverages advanced image processing techniques, enabling researchers to quantify 3D cardiomyocyte orientations efficiently. It is designed to support a wide range of datasets and provide accurate results for cardiac research.
+**Cardiotensor** is a user-friendly and memory-efficient toolkit designed for analyzing the orientation of cardiomyocyte fibers in large heart imaging datasets. It uses advanced image processing techniques to help researchers to accurately quantify 3D cardiomyocyte orientations with high efficiency. The package works well with different types of datasets and provides reliable results, making it a helpful resource for studying the structure and function of the heart.
 
 ## Installation
 
