@@ -1,7 +1,7 @@
 <h1 align="center">Cardiotensor</h1>
 
 <p align="center">
-    <img src="assets/logos/heart_logo_dark.png" alt="Example Slice" width="200px" style="max-width: 200px; max-width: 100%;">
+    <img src="assets/logos/heart_logo_dark.png" alt="Logo" width="200px" style="max-width: 150px">
     <!-- <br>
     <em>Figure: Image caption</em> -->
 </p>
@@ -17,14 +17,17 @@
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
 
 
-
 <p align="center">
-    <img src="assets/images/result_HA_slice.jpeg" alt="Example Slice">
-    <!-- <br>
-    <em>Figure: Image caption</em> -->
+    <img src="assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
+    <br>
+    <em>Helical angle map of a heart scanned using synchrtron X-ray imaging.</em>
 </p>
 
-**Cardiotensor** is a user-friendly and memory-efficient toolkit designed for analyzing the orientation of cardiomyocyte fibers in large heart imaging datasets. It uses advanced image processing techniques to help researchers to accurately quantify 3D cardiomyocyte orientations with high efficiency. The package works well with different types of datasets and provides reliable results, making it a helpful resource for studying the structure and function of the heart.
+## Introduction
+
+**Cardiotensor** is a user-friendly and memory-efficient toolkit designed for analyzing the orientation of cardiomyocyte fibers in large heart imaging datasets. It uses advanced image processing techniques to help researchers to accurately quantify 3D cardiomyocyte orientations with high efficiency.
+
+
 
 ## Installation
 
@@ -42,24 +45,13 @@ pip install .
 
 ## Getting Started
 
-1. **Prepare a Configuration File**:
+Have a look at our simple [./example/](./examples/README.md) that runs you through all the commands of the package
 
-   - Use the provided template (`/param_files/parameters_template.conf`) to create a configuration file tailored to your dataset.
 
-2. **Run the orientation computation**:
-
-   - Execute the following command in your terminal:
-     ```bash
-     cardio-tensor
-     ```
-   - When prompted, select your `.conf` file to start the analysis.
-
-3. **View Results**:
-   - The results will be saved in the specified output directory as defined in your configuration file.
 
 ## More Information
 
-This package builds upon the [structure-tensor](https://github.com/Skielex/structure-tensor) package, extending its capabilities for cardiac imaging.
+This package uses the [structure-tensor](https://github.com/Skielex/structure-tensor) package to calculate the structure tensor, extending its capabilities for cardiac imaging.
 
 ## License
 
