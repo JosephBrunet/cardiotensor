@@ -55,7 +55,7 @@ To process and visualize a single test slice:
 
 3. The processed result will be displayed as a plot:
 
-   ![Example Result](./result_test_slice.png)
+   ![Example Result](../assets/images/result_test_slice.png)
 
 ### Processing the Whole Volume
 
@@ -88,13 +88,13 @@ cardio-analysis ./parameters_example.conf 150
 
 Here, `150` refers to the slice number. The GUI will appear as follows:
 
-![Analysis GUI](./analyse_GUI.png)
+![Analysis GUI](../assets/images/analyse_GUI.png)
 
 1. Drag and drop on the image to define a transmural profile line.
 2. Adjust parameters like `Angle range` and `Number of lines` as needed.
 3. Click on `Plot profile` to generate the profile plot. The result will resemble this:
 
-![Transmural Plot Profile](./transmural_profile.png)
+![Transmural Plot Profile](../assets/images/transmural_profile.png)
 
 You can save the plot or click `Save Profile` to export the profile as a `.csv` file.
 
