@@ -51,7 +51,7 @@ def interpolate_points(
 
 
 def calculate_center_vector(
-    pt_mv: np.ndarray, pt_apex: np.ndarray, is_flip: bool = True
+    pt_mv: np.ndarray, pt_apex: np.ndarray,
 ) -> np.ndarray:
     """
     Calculates the center vector between two points in 3D space.
@@ -59,27 +59,22 @@ def calculate_center_vector(
     Args:
         pt_mv (np.ndarray): The mitral valve point (x, y, z).
         pt_apex (np.ndarray): The apex point (x, y, z).
-        is_flip (bool): If True, inverts the z-component of the vector. Default is True.
-
+        
     Returns:
         np.ndarray: Normalized center vector.
     """
     # Calculate center vector
 
-    center_vec = pt_mv - pt_apex
+    center_vec = pt_mv - pt_apex  # points are [X,Y,Z]
     center_vec = center_vec / np.linalg.norm(center_vec)
 
-    if is_flip:
-        center_vec[2] = -center_vec[
-            2
-        ]  # Invert z components (Don't know why but it works)
-
-    # center_vec[0] = -center_vec[0]  # Invert z components (Don't know why but it works)
-    # center_vec[1] = -center_vec[1]  # Invert z components (Don't know why but it works)
-
-    # if center_vec[2] < 0:
-    #     center_vec = -center_vec
-
+    # if is_flip:
+    #     center_vec[2] = -center_vec[
+    #         2
+    #     ]  # Invert z components (Don't know why but it works)
+    
+    center_vec = center_vec[[2, 1, 0]]  # Swap (X, Y, Z) -> (Z, Y, X)
+    
     return center_vec
 
 
@@ -259,11 +254,14 @@ def rotate_vectors_to_new_axis(
     """
     # Ensure new_axis_vec is normalized
     new_axis_vec = new_axis_vec / np.linalg.norm(new_axis_vec)
-
+        
     # Calculate the rotation matrix
-    vec1 = np.array([0, 0, 1])  # Initial vertical axis
+    vec1 = np.array([1, 0, 0])  # Initial vertical axis
 
-    a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (new_axis_vec).reshape(3)
+    vec1 = vec1 * np.sign(new_axis_vec[0])
+
+    a = (vec1 / np.linalg.norm(vec1)).reshape(3)
+    b = (new_axis_vec).reshape(3)
     v = np.cross(a, b)
     c = np.dot(a, b)
 
@@ -292,7 +290,7 @@ def rotate_vectors_to_new_axis(
 
 
 def compute_helix_and_transverse_angles(
-    vector_field_2d: np.ndarray, center_point: tuple[int, int, int]
+    vector_field_2d: np.ndarray, center_point: tuple[int, int, int], new_axis_vec
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Computes helix and transverse angles from a 2D vector field.
@@ -340,9 +338,10 @@ def compute_helix_and_transverse_angles(
     transverse_angle = np.arctan(
         reshaped_rotated_vector_field[0, :, :] / reshaped_rotated_vector_field[1, :, :]
     )
-
+    helix_angle = helix_angle * -np.sign(new_axis_vec[0])
     helix_angle = np.rad2deg(helix_angle)
     transverse_angle = np.rad2deg(transverse_angle)
+
 
     return helix_angle, transverse_angle
 

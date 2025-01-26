@@ -82,43 +82,24 @@ def compute_orientation(
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
-        print(e)
-        sys.exit(f"⚠️  Error reading parameter file: {conf_file_path}")
+        print(f"⚠️  Error reading parameter file '{conf_file_path}': {e}")
+        sys.exit(1)
 
-    (
-        VOLUME_PATH,
-        MASK_PATH,
-        IS_FLIP,
-        OUTPUT_DIR,
-        OUTPUT_FORMAT,
-        OUTPUT_TYPE,
-        IS_VECTORS,
-        SIGMA,
-        RHO,
-        N_CHUNK,
-        PT_MV,
-        PT_APEX,
-        IS_TEST,
-        N_SLICE_TEST,
-    ) = (
-        params[key]
-        for key in [
-            "IMAGES_PATH",
-            "MASK_PATH",
-            "FLIP",
-            "OUTPUT_PATH",
-            "OUTPUT_FORMAT",
-            "OUTPUT_TYPE",
-            "VECTORS",
-            "SIGMA",
-            "RHO",
-            "N_CHUNK",
-            "POINT_MITRAL_VALVE",
-            "POINT_APEX",
-            "TEST",
-            "N_SLICE_TEST",
-        ]
-    )
+    # Extracting parameters safely using .get() with defaults where necessary
+    VOLUME_PATH = params.get("IMAGES_PATH", "")
+    MASK_PATH = params.get("MASK_PATH", "")
+    OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
+    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
+    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
+    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
+    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
+    SIGMA = params.get("SIGMA", 3.0)
+    RHO = params.get("RHO", 1.0)
+    N_CHUNK = params.get("N_CHUNK", 100)
+    PT_MV = params.get("POINT_MITRAL_VALVE")
+    PT_APEX = params.get("POINT_APEX", None)
+    IS_TEST = params.get("TEST", False)
+    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
     print("\n---------------------------------")
     print("READING VOLUME INFORMATION\n")
@@ -159,7 +140,7 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
     center_line = interpolate_points(PT_MV, PT_APEX, data_reader.shape[0])
-    center_vec = calculate_center_vector(PT_MV, PT_APEX, IS_FLIP)
+    center_vec = calculate_center_vector(PT_MV, PT_APEX)
     print(f"Center vector: {center_vec}")
 
     print("\n---------------------------------")
@@ -197,6 +178,8 @@ def compute_orientation(
     print(f"Loaded volume shape {volume.shape}")
 
     if is_mask:
+        print("\n---------------------------------")
+        print("LOAD MASK\n")
         mask_reader = DataReader(MASK_PATH)
 
         mask = mask_reader.load_volume(
@@ -266,7 +249,8 @@ def compute_orientation(
                             OUTPUT_FORMAT,
                             OUTPUT_TYPE,
                             start_index,
-                            IS_VECTORS,
+                            WRITE_VECTORS,
+                            WRITE_ANGLES,
                             IS_TEST,
                         )
                         for z in range(vec.shape[1])
@@ -295,7 +279,8 @@ def compute_orientation(
                     OUTPUT_FORMAT,
                     OUTPUT_TYPE,
                     start_index,
-                    IS_VECTORS,
+                    WRITE_VECTORS,
+                    WRITE_ANGLES,
                     IS_TEST,
                 )
                 bar()  # Update the progress bar for each slice
@@ -346,7 +331,8 @@ def compute_slice_angles_and_anisotropy(
     OUTPUT_FORMAT: str,
     OUTPUT_TYPE: str,
     start_index: int,
-    IS_VECTORS: bool,
+    WRITE_VECTORS: bool,
+    WRITE_ANGLES: bool,
     IS_TEST: bool,
 ) -> None:
     """
@@ -363,36 +349,47 @@ def compute_slice_angles_and_anisotropy(
         OUTPUT_FORMAT (str): Format for the output files (e.g., "tif").
         OUTPUT_TYPE (str): Type of output (e.g., "HA", "IA").
         start_index (int): Start index of the slice.
-        IS_VECTORS (bool): Whether to output vector fields.
+        WRITE_VECTORS (bool): Whether to output vector fields.
+        WRITE_ANGLES (bool): Whether to output angles and fractional anisotropy.
         IS_TEST (bool): Whether in test mode.
 
     Returns:
         None
     """
     # print(f"Processing image: {start_index + z}")
-    paths = [
-        f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",
-        f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
-        f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif",
-    ]
-    if IS_VECTORS:
+    
+    paths = []
+    if WRITE_ANGLES:
+        paths = [
+            f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",
+            f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
+            f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif",
+        ]
+    if WRITE_VECTORS:
         paths.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
 
+    # Skip processing if files already exist (unless in test mode)
     if not IS_TEST and all(os.path.exists(path) for path in paths):
         # print(f"File {(start_index + z):06d} already exists")
         return
 
-    img_FA = compute_fraction_anisotropy(eigen_val_slice)
-    vector_field_slice_rotated = rotate_vectors_to_new_axis(
-        vector_field_slice, center_vec
-    )
-    img_helix, img_intrusion = compute_helix_and_transverse_angles(
-        vector_field_slice_rotated, center_point
-    )
+    # Compute angles and FA if needed
+    if WRITE_ANGLES or IS_TEST:
+        img_FA = compute_fraction_anisotropy(eigen_val_slice)
+        vector_field_slice_rotated = rotate_vectors_to_new_axis(
+            vector_field_slice, center_vec
+        )
+        img_helix, img_intrusion = compute_helix_and_transverse_angles(
+            vector_field_slice_rotated, center_point, center_vec
+        )
 
+    # Visualization in test mode
     if IS_TEST:
         plot_images(img_slice, img_helix, img_intrusion, img_FA, center_point)
-    else:
+        return
+    
+    # Save results
+    if WRITE_ANGLES:
         write_images(
             img_helix,
             img_intrusion,
@@ -403,5 +400,5 @@ def compute_slice_angles_and_anisotropy(
             OUTPUT_TYPE,
             z,
         )
-        if IS_VECTORS:
-            write_vector_field(vector_field_slice, start_index, OUTPUT_DIR, z)
+    if WRITE_VECTORS:
+        write_vector_field(vector_field_slice, start_index, OUTPUT_DIR, z)
