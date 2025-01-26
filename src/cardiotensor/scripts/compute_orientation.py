@@ -81,42 +81,25 @@ def script() -> None:
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
-        print(f"⚠️  Error reading parameter file: {conf_file_path}")
-        print(f"\nError is {e}")
-        sys.exit()
+        print(f"⚠️  Error reading parameter file '{conf_file_path}': {e}")
+        sys.exit(1)
 
-    (
-        VOLUME_PATH,
-        MASK_PATH,
-        IS_FLIP,
-        OUTPUT_DIR,
-        OUTPUT_TYPE,
-        SIGMA,
-        RHO,
-        N_CHUNK,
-        PT_MV,
-        PT_APEX,
-        REVERSE,
-        IS_TEST,
-        N_SLICE_TEST,
-    ) = (
-        params[key]
-        for key in [
-            "IMAGES_PATH",
-            "MASK_PATH",
-            "FLIP",
-            "OUTPUT_PATH",
-            "OUTPUT_TYPE",
-            "SIGMA",
-            "RHO",
-            "N_CHUNK",
-            "POINT_MITRAL_VALVE",
-            "POINT_APEX",
-            "REVERSE",
-            "TEST",
-            "N_SLICE_TEST",
-        ]
-    )
+    # Extracting parameters safely using .get() with defaults where necessary
+    VOLUME_PATH = params.get("IMAGES_PATH", "")
+    MASK_PATH = params.get("MASK_PATH", "")
+    OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
+    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
+    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
+    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
+    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
+    REVERSE = params.get("REVERSE", False)
+    SIGMA = params.get("SIGMA", 3.0)
+    RHO = params.get("RHO", 1.0)
+    N_CHUNK = params.get("N_CHUNK", 100)
+    PT_MV = params.get("POINT_MITRAL_VALVE", None)
+    PT_APEX = params.get("POINT_APEX", None)
+    IS_TEST = params.get("TEST", False)
+    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
     data_reader = DataReader(VOLUME_PATH)
     volume_shape = data_reader.shape

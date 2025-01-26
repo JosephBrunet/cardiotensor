@@ -114,7 +114,7 @@ class DataReader:
         binning_factor = 1.0
         if unbinned_shape is not None:
             binning_factor = unbinned_shape[0] / self.shape[0]
-            print(f"Mask bining factor: {binning_factor}\n")
+            print(f"Mask bining factor: {binning_factor}")
 
         if binning_factor != 1.0:
             start_index_ini = start_index
@@ -144,6 +144,7 @@ class DataReader:
             raise ValueError("Unsupported volume type.")
 
         if binning_factor != 1.0 and unbinned_shape is not None:
+            print("Resizing mask")
             volume = zoom(
                 volume,
                 zoom=binning_factor,
@@ -153,7 +154,7 @@ class DataReader:
             start_index_bin_upscaled = int(
                 np.abs(start_index * binning_factor - start_index_ini)
             )
-            end_index_bin_upscaled = start_index_bin_upscaled + volume.shape[0]
+            end_index_bin_upscaled = start_index_bin_upscaled + (end_index_ini - start_index_ini)
 
             if start_index_bin_upscaled < 0:
                 start_index_bin_upscaled = 0
