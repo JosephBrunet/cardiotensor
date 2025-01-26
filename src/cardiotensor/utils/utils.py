@@ -22,8 +22,9 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
-    if not file_path[-5:] == ".conf":
-        raise FileNotFoundError("The file is not a .conf file")
+    
+    if not file_path.endswith(".conf"):
+        raise ValueError("The file is not a .conf file")
 
     config = configparser.ConfigParser()
     config.read(file_path)
@@ -44,32 +45,30 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         # DATASET
         "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH").strip(),
         "MASK_PATH": config.get("DATASET", "MASK_PATH", fallback="").strip(),
-        "FLIP": config.getboolean("DATASET", "FLIP", fallback=True),
         "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
+        
+        # STRUCTURE TENSOR CALCULATION
+        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
+        "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
+        "N_CHUNK": config.getint("STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100),
+        "USE_GPU": config.getboolean("STRUCTURE TENSOR CALCULATION", "USE_GPU", fallback=False),
+        "WRITE_VECTORS": config.getboolean("STRUCTURE TENSOR CALCULATION", "WRITE_VECTORS", fallback=False),
+        "REVERSE": config.getboolean("STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False),
+
+        # ANGLE CALCULATION
+        "WRITE_ANGLES": config.getboolean("ANGLE CALCULATION", "WRITE_ANGLES", fallback=False),
+        "POINT_MITRAL_VALVE": parse_coordinates("ANGLE CALCULATION", "POINT_MITRAL_VALVE"),
+        "POINT_APEX": parse_coordinates("ANGLE CALCULATION", "POINT_APEX"),
+
+        # TEST
+        "TEST": config.getboolean("TEST", "TEST", fallback=False),
+        "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
+
         # OUTPUT
         "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="./output").strip(),
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
-        "VECTORS": config.getboolean("OUTPUT", "VECTORS", fallback=False),
-        # STRUCTURE TENSOR CALCULATION
-        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
-        "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
-        "N_CHUNK": config.getint(
-            "STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100
-        ),
-        # LV AXIS COORDINATES
-        "POINT_MITRAL_VALVE": parse_coordinates(
-            "LV AXIS COORDINATES", "POINT_MITRAL_VALVE"
-        ),
-        "POINT_APEX": parse_coordinates("LV AXIS COORDINATES", "POINT_APEX"),
-        # RUN
-        "REVERSE": config.getboolean("RUN", "REVERSE", fallback=False),
-        "MASK_REMOVAL": config.get("RUN", "MASK_REMOVAL", fallback="after").strip(),
-        # TEST
-        "TEST": config.getboolean("TEST", "TEST", fallback=False),
-        "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
     }
-
 
 def convert_to_8bit(
     img: np.ndarray,
