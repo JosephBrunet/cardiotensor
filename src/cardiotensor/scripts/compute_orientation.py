@@ -57,6 +57,11 @@ def script() -> None:
         action="store_true",
         help="Activate GPU acceleration for computations.",
     )
+    parser.add_argument(
+        "--reverse",
+        action="store_true",
+        help="Start the orientation computation from the end of the volume",
+    )
 
     # Print help and exit if no arguments are provided
     if len(sys.argv) < 2:
@@ -77,6 +82,7 @@ def script() -> None:
         start_index = args.start_index
         end_index = args.end_index
         use_gpu = args.gpu
+        reverse = args.reverse
 
     try:
         params = read_conf_file(conf_file_path)
@@ -86,20 +92,10 @@ def script() -> None:
 
     # Extracting parameters safely using .get() with defaults where necessary
     VOLUME_PATH = params.get("IMAGES_PATH", "")
-    MASK_PATH = params.get("MASK_PATH", "")
-    OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
-    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
-    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
-    REVERSE = params.get("REVERSE", False)
-    SIGMA = params.get("SIGMA", 3.0)
-    RHO = params.get("RHO", 1.0)
+    if reverse is False:
+        reverse = params.get("REVERSE", False)
     N_CHUNK = params.get("N_CHUNK", 100)
-    PT_MV = params.get("POINT_MITRAL_VALVE", None)
-    PT_APEX = params.get("POINT_APEX", None)
     IS_TEST = params.get("TEST", False)
-    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
     data_reader = DataReader(VOLUME_PATH)
     volume_shape = data_reader.shape
@@ -109,8 +105,8 @@ def script() -> None:
         end_index = volume_shape[0]
 
     if not IS_TEST:
-        # If REVERSE is True, run the loop in reverse order; otherwise, run normally
-        if REVERSE:
+        # If reverse is True, run the loop in reverse order; otherwise, run normally
+        if reverse:
             for idx in range(end_index, start_index, -N_CHUNK):
                 start_time = time.time()
                 compute_orientation(
@@ -137,3 +133,5 @@ def script() -> None:
         print("--- %s seconds ---" % (time.time() - start_time))
 
     return None
+
+

@@ -56,7 +56,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "REVERSE": config.getboolean("STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False),
 
         # ANGLE CALCULATION
-        "WRITE_ANGLES": config.getboolean("ANGLE CALCULATION", "WRITE_ANGLES", fallback=False),
+        "WRITE_ANGLES": config.getboolean("ANGLE CALCULATION", "WRITE_ANGLES", fallback=True),
         "POINT_MITRAL_VALVE": parse_coordinates("ANGLE CALCULATION", "POINT_MITRAL_VALVE"),
         "POINT_APEX": parse_coordinates("ANGLE CALCULATION", "POINT_APEX"),
 
@@ -69,6 +69,15 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
     }
+
+# Function to remove files smaller than 1KB
+def remove_corrupted_files(file_paths, size_threshold=1024):
+    for file_path in file_paths:
+        if os.path.exists(file_path) and os.path.getsize(file_path) < size_threshold:
+            print("Corrupted file removed:", file_path)
+            os.remove(file_path)
+
+
 
 def convert_to_8bit(
     img: np.ndarray,

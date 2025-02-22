@@ -23,32 +23,11 @@ from cardiotensor.orientation.orientation_computation_functions import (
     write_vector_field,
 )
 from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import read_conf_file
+from cardiotensor.utils.utils import read_conf_file, remove_corrupted_files
 
 MULTIPROCESS = True
 
 
-def is_tiff_image_valid(image_path: str) -> bool:
-    """
-    Check if the TIFF image is readable and valid.
-
-    Args:
-        image_path (str): Path to the TIFF image.
-
-    Returns:
-        bool: True if the image is valid, False otherwise.
-    """
-
-    try:
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        if image is None:
-            raise ValueError(
-                "cv2.imread failed to load the image. Unsupported or corrupted TIFF file."
-            )
-        return True
-    except Exception as e:
-        print(f"Error reading TIFF image {image_path}: {e}")
-        return False
 
 
 # @profile
@@ -92,7 +71,7 @@ def compute_orientation(
     OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
     OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
     WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
+    WRITE_ANGLES = params.get("WRITE_ANGLES", True)
     SIGMA = params.get("SIGMA", 3.0)
     RHO = params.get("RHO", 1.0)
     N_CHUNK = params.get("N_CHUNK", 100)
@@ -115,20 +94,32 @@ def compute_orientation(
     # Check if already done the processing
     if not IS_TEST:
         is_already_done = True
+
         if end_index is None:
             is_already_done = False
+
         for idx in range(start_index, end_index):
-            if (
-                not os.path.exists(f"{OUTPUT_DIR}/HA/HA_{idx:06d}.tif")
-                or not os.path.exists(f"{OUTPUT_DIR}/IA/IA_{idx:06d}.tif")
-                or not os.path.exists(f"{OUTPUT_DIR}/FA/FA_{idx:06d}.tif")
-                or not os.path.exists(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{idx:06d}.npy")
-            ):
+            existing_files = []
+
+            if WRITE_ANGLES:
+                existing_files.extend([
+                    f"{OUTPUT_DIR}/HA/HA_{idx:06d}.{OUTPUT_FORMAT}",
+                    f"{OUTPUT_DIR}/IA/IA_{idx:06d}.{OUTPUT_FORMAT}",
+                    f"{OUTPUT_DIR}/FA/FA_{idx:06d}.{OUTPUT_FORMAT}",
+                ])
+            
+            if WRITE_VECTORS:
+                existing_files.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{idx:06d}.npy")
+
+            # Remove small files before checking existence
+            remove_corrupted_files(existing_files)
+
+            # If any required file is missing, mark processing as needed
+            if not all(os.path.exists(file) for file in existing_files):
                 is_already_done = False
-                break
 
         if is_already_done:
-            print("All images are already done")
+            print("\nAll images are already processed. Skipping computation.\n")
             return
 
     if MASK_PATH:
@@ -229,14 +220,13 @@ def compute_orientation(
 
     print("\nCalculating helix/intrusion angle and fractional anisotropy:")
     if MULTIPROCESS and not IS_TEST:
+        num_slices = vec.shape[1]
         print(f"Using {mp.cpu_count()} CPU cores")
+
         with mp.Pool(processes=mp.cpu_count()) as pool:
-            # Initialize the alive-progress bar
-            with alive_bar(
-                vec.shape[1], title="Processing slices (Multiprocess)", bar="smooth"
-            ) as bar:
-                result = pool.starmap_async(
-                    compute_slice_angles_and_anisotropy,
+            with alive_bar(num_slices, title="Processing slices (Multiprocess)", bar="smooth") as bar:
+                for _ in pool.starmap(
+                    compute_slice_angles_and_anisotropy,  # 🔹 Use starmap instead of imap_unordered
                     [
                         (
                             z,
@@ -253,14 +243,10 @@ def compute_orientation(
                             WRITE_ANGLES,
                             IS_TEST,
                         )
-                        for z in range(vec.shape[1])
+                        for z in range(num_slices)
                     ],
-                    callback=lambda _: bar(
-                        vec.shape[1]
-                    ),  # Update progress bar once all tasks are completed
-                )
-                result.wait()  # Wait for all tasks to complete
-
+                ):
+                    bar()  # ✅ Increment progress bar correctly
     else:
         # Add a progress bar for single-threaded processing
         with alive_bar(
@@ -284,35 +270,6 @@ def compute_orientation(
                     IS_TEST,
                 )
                 bar()  # Update the progress bar for each slice
-
-    # #Check images
-    # for idx in range(start_index, end_index):
-    #     ia_path = f"{OUTPUT_DIR}/IA/IA_{idx:06d}.tif"
-    #     ha_path = f"{OUTPUT_DIR}/HA/HA_{idx:06d}.tif"
-    #     fa_path = f"{OUTPUT_DIR}/FA/FA_{idx:06d}.tif"
-
-    #     # Validate IA image
-    #     if not is_tiff_image_valid(ia_path):
-    #         print(f"Invalid or corrupt IA image: {ia_path}")
-    #         if os.path.exists(ia_path):
-    #             os.remove(ia_path)
-    #         continue
-
-    #     # Validate HA image
-    #     if not is_tiff_image_valid(ha_path):
-    #         print(f"Invalid or corrupt HA image: {ha_path}")
-    #         if os.path.exists(ha_path):
-    #             os.remove(ha_path)
-    #         continue
-
-    #     # Validate FA image
-    #     if not is_tiff_image_valid(fa_path):
-    #         print(f"Invalid or corrupt FA image: {fa_path}")
-    #         if os.path.exists(fa_path):
-    #             os.remove(fa_path)
-    #         continue
-
-    #     print(f"Valid image set: {idx:06d}")
 
     print(f"\n🤖 - Finished processing slices {start_index} - {end_index}")
     print("---------------------------------\n\n")
@@ -347,7 +304,7 @@ def compute_slice_angles_and_anisotropy(
         center_vec (np.ndarray): Center vector for alignment.
         OUTPUT_DIR (str): Directory to save the output.
         OUTPUT_FORMAT (str): Format for the output files (e.g., "tif").
-        OUTPUT_TYPE (str): Type of output (e.g., "HA", "IA").
+        OUTPUT_TYPE (str): Type of output (e.g., "8bits", "rgb").
         start_index (int): Start index of the slice.
         WRITE_VECTORS (bool): Whether to output vector fields.
         WRITE_ANGLES (bool): Whether to output angles and fractional anisotropy.
@@ -361,9 +318,9 @@ def compute_slice_angles_and_anisotropy(
     paths = []
     if WRITE_ANGLES:
         paths = [
-            f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",
-            f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
-            f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif",
+            f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
+            f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
+            f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
         ]
     if WRITE_VECTORS:
         paths.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
