@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
@@ -44,8 +45,14 @@ def submit_job_to_slurm(
     executable = os.path.basename(executable_path)
     print(f"Script to start: {executable}")
 
-    job_name = f"{executable}"
+    # Get the current date in YYYY-MM-DD format
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
+    job_name = f"{executable}_{current_date}"
+    # Generate the job filename
     job_filename = f"{submit_dir}/{job_name}.slurm"
+
+
 
     # Calculate the total number of images to process
     total_images = end_image - start_image + 1
@@ -90,13 +97,13 @@ echo Start index, End index : $START_INDEX: $END_INDEX
 echo mem used {math.ceil(mem_needed)}G
 
 # Starting python script
-echo python3 {executable_path}.py {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
+echo cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
 
-# python3 {executable_path}.py {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
+# cardio-tensor {executable_path}.py {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
 cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
 
 """
-
+    
     with open(job_filename, "w") as file:
         file.write(slurm_script_content)
 

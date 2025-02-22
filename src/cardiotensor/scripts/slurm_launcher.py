@@ -9,7 +9,6 @@ from tkinter import Tk  # from tkinter import Tk for Python 3.x
 from tkinter.filedialog import askopenfilename
 
 from cardiotensor.launcher.slurm_launcher import slurm_launcher
-from cardiotensor.utils.utils import read_conf_file
 
 
 def script() -> None:
@@ -37,46 +36,6 @@ def script() -> None:
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
 
-    try:
-        # Read configuration parameters from the selected file
-        params = read_conf_file(conf_file_path)
-    except Exception as e:
-        print(e)
-        sys.exit(f"⚠️  Error reading parameter file: {conf_file_path}")
-
-    # Extract configuration parameters
-    (
-        VOLUME_PATH,
-        MASK_PATH,
-        IS_FLIP,
-        OUTPUT_DIR,
-        OUTPUT_TYPE,
-        SIGMA,
-        RHO,
-        N_CHUNK,
-        PT_MV,
-        PT_APEX,
-        REVERSE,
-        IS_TEST,
-        N_SLICE_TEST,
-    ) = (
-        params[key]
-        for key in [
-            "IMAGES_PATH",
-            "MASK_PATH",
-            "FLIP",
-            "OUTPUT_PATH",
-            "OUTPUT_TYPE",
-            "SIGMA",
-            "RHO",
-            "N_CHUNK",
-            "POINT_MITRAL_VALVE",
-            "POINT_APEX",
-            "REVERSE",
-            "TEST",
-            "N_SLICE_TEST",
-        ]
-    )
 
     # Launch processing using slurm_launcher
     slurm_launcher(conf_file_path)

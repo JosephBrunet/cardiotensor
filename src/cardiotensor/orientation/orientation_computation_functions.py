@@ -315,7 +315,7 @@ def compute_helix_and_transverse_angles(
     cos_angle = np.cos(theta)
     sin_angle = np.sin(theta)
 
-    # Rotate the vector field
+    # Change coordinate system to cylindrical
     rotated_vector_field = np.copy(reshaped_vector_field)
     rotated_vector_field[0, :] = (
         cos_angle * reshaped_vector_field[0, :]
@@ -455,22 +455,34 @@ def write_images(
 
         if OUTPUT_FORMAT == "jp2":
             ratio_compression = 10
+
+            # Define file paths
+            ha_path = f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2"
+            ia_path = f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2"
+            fa_path = f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2"
+
+            # Remove existing files if they exist
+            for file_path in [ha_path, ia_path, fa_path]:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+            # Write new JP2 files
             glymur.Jp2k(
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2",
+                ha_path,
                 data=img_helix,
                 cratios=[ratio_compression],
                 numres=8,
                 irreversible=True,
             )
             glymur.Jp2k(
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2",
+                ia_path,
                 data=img_intrusion,
                 cratios=[ratio_compression],
                 numres=8,
                 irreversible=True,
             )
             glymur.Jp2k(
-                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2",
+                fa_path,
                 data=img_FA,
                 cratios=[ratio_compression],
                 numres=8,
