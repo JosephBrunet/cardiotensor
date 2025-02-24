@@ -343,6 +343,16 @@ def compute_slice_angles_and_anisotropy(
     # Visualization in test mode
     if IS_TEST:
         plot_images(img_slice, img_helix, img_intrusion, img_FA, center_point)
+        write_images(
+            img_helix,
+            img_intrusion,
+            img_FA,
+            start_index,
+            OUTPUT_DIR+'/test_slice',
+            OUTPUT_FORMAT,
+            OUTPUT_TYPE,
+            z,
+        )
         return
     
     # Save results
