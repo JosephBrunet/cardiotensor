@@ -75,6 +75,7 @@ def script() -> None:
         start_index = 0
         end_index = None
         use_gpu = True
+        reverse = False
 
     else:
         args = parser.parse_args()
