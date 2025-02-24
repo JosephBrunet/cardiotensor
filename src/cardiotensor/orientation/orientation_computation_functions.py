@@ -6,6 +6,7 @@ import glymur
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
+from scipy.interpolate import CubicSpline
 
 # Optional GPU support
 try:
@@ -23,31 +24,73 @@ from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from cardiotensor.utils.utils import convert_to_8bit
 
 
-def interpolate_points(
-    point1: tuple[float, float, float], point2: tuple[float, float, float], N_img: int
-) -> np.ndarray:
+# def interpolate_points(
+#     point1: tuple[float, float, float], point2: tuple[float, float, float], N_img: int
+# ) -> np.ndarray:
+#     """
+#     Generates interpolated points between two 3D points.
+
+#     Args:
+#         point1 (Tuple[float, float, float]): The first point (x, y, z).
+#         point2 (Tuple[float, float, float]): The second point (x, y, z).
+#         N_img (int): The number of images or points to interpolate.
+
+#     Returns:
+#         np.ndarray: Array of interpolated points.
+#     """
+#     x1, y1, z1 = point1
+#     x2, y2, z2 = point2
+#     z_values = list(range(N_img))
+
+#     if N_img < 2:
+#         return np.array([point1, point2])
+
+#     points = []
+#     for z in z_values:
+#         t = (z - z1) / (z2 - z1)  # Calculate the interpolation parameter
+#         x = x1 + (x2 - x1) * t
+#         y = y1 + (y2 - y1) * t
+#         points.append((x, y, z))
+    
+         
+#     return np.array(points)
+
+
+def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> np.ndarray:
     """
-    Generates interpolated points between two 3D points.
+    Generates interpolated points using cubic spline interpolation for a given set of 3D points.
 
     Args:
-        point1 (Tuple[float, float, float]): The first point (x, y, z).
-        point2 (Tuple[float, float, float]): The second point (x, y, z).
-        N_img (int): The number of images or points to interpolate.
+        points (list[tuple[float, float, float]]): A list of (x, y, z) points.
+        N_img (int): The number of slices in the z-dimension.
 
     Returns:
         np.ndarray: Array of interpolated points.
     """
-    x1, y1, z1 = point1
-    x2, y2, z2 = point2
-    z_values = list(range(N_img))
+    if len(points) < 2:
+        raise ValueError("At least two points are required for interpolation.")
 
-    points = []
-    for z in z_values:
-        t = (z - z1) / (z2 - z1)  # Calculate the interpolation parameter
-        x = x1 + (x2 - x1) * t
-        y = y1 + (y2 - y1) * t
-        points.append((x, y, z))
-    return np.array(points)
+    # Extract x, y, z coordinates separately
+    points = np.array(points)
+    x_vals, y_vals, z_vals = points[:, 0], points[:, 1], points[:, 2]
+
+    # Define cubic splines for x and y based on given z values
+    cs_x = CubicSpline(z_vals, x_vals, bc_type='natural')
+    cs_y = CubicSpline(z_vals, y_vals, bc_type='natural')
+
+    # Generate integer z-values from 1 to N_img
+    z_interp = np.arange(0, N_img)
+
+    # Compute interpolated x and y values at integer z positions
+    x_interp = cs_x(z_interp)
+    y_interp = cs_y(z_interp)
+
+    # Stack into an Nx3 array
+    interpolated_points = np.column_stack((x_interp, y_interp, z_interp))
+
+    return interpolated_points
+
+
 
 
 def calculate_center_vector(
