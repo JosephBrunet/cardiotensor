@@ -130,7 +130,8 @@ def compute_orientation(
 
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
-    center_line = interpolate_points(PT_MV, PT_APEX, data_reader.shape[0])
+    center_line = interpolate_points([PT_MV, PT_APEX], data_reader.shape[0])
+
     center_vec = calculate_center_vector(PT_MV, PT_APEX)
     print(f"Center vector: {center_vec}")
 
