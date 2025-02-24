@@ -66,7 +66,7 @@ git = [
 
 [project.scripts]
 cardio-amira = "cardiotensor.scripts.amira_writer:script"
-cardio-analyse = "cardiotensor.scripts.gui_analysis_tool:script"
+cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"

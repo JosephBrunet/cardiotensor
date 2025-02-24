@@ -16,7 +16,7 @@ See the [example](./examples.md) to get started.
 
 GUI to plot angle profiles across the heart.
 
-- `cardio-analyse`
+- `cardio-analysis`
 
 See the [example](././examples.md#visualizing-transmural-profiles) on how to visualize transmural profile to get started.
 
