@@ -75,8 +75,7 @@ def compute_orientation(
     SIGMA = params.get("SIGMA", 3.0)
     RHO = params.get("RHO", 1.0)
     N_CHUNK = params.get("N_CHUNK", 100)
-    PT_MV = params.get("POINT_MITRAL_VALVE")
-    PT_APEX = params.get("POINT_APEX", None)
+    AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
@@ -129,11 +128,9 @@ def compute_orientation(
         is_mask = False
 
     print("\n---------------------------------")
-    print("CALCULATE CENTER LINE AND CENTER VECTOR\n")
-    center_line = interpolate_points([PT_MV, PT_APEX], data_reader.shape[0])
+    print("CALCULATE CENTER LINE\n")
+    center_line = interpolate_points(AXIS_PTS, data_reader.shape[0])
 
-    center_vec = calculate_center_vector(PT_MV, PT_APEX)
-    print(f"Center vector: {center_vec}")
 
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
@@ -235,7 +232,7 @@ def compute_orientation(
                             volume[z, :, :],
                             np.around(center_line[z]),
                             val[:, z, :, :],
-                            center_vec,
+                            center_line,
                             OUTPUT_DIR,
                             OUTPUT_FORMAT,
                             OUTPUT_TYPE,
@@ -261,7 +258,7 @@ def compute_orientation(
                     volume[z, :, :],
                     np.around(center_line[z]),
                     val[:, z, :, :],
-                    center_vec,
+                    center_line,
                     OUTPUT_DIR,
                     OUTPUT_FORMAT,
                     OUTPUT_TYPE,
@@ -284,7 +281,7 @@ def compute_slice_angles_and_anisotropy(
     img_slice: np.ndarray,
     center_point: np.ndarray,
     eigen_val_slice: np.ndarray,
-    center_vec: np.ndarray,
+    center_line: np.ndarray,
     OUTPUT_DIR: str,
     OUTPUT_FORMAT: str,
     OUTPUT_TYPE: str,
@@ -302,7 +299,7 @@ def compute_slice_angles_and_anisotropy(
         img_slice (np.ndarray): Image data for the slice.
         center_point (np.ndarray): Center point for alignment.
         eigen_val_slice (np.ndarray): Eigenvalues for the slice.
-        center_vec (np.ndarray): Center vector for alignment.
+        center_line (np.ndarray): Center line for alignment.
         OUTPUT_DIR (str): Directory to save the output.
         OUTPUT_FORMAT (str): Format for the output files (e.g., "tif").
         OUTPUT_TYPE (str): Type of output (e.g., "8bits", "rgb").
@@ -330,6 +327,17 @@ def compute_slice_angles_and_anisotropy(
     if not IS_TEST and all(os.path.exists(path) for path in paths):
         # print(f"File {(start_index + z):06d} already exists")
         return
+
+    buffer = 5
+    if z < buffer:
+        VEC_PTS = center_line[:z+buffer]
+    elif z > len(center_line) - buffer:
+        VEC_PTS = center_line[z-buffer:]
+    else: 
+        VEC_PTS = center_line[z-buffer:z+buffer]
+
+    center_vec = calculate_center_vector(VEC_PTS)
+    print(f"(Center vector: {center_vec})")
 
     # Compute angles and FA if needed
     if WRITE_ANGLES or IS_TEST:

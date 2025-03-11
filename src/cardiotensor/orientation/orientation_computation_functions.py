@@ -93,32 +93,55 @@ def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> 
 
 
 
-def calculate_center_vector(
-    pt_mv: np.ndarray, pt_apex: np.ndarray,
-) -> np.ndarray:
-    """
-    Calculates the center vector between two points in 3D space.
+# def calculate_center_vector(
+#     pt_mv: np.ndarray, pt_apex: np.ndarray,
+# ) -> np.ndarray:
+#     """
+#     Calculates the center vector between two points in 3D space.
 
-    Args:
-        pt_mv (np.ndarray): The mitral valve point (x, y, z).
-        pt_apex (np.ndarray): The apex point (x, y, z).
+#     Args:
+#         pt_mv (np.ndarray): The mitral valve point (x, y, z).
+#         pt_apex (np.ndarray): The apex point (x, y, z).
         
+#     Returns:
+#         np.ndarray: Normalized center vector.
+#     """
+#     # Calculate center vector
+
+#     center_vec = pt_mv - pt_apex  # points are [X,Y,Z]
+#     center_vec = center_vec / np.linalg.norm(center_vec)
+
+#     # if is_flip:
+#     #     center_vec[2] = -center_vec[
+#     #         2
+#     #     ]  # Invert z components (Don't know why but it works)
+    
+#     center_vec = center_vec[[2, 1, 0]]  # Swap (X, Y, Z) -> (Z, Y, X)
+    
+#     return center_vec
+
+
+
+def calculate_center_vector(points: np.ndarray) -> np.ndarray:
+    """Compute the linear regression vector for a given set of 3D points.
+    
+    Args:
+        points (np.ndarray): An Nx3 array of (x, y, z) coordinates representing the curved line.
+    
     Returns:
-        np.ndarray: Normalized center vector.
+        np.ndarray: A single 3D unit vector representing the direction of the best-fit line.
     """
-    # Calculate center vector
-
-    center_vec = pt_mv - pt_apex  # points are [X,Y,Z]
-    center_vec = center_vec / np.linalg.norm(center_vec)
-
-    # if is_flip:
-    #     center_vec[2] = -center_vec[
-    #         2
-    #     ]  # Invert z components (Don't know why but it works)
+    if points.shape[1] != 3:
+        raise ValueError("Input must be an Nx3 array of (x, y, z) coordinates.")
     
-    center_vec = center_vec[[2, 1, 0]]  # Swap (X, Y, Z) -> (Z, Y, X)
+    centroid = np.mean(points, axis=0)
+    centered_points = points - centroid
     
-    return center_vec
+    _, _, vh = np.linalg.svd(centered_points)
+    center_vector = vh[0] / np.linalg.norm(vh[0])
+    
+    return center_vector
+
 
 
 def adjust_start_end_index(
