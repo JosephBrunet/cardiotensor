@@ -167,3 +167,5 @@ src/hipct_data_tools/_version.py
 uv.lock
 tmp*
 uv.lock
+
+.vs

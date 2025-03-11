@@ -29,17 +29,40 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     config = configparser.ConfigParser()
     config.read(file_path)
 
-    def parse_coordinates(section: str, option: str, fallback: str = "") -> np.ndarray:
-        """Parse a comma-separated coordinate string into a NumPy array."""
+        # def parse_coordinates(section: str, option: str, fallback: str = "") -> np.ndarray:
+        #     """Parse a comma-separated coordinate string into a NumPy array."""
+        #     value = config.get(section, option, fallback=fallback).strip()
+        #     if value:
+        #         try:
+        #             return np.array([float(coord) for coord in value.split(",")])
+        #         except ValueError:
+        #             raise ValueError(
+        #                 f"Invalid coordinate format for {option} in [{section}]: {value}"
+        #             )
+        #     return np.array([])
+
+    # def parse_coordinates(axis_points: str):
+    #     try:
+    #         # Extract coordinate sets from brackets and split them
+    #         points = axis_points.strip().strip("[]").split("],[")
+    #         return [np.array([float(coord) for coord in point.split(",")]) for point in points]
+    #     except ValueError:
+    #         raise ValueError(f"Invalid coordinate format: {axis_points}")
+
+    #     return np.array([])
+
+    def parse_coordinates(section: str, option: str, fallback: str = ""):
         value = config.get(section, option, fallback=fallback).strip()
         if value:
             try:
-                return np.array([float(coord) for coord in value.split(",")])
+                # Extract coordinate sets from brackets and split them
+                points = value.strip("[]").split("],[")
+                return [np.array([float(coord) for coord in point.split(",")]) for point in points]
             except ValueError:
-                raise ValueError(
-                    f"Invalid coordinate format for {option} in [{section}]: {value}"
+                raise ValueError(f"Invalid coordinate format for {option} in [{section}]: {value}"
                 )
         return np.array([])
+
 
     return {
         # DATASET
@@ -57,8 +80,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
         # ANGLE CALCULATION
         "WRITE_ANGLES": config.getboolean("ANGLE CALCULATION", "WRITE_ANGLES", fallback=True),
-        "POINT_MITRAL_VALVE": parse_coordinates("ANGLE CALCULATION", "POINT_MITRAL_VALVE"),
-        "POINT_APEX": parse_coordinates("ANGLE CALCULATION", "POINT_APEX"),
+        "AXIS_POINTS": parse_coordinates("ANGLE CALCULATION", "AXIS_POINTS"),
 
         # TEST
         "TEST": config.getboolean("TEST", "TEST", fallback=False),
