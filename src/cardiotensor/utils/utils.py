@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 
+import ast
 
 def read_conf_file(file_path: str) -> dict[str, Any]:
     """
@@ -29,39 +30,32 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     config = configparser.ConfigParser()
     config.read(file_path)
 
-        # def parse_coordinates(section: str, option: str, fallback: str = "") -> np.ndarray:
-        #     """Parse a comma-separated coordinate string into a NumPy array."""
-        #     value = config.get(section, option, fallback=fallback).strip()
-        #     if value:
-        #         try:
-        #             return np.array([float(coord) for coord in value.split(",")])
-        #         except ValueError:
-        #             raise ValueError(
-        #                 f"Invalid coordinate format for {option} in [{section}]: {value}"
-        #             )
-        #     return np.array([])
-
-    # def parse_coordinates(axis_points: str):
-    #     try:
-    #         # Extract coordinate sets from brackets and split them
-    #         points = axis_points.strip().strip("[]").split("],[")
-    #         return [np.array([float(coord) for coord in point.split(",")]) for point in points]
-    #     except ValueError:
-    #         raise ValueError(f"Invalid coordinate format: {axis_points}")
-
-    #     return np.array([])
 
     def parse_coordinates(section: str, option: str, fallback: str = ""):
-        value = config.get(section, option, fallback=fallback).strip()
-        if value:
-            try:
-                # Extract coordinate sets from brackets and split them
-                points = value.strip("[]").split("],[")
-                return [np.array([float(coord) for coord in point.split(",")]) for point in points]
-            except ValueError:
-                raise ValueError(f"Invalid coordinate format for {option} in [{section}]: {value}"
-                )
-        return np.array([])
+        """
+        Parses a coordinate string from a configuration file into a list of tuples.
+
+        Parameters:
+            config (ConfigParser): The configuration parser object.
+            section (str): The section in the config.
+            option (str): The option name.
+            fallback (str): A fallback value if the option is missing.
+
+        Returns:
+            list[tuple[int, int, int]]: List of 3D coordinate tuples or an empty list.
+        """
+        value = config.get(section, option, fallback=fallback).strip().replace(' ', '')
+        
+        if not value:  # Return an empty list if the value is empty
+            return []
+
+        try:
+            value = f"[{value}]"  # Ensure it's formatted as a list
+            points_list = ast.literal_eval(value)  # Safely evaluate the string
+            return [tuple(point) for point in points_list]  # Convert to list of tuples
+        except (SyntaxError, ValueError) as e:
+            raise ValueError(f"Invalid coordinate format for {option} in [{section}]: {value}") from e
+
 
 
     return {
