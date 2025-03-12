@@ -221,11 +221,16 @@ def compute_orientation(
         num_slices = vec.shape[1]
         print(f"Using {mp.cpu_count()} CPU cores")
 
+        def update_bar(_):
+            """Callback function to update progress bar."""
+            bar()
+                
         with mp.Pool(processes=mp.cpu_count()) as pool:
             with alive_bar(num_slices, title="Processing slices (Multiprocess)", bar="smooth") as bar:
-                for _ in pool.starmap(
-                    compute_slice_angles_and_anisotropy,  # 🔹 Use starmap instead of imap_unordered
-                    [
+                results = []
+                for z in range(num_slices):
+                    result = pool.apply_async(
+                        compute_slice_angles_and_anisotropy,
                         (
                             z,
                             vec[:, z, :, :],
@@ -240,11 +245,13 @@ def compute_orientation(
                             WRITE_VECTORS,
                             WRITE_ANGLES,
                             IS_TEST,
-                        )
-                        for z in range(num_slices)
-                    ],
-                ):
-                    bar()  # ✅ Increment progress bar correctly
+                        ),
+                        callback=update_bar,  # ✅ Update progress bar after each task
+                    )
+                    results.append(result)
+
+                for result in results:
+                    result.wait()  # Ensure all tasks are completed before exiting
     else:
         # Add a progress bar for single-threaded processing
         with alive_bar(
@@ -337,7 +344,7 @@ def compute_slice_angles_and_anisotropy(
         VEC_PTS = center_line[z-buffer:z+buffer]
 
     center_vec = calculate_center_vector(VEC_PTS)
-    print(f"(Center vector: {center_vec})")
+    # print(f"(Center vector: {center_vec})")
 
     # Compute angles and FA if needed
     if WRITE_ANGLES or IS_TEST:
