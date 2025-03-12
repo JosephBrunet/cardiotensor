@@ -101,20 +101,8 @@ class Window(QWidget):
             sys.exit(1)
 
         # Extracting parameters safely using .get() with defaults where necessary
-        VOLUME_PATH = params.get("IMAGES_PATH", "")
         MASK_PATH = params.get("MASK_PATH", "")
         OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-        OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
-        OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
-        WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-        WRITE_ANGLES = params.get("WRITE_ANGLES", False)
-        SIGMA = params.get("SIGMA", 3.0)
-        RHO = params.get("RHO", 1.0)
-        N_CHUNK = params.get("N_CHUNK", 100)
-        PT_MV = params.get("POINT_MITRAL_VALVE", None)
-        PT_APEX = params.get("POINT_APEX", None)
-        IS_TEST = params.get("TEST", False)
-        N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
         self.MASK_PATH = MASK_PATH
         self.OUTPUT_DIR = OUTPUT_DIR
@@ -395,9 +383,9 @@ class Window(QWidget):
                 interpolation=cv2.INTER_LINEAR,
             )
 
-            assert (
-                img_mask.shape == img.shape
-            ), f"Mask shape {img_mask.shape} does not match volume shape {img.shape}"
+            assert img_mask.shape == img.shape, (
+                f"Mask shape {img_mask.shape} does not match volume shape {img.shape}"
+            )
 
             img64[img_mask == 0] = np.nan
 

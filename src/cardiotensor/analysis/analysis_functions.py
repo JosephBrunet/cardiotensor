@@ -105,7 +105,7 @@ def calculate_intensities(
 
     intensity_profiles = []
     for i, end in enumerate(end_points):
-        print(f"Measure {i+1}/{len(end_points)}")
+        print(f"Measure {i + 1}/{len(end_points)}")
         intensity_profile = profile_line(img_helix, start_point, end, order=0)
 
         if min_value is not None and max_value is not None:
@@ -224,10 +224,10 @@ def save_intensity(intensity_profiles: list[np.ndarray], save_path: str) -> None
     df = pd.DataFrame(intensity_profiles)
 
     # Rename columns to start from "Value 1"
-    df.columns = [f"Value {i+1}" for i in range(df.shape[1])]
+    df.columns = [f"Value {i + 1}" for i in range(df.shape[1])]
 
     # Add a "Profile" row
-    df.insert(0, "Profile", [f"Profile {i+1}" for i in range(df.shape[0])])
+    df.insert(0, "Profile", [f"Profile {i + 1}" for i in range(df.shape[0])])
 
     # Transpose the DataFrame so profiles are in columns
     df = df.transpose()

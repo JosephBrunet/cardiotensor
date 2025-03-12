@@ -51,10 +51,10 @@ repos:
         args: [--config-file, pyproject.toml, --ignore-missing-imports]
         files: ^src/
         exclude: ^examples/
-  -   repo: https://github.com/psf/black
-      rev: 24.10.0
-      hooks:
-      - id: black
+  # -   repo: https://github.com/psf/black
+  #     rev: 24.10.0
+  #     hooks:
+  #     - id: black
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

@@ -24,10 +24,9 @@ from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from cardiotensor.utils.utils import convert_to_8bit
 
 
-
-
-
-def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> np.ndarray:
+def interpolate_points(
+    points: list[tuple[float, float, float]], N_img: int
+) -> np.ndarray:
     """
     Generates interpolated points using cubic spline interpolation for a given set of 3D points.
 
@@ -49,8 +48,8 @@ def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> 
     x_vals, y_vals, z_vals = points_array[:, 0], points_array[:, 1], points_array[:, 2]
 
     # Define cubic splines for x and y based on given z values
-    cs_x = CubicSpline(z_vals, x_vals, bc_type='natural')
-    cs_y = CubicSpline(z_vals, y_vals, bc_type='natural')
+    cs_x = CubicSpline(z_vals, x_vals, bc_type="natural")
+    cs_y = CubicSpline(z_vals, y_vals, bc_type="natural")
 
     # Generate integer z-values from 1 to N_img
     z_interp = np.arange(0, N_img)
@@ -65,33 +64,31 @@ def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> 
     return interpolated_points
 
 
-
 def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     """Compute the linear regression vector for a given set of 3D points.
-    
+
     Args:
         points (np.ndarray): An Nx3 array of (x, y, z) coordinates representing the curved line.
-    
+
     Returns:
         np.ndarray: A single 3D unit vector representing the direction of the best-fit line.
     """
     if points.shape[1] != 3:
         raise ValueError("Input must be an Nx3 array of (x, y, z) coordinates.")
-    
+
     # Compute the centroid (mean position of all points)
     centroid = np.mean(points, axis=0)
     # Center the points by subtracting the centroid
     centered_points = points - centroid
-    
+
     # Perform Singular Value Decomposition (SVD)
     # This decomposes the data into principal components
     _, _, vh = np.linalg.svd(centered_points)
-    
-    #Extract the Dominant Direction
-    center_vector = vh[0] / np.linalg.norm(vh[0])
-        
-    return center_vector
 
+    # Extract the Dominant Direction
+    center_vector = vh[0] / np.linalg.norm(vh[0])
+
+    return center_vector
 
 
 def adjust_start_end_index(
@@ -270,7 +267,7 @@ def rotate_vectors_to_new_axis(
     """
     # Ensure new_axis_vec is normalized
     new_axis_vec = new_axis_vec / np.linalg.norm(new_axis_vec)
-        
+
     # Calculate the rotation matrix
     vec1 = np.array([1, 0, 0])  # Initial vertical axis
 
@@ -357,7 +354,6 @@ def compute_helix_and_transverse_angles(
     helix_angle = helix_angle * -np.sign(new_axis_vec[0])
     helix_angle = np.rad2deg(helix_angle)
     transverse_angle = np.rad2deg(transverse_angle)
-
 
     return helix_angle, transverse_angle
 
