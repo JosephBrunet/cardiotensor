@@ -18,15 +18,18 @@ def tests(session):
     # Install development dependencies
     session.install(".[dev]")
 
-    # Run pytest with coverage tracking
-    session.run(
-        "coverage", "run", "--source=src", "-m", "pytest", "-s", *session.posargs
-    )
+    # Run pytest without coverage
+    session.run("pytest", "-s", *session.posargs)
 
-    # Generate coverage reports
-    session.run("coverage", "report", "--show-missing")
-    session.run("coverage", "xml")  # For CI integrations
-    session.run("coverage", "html")  # For local inspection
+    # # Run pytest with coverage tracking
+    # session.run(
+    #     "coverage", "run", "--source=src", "-m", "pytest", "-s", *session.posargs
+    # )
+
+    # # Generate coverage reports
+    # session.run("coverage", "report", "--show-missing")
+    # session.run("coverage", "xml")  # For CI integrations
+    # session.run("coverage", "html")  # For local inspection
 
 
 # @nox.session(python=PYTHON_VERSIONS)
