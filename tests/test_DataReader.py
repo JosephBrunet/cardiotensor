@@ -44,7 +44,7 @@ def create_test_mhd(
 
     mhd_content = f"""ObjectType = Image
 NDims = 3
-DimSize = {' '.join(map(str, shape))}
+DimSize = {" ".join(map(str, shape))}
 ElementType = {element_type}
 ElementSpacing = 1 1 1
 ElementDataFile = {raw_file.name}

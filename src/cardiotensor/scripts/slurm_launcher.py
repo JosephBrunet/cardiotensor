@@ -36,7 +36,6 @@ def script() -> None:
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
 
-
     # Launch processing using slurm_launcher
     slurm_launcher(conf_file_path)
 

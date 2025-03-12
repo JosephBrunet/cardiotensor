@@ -1,10 +1,10 @@
+import ast
 import configparser
 import os
 from typing import Any
 
 import numpy as np
 
-import ast
 
 def read_conf_file(file_path: str) -> dict[str, Any]:
     """
@@ -23,13 +23,12 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
-    
+
     if not file_path.endswith(".conf"):
         raise ValueError("The file is not a .conf file")
 
     config = configparser.ConfigParser()
     config.read(file_path)
-
 
     def parse_coordinates(section: str, option: str, fallback: str = ""):
         """
@@ -44,8 +43,8 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         Returns:
             list[tuple[int, int, int]]: List of 3D coordinate tuples or an empty list.
         """
-        value = config.get(section, option, fallback=fallback).strip().replace(' ', '')
-        
+        value = config.get(section, option, fallback=fallback).strip().replace(" ", "")
+
         if not value:  # Return an empty list if the value is empty
             return []
 
@@ -54,37 +53,44 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
             points_list = ast.literal_eval(value)  # Safely evaluate the string
             return [tuple(point) for point in points_list]  # Convert to list of tuples
         except (SyntaxError, ValueError) as e:
-            raise ValueError(f"Invalid coordinate format for {option} in [{section}]: {value}") from e
-
-
+            raise ValueError(
+                f"Invalid coordinate format for {option} in [{section}]: {value}"
+            ) from e
 
     return {
         # DATASET
         "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH").strip(),
         "MASK_PATH": config.get("DATASET", "MASK_PATH", fallback="").strip(),
         "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
-        
         # STRUCTURE TENSOR CALCULATION
         "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
         "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
-        "N_CHUNK": config.getint("STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100),
-        "USE_GPU": config.getboolean("STRUCTURE TENSOR CALCULATION", "USE_GPU", fallback=False),
-        "WRITE_VECTORS": config.getboolean("STRUCTURE TENSOR CALCULATION", "WRITE_VECTORS", fallback=False),
-        "REVERSE": config.getboolean("STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False),
-
+        "N_CHUNK": config.getint(
+            "STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100
+        ),
+        "USE_GPU": config.getboolean(
+            "STRUCTURE TENSOR CALCULATION", "USE_GPU", fallback=False
+        ),
+        "WRITE_VECTORS": config.getboolean(
+            "STRUCTURE TENSOR CALCULATION", "WRITE_VECTORS", fallback=False
+        ),
+        "REVERSE": config.getboolean(
+            "STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False
+        ),
         # ANGLE CALCULATION
-        "WRITE_ANGLES": config.getboolean("ANGLE CALCULATION", "WRITE_ANGLES", fallback=True),
+        "WRITE_ANGLES": config.getboolean(
+            "ANGLE CALCULATION", "WRITE_ANGLES", fallback=True
+        ),
         "AXIS_POINTS": parse_coordinates("ANGLE CALCULATION", "AXIS_POINTS"),
-
         # TEST
         "TEST": config.getboolean("TEST", "TEST", fallback=False),
         "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
-
         # OUTPUT
         "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="./output").strip(),
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
     }
+
 
 # Function to remove files smaller than 1KB
 def remove_corrupted_files(file_paths, size_threshold=1024):
@@ -92,7 +98,6 @@ def remove_corrupted_files(file_paths, size_threshold=1024):
         if os.path.exists(file_path) and os.path.getsize(file_path) < size_threshold:
             print("Corrupted file removed:", file_path)
             os.remove(file_path)
-
 
 
 def convert_to_8bit(

@@ -200,20 +200,7 @@ def vtk_writer(
 
     # Extracting parameters safely using .get() with defaults where necessary
     VOLUME_PATH = params.get("IMAGES_PATH", "")
-    MASK_PATH = params.get("MASK_PATH", "")
     OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
-    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
-    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
-    SIGMA = params.get("SIGMA", 3.0)
-    RHO = params.get("RHO", 1.0)
-    N_CHUNK = params.get("N_CHUNK", 100)
-    PT_MV = params.get("POINT_MITRAL_VALVE", None)
-    PT_APEX = params.get("POINT_APEX", None)
-    IS_TEST = params.get("TEST", False)
-    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
-
     OUTPUT_DIR = Path(OUTPUT_DIR)
 
     data_reader_volume = DataReader(VOLUME_PATH)

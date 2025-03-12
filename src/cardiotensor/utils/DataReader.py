@@ -154,7 +154,9 @@ class DataReader:
             start_index_bin_upscaled = int(
                 np.abs(start_index * binning_factor - start_index_ini)
             )
-            end_index_bin_upscaled = start_index_bin_upscaled + (end_index_ini - start_index_ini)
+            end_index_bin_upscaled = start_index_bin_upscaled + (
+                end_index_ini - start_index_ini
+            )
 
             if start_index_bin_upscaled < 0:
                 start_index_bin_upscaled = 0

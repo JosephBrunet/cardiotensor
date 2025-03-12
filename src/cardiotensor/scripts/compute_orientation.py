@@ -134,5 +134,3 @@ def script() -> None:
         print("--- %s seconds ---" % (time.time() - start_time))
 
     return None
-
-

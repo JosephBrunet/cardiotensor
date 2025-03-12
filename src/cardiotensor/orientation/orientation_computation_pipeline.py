@@ -4,7 +4,6 @@ import os
 import sys
 import time
 
-import cv2
 import numpy as np
 from alive_progress import alive_bar
 
@@ -26,8 +25,6 @@ from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import read_conf_file, remove_corrupted_files
 
 MULTIPROCESS = True
-
-
 
 
 # @profile
@@ -74,7 +71,6 @@ def compute_orientation(
     WRITE_ANGLES = params.get("WRITE_ANGLES", True)
     SIGMA = params.get("SIGMA", 3.0)
     RHO = params.get("RHO", 1.0)
-    N_CHUNK = params.get("N_CHUNK", 100)
     AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
@@ -101,12 +97,14 @@ def compute_orientation(
             existing_files = []
 
             if WRITE_ANGLES:
-                existing_files.extend([
-                    f"{OUTPUT_DIR}/HA/HA_{idx:06d}.{OUTPUT_FORMAT}",
-                    f"{OUTPUT_DIR}/IA/IA_{idx:06d}.{OUTPUT_FORMAT}",
-                    f"{OUTPUT_DIR}/FA/FA_{idx:06d}.{OUTPUT_FORMAT}",
-                ])
-            
+                existing_files.extend(
+                    [
+                        f"{OUTPUT_DIR}/HA/HA_{idx:06d}.{OUTPUT_FORMAT}",
+                        f"{OUTPUT_DIR}/IA/IA_{idx:06d}.{OUTPUT_FORMAT}",
+                        f"{OUTPUT_DIR}/FA/FA_{idx:06d}.{OUTPUT_FORMAT}",
+                    ]
+                )
+
             if WRITE_VECTORS:
                 existing_files.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{idx:06d}.npy")
 
@@ -130,7 +128,6 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE\n")
     center_line = interpolate_points(AXIS_PTS, data_reader.shape[0])
-
 
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
@@ -175,9 +172,9 @@ def compute_orientation(
             start_index_padded, end_index_padded, unbinned_shape=data_reader.shape
         ).astype("float32")
 
-        assert (
-            mask.shape == volume.shape
-        ), f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
+        assert mask.shape == volume.shape, (
+            f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
+        )
 
         volume[mask == 0] = 0
 
@@ -224,9 +221,11 @@ def compute_orientation(
         def update_bar(_):
             """Callback function to update progress bar."""
             bar()
-                
+
         with mp.Pool(processes=mp.cpu_count()) as pool:
-            with alive_bar(num_slices, title="Processing slices (Multiprocess)", bar="smooth") as bar:
+            with alive_bar(
+                num_slices, title="Processing slices (Multiprocess)", bar="smooth"
+            ) as bar:
                 results = []
                 for z in range(num_slices):
                     result = pool.apply_async(
@@ -319,7 +318,7 @@ def compute_slice_angles_and_anisotropy(
         None
     """
     # print(f"Processing image: {start_index + z}")
-    
+
     paths = []
     if WRITE_ANGLES:
         paths = [
@@ -337,11 +336,11 @@ def compute_slice_angles_and_anisotropy(
 
     buffer = 5
     if z < buffer:
-        VEC_PTS = center_line[:z+buffer]
+        VEC_PTS = center_line[: z + buffer]
     elif z > len(center_line) - buffer:
-        VEC_PTS = center_line[z-buffer:]
-    else: 
-        VEC_PTS = center_line[z-buffer:z+buffer]
+        VEC_PTS = center_line[z - buffer :]
+    else:
+        VEC_PTS = center_line[z - buffer : z + buffer]
 
     center_vec = calculate_center_vector(VEC_PTS)
     # print(f"(Center vector: {center_vec})")
@@ -364,13 +363,13 @@ def compute_slice_angles_and_anisotropy(
             img_intrusion,
             img_FA,
             start_index,
-            OUTPUT_DIR+'/test_slice',
+            OUTPUT_DIR + "/test_slice",
             OUTPUT_FORMAT,
             OUTPUT_TYPE,
             z,
         )
         return
-    
+
     # Save results
     if WRITE_ANGLES:
         write_images(

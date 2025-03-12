@@ -52,8 +52,6 @@ def submit_job_to_slurm(
     # Generate the job filename
     job_filename = f"{submit_dir}/{job_name}.slurm"
 
-
-
     # Calculate the total number of images to process
     total_images = end_image - start_image + 1
     IMAGES_PER_JOB = N_chunk
@@ -103,7 +101,7 @@ echo cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_
 cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
 
 """
-    
+
     with open(job_filename, "w") as file:
         file.write(slurm_script_content)
 
@@ -173,19 +171,9 @@ def slurm_launcher(conf_file_path: str) -> None:
 
     # Extracting parameters safely using .get() with defaults where necessary
     VOLUME_PATH = params.get("IMAGES_PATH", "")
-    MASK_PATH = params.get("MASK_PATH", "")
     OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
-    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
-    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-    WRITE_ANGLES = params.get("WRITE_ANGLES", False)
-    SIGMA = params.get("SIGMA", 3.0)
-    RHO = params.get("RHO", 1.0)
     N_CHUNK = params.get("N_CHUNK", 100)
-    PT_MV = params.get("POINT_MITRAL_VALVE", None)
-    PT_APEX = params.get("POINT_APEX", None)
     IS_TEST = params.get("TEST", False)
-    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
 
     if IS_TEST == True:
         sys.exit(

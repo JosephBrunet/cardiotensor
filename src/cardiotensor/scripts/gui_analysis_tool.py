@@ -15,7 +15,9 @@ def parse_arguments() -> argparse.Namespace:
     Returns:
         argparse.Namespace: Parsed command-line arguments.
     """
-    parser = argparse.ArgumentParser(description="Open a GUI to interactively plot transmural profiles of the angles.")
+    parser = argparse.ArgumentParser(
+        description="Open a GUI to interactively plot transmural profiles of the angles."
+    )
     parser.add_argument(
         "conf_file_path", type=str, help="Path to the configuration file"
     )
