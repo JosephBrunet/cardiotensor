@@ -24,36 +24,7 @@ from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from cardiotensor.utils.utils import convert_to_8bit
 
 
-# def interpolate_points(
-#     point1: tuple[float, float, float], point2: tuple[float, float, float], N_img: int
-# ) -> np.ndarray:
-#     """
-#     Generates interpolated points between two 3D points.
 
-#     Args:
-#         point1 (Tuple[float, float, float]): The first point (x, y, z).
-#         point2 (Tuple[float, float, float]): The second point (x, y, z).
-#         N_img (int): The number of images or points to interpolate.
-
-#     Returns:
-#         np.ndarray: Array of interpolated points.
-#     """
-#     x1, y1, z1 = point1
-#     x2, y2, z2 = point2
-#     z_values = list(range(N_img))
-
-#     if N_img < 2:
-#         return np.array([point1, point2])
-
-#     points = []
-#     for z in z_values:
-#         t = (z - z1) / (z2 - z1)  # Calculate the interpolation parameter
-#         x = x1 + (x2 - x1) * t
-#         y = y1 + (y2 - y1) * t
-#         points.append((x, y, z))
-    
-         
-#     return np.array(points)
 
 
 def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> np.ndarray:
@@ -70,9 +41,12 @@ def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> 
     if len(points) < 2:
         raise ValueError("At least two points are required for interpolation.")
 
+    # Sort based on the third element (z-coordinate)
+    points = sorted(points, key=lambda p: p[2])
+
     # Extract x, y, z coordinates separately
-    points = np.array(points)
-    x_vals, y_vals, z_vals = points[:, 0], points[:, 1], points[:, 2]
+    points_array = np.array(points)
+    x_vals, y_vals, z_vals = points_array[:, 0], points_array[:, 1], points_array[:, 2]
 
     # Define cubic splines for x and y based on given z values
     cs_x = CubicSpline(z_vals, x_vals, bc_type='natural')
@@ -92,36 +66,6 @@ def interpolate_points(points: list[tuple[float, float, float]], N_img: int) -> 
 
 
 
-
-# def calculate_center_vector(
-#     pt_mv: np.ndarray, pt_apex: np.ndarray,
-# ) -> np.ndarray:
-#     """
-#     Calculates the center vector between two points in 3D space.
-
-#     Args:
-#         pt_mv (np.ndarray): The mitral valve point (x, y, z).
-#         pt_apex (np.ndarray): The apex point (x, y, z).
-        
-#     Returns:
-#         np.ndarray: Normalized center vector.
-#     """
-#     # Calculate center vector
-
-#     center_vec = pt_mv - pt_apex  # points are [X,Y,Z]
-#     center_vec = center_vec / np.linalg.norm(center_vec)
-
-#     # if is_flip:
-#     #     center_vec[2] = -center_vec[
-#     #         2
-#     #     ]  # Invert z components (Don't know why but it works)
-    
-#     center_vec = center_vec[[2, 1, 0]]  # Swap (X, Y, Z) -> (Z, Y, X)
-    
-#     return center_vec
-
-
-
 def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     """Compute the linear regression vector for a given set of 3D points.
     
@@ -134,12 +78,18 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     if points.shape[1] != 3:
         raise ValueError("Input must be an Nx3 array of (x, y, z) coordinates.")
     
+    # Compute the centroid (mean position of all points)
     centroid = np.mean(points, axis=0)
+    # Center the points by subtracting the centroid
     centered_points = points - centroid
     
+    # Perform Singular Value Decomposition (SVD)
+    # This decomposes the data into principal components
     _, _, vh = np.linalg.svd(centered_points)
-    center_vector = vh[0] / np.linalg.norm(vh[0])
     
+    #Extract the Dominant Direction
+    center_vector = vh[0] / np.linalg.norm(vh[0])
+        
     return center_vector
 
 
