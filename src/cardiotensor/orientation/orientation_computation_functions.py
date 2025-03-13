@@ -138,9 +138,11 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     centered_points = points - centroid
     
     _, _, vh = np.linalg.svd(centered_points)
-    center_vector = vh[0] / np.linalg.norm(vh[0])
+    center_vec = vh[0] / np.linalg.norm(vh[0])
+
+    center_vec = -center_vec[[2, 1, 0]]
     
-    return center_vector
+    return center_vec
 
 
 

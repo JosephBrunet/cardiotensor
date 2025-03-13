@@ -274,7 +274,6 @@ def compute_orientation(
 
     return
 
-
 def compute_slice_angles_and_anisotropy(
     z: int,
     vector_field_slice: np.ndarray,
@@ -329,12 +328,13 @@ def compute_slice_angles_and_anisotropy(
         return
 
     buffer = 5
+
     if z < buffer:
-        VEC_PTS = center_line[:z+buffer]
-    elif z > len(center_line) - buffer:
-        VEC_PTS = center_line[z-buffer:]
+        VEC_PTS = center_line[:min(z + buffer, len(center_line))] 
+    elif z >= len(center_line) - buffer:  
+        VEC_PTS = center_line[max(z - buffer, 0):] 
     else: 
-        VEC_PTS = center_line[z-buffer:z+buffer]
+        VEC_PTS = center_line[z - buffer:z + buffer]
 
     center_vec = calculate_center_vector(VEC_PTS)
     print(f"(Center vector: {center_vec})")
