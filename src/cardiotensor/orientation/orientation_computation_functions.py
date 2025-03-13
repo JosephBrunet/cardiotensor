@@ -77,7 +77,7 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     """
     if points.shape[1] != 3:
         raise ValueError("Input must be an Nx3 array of (x, y, z) coordinates.")
-
+    
     # Compute the centroid (mean position of all points)
     centroid = np.mean(points, axis=0)
     # Center the points by subtracting the centroid
@@ -86,12 +86,11 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     # Perform Singular Value Decomposition (SVD)
     # This decomposes the data into principal components
     _, _, vh = np.linalg.svd(centered_points)
-    center_vec = vh[0] / np.linalg.norm(vh[0])
-
-    # Extract the Dominant Direction
-    center_vec = -center_vec[[2, 1, 0]]
     
-    return center_vec
+    #Extract the Dominant Direction
+    center_vector = vh[0] / np.linalg.norm(vh[0])
+        
+    return center_vector
 
 
 

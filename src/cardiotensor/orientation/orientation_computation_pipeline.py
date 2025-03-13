@@ -227,9 +227,10 @@ def compute_orientation(
                 
         with mp.Pool(processes=mp.cpu_count()) as pool:
             with alive_bar(num_slices, title="Processing slices (Multiprocess)", bar="smooth") as bar:
-                for _ in pool.starmap(
-                    compute_slice_angles_and_anisotropy,  # 🔹 Use starmap instead of imap_unordered
-                    [
+                results = []
+                for z in range(num_slices):
+                    result = pool.apply_async(
+                        compute_slice_angles_and_anisotropy,
                         (
                             z,
                             vec[:, z, :, :],
@@ -246,11 +247,11 @@ def compute_orientation(
                             IS_TEST,
                         ),
                         callback=update_bar,  # ✅ Update progress bar after each task
-                        )
-                        for z in range(num_slices)
-                    ],
-                ):
-                    bar()  # ✅ Increment progress bar correctly
+                    )
+                    results.append(result)
+
+                for result in results:
+                    result.wait()  # Ensure all tasks are completed before exiting
     else:
         # Add a progress bar for single-threaded processing
         with alive_bar(
@@ -279,6 +280,7 @@ def compute_orientation(
     print("---------------------------------\n\n")
 
     return
+
 
 def compute_slice_angles_and_anisotropy(
     z: int,
@@ -334,16 +336,15 @@ def compute_slice_angles_and_anisotropy(
         return
 
     buffer = 5
-
     if z < buffer:
-        VEC_PTS = center_line[:min(z + buffer, len(center_line))] 
-    elif z >= len(center_line) - buffer:  
-        VEC_PTS = center_line[max(z - buffer, 0):] 
+        VEC_PTS = center_line[:z+buffer]
+    elif z > len(center_line) - buffer:
+        VEC_PTS = center_line[z-buffer:]
     else: 
-        VEC_PTS = center_line[z - buffer:z + buffer]
+        VEC_PTS = center_line[z-buffer:z+buffer]
 
     center_vec = calculate_center_vector(VEC_PTS)
-    print(f"(Center vector: {center_vec})")
+    # print(f"(Center vector: {center_vec})")
 
     # Compute angles and FA if needed
     if WRITE_ANGLES or IS_TEST:
