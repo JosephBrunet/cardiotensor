@@ -78,6 +78,7 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
 
     # Compute the centroid (mean position of all points)
     centroid = np.mean(points, axis=0)
+    
     # Center the points by subtracting the centroid
     centered_points = points - centroid
 
@@ -85,10 +86,12 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
     # This decomposes the data into principal components
     _, _, vh = np.linalg.svd(centered_points)
 
-    # Extract the Dominant Direction
-    center_vector = vh[0] / np.linalg.norm(vh[0])
+    center_vec = vh[0] / np.linalg.norm(vh[0])
 
-    return center_vector
+    # Extract the Dominant Direction
+    center_vec = -center_vec[[2, 1, 0]]
+
+    return center_vec
 
 
 def adjust_start_end_index(
