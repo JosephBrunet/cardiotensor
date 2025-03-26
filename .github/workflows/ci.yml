@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -7,6 +6,8 @@ on:
   pull_request:
     branches:
       - main
+permissions:
+  contents: write
 
 jobs:
   lint:
@@ -14,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -25,10 +26,28 @@ jobs:
         run: pip install black ruff
 
       - name: Run Ruff
-        run: ruff check .
+        run: ruff check . --fix
 
-      # - name: Run Black
-      #   run: black --check .
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+      - run: pip install mkdocs-material
+      - run: mkdocs gh-deploy --force
 
   nox:
     runs-on: ubuntu-latest
