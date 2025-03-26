@@ -274,7 +274,7 @@ def rotate_vectors_to_new_axis(
     # Calculate the rotation matrix
     vec1 = np.array([1, 0, 0])  # Initial vertical axis
 
-    # vec1 = vec1 * np.sign(new_axis_vec[0])
+    vec1 = vec1 * np.sign(new_axis_vec[0])
 
     a = (vec1 / np.linalg.norm(vec1)).reshape(3)
     b = (new_axis_vec).reshape(3)
