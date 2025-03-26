@@ -63,6 +63,7 @@ jobs:
           echo "Verifying mkdocstrings versions..."
           pip show mkdocstrings
           pip show mkdocstrings-python
+      - run: pip show griffe
       - run: mkdocs gh-deploy --force
 
   nox:
