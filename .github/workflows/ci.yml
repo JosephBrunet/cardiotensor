@@ -50,13 +50,18 @@ jobs:
             mkdocs-material-
       - run: |
           pip install --upgrade pip
-          pip install --upgrade \
+          pip install --no-cache-dir \
               mkdocs-material \
               mkdocs-autorefs \
               mkdocs-section-index \
               mkdocs-git-revision-date-localized-plugin \
-              "mkdocstrings[python]>=0.24" \
+              mkdocstrings==0.24.0 \
+              mkdocstrings-python==1.8.0 \
               pymdown-extensions
+      - run: |
+          echo "Verifying mkdocstrings versions..."
+          pip show mkdocstrings
+          pip show mkdocstrings-python
       - run: mkdocs gh-deploy --force
 
   nox:
