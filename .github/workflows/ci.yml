@@ -51,8 +51,8 @@ jobs:
                       mkdocs-autorefs \
                       mkdocs-section-index \
                       mkdocs-git-revision-date-localized-plugin \
-                      mkdocstrings \
-                      mkdocstrings-python \
+                      mkdocstrings>=0.24 \
+                      mkdocstrings-python>=1.8 \
                       pymdown-extensions
       - run: mkdocs gh-deploy --force
 
