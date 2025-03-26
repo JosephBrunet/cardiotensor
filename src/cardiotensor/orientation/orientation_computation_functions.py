@@ -274,7 +274,7 @@ def rotate_vectors_to_new_axis(
     # Calculate the rotation matrix
     vec1 = np.array([1, 0, 0])  # Initial vertical axis
 
-    vec1 = vec1 * np.sign(new_axis_vec[0])
+    # vec1 = vec1 * np.sign(new_axis_vec[0])
 
     a = (vec1 / np.linalg.norm(vec1)).reshape(3)
     b = (new_axis_vec).reshape(3)
@@ -306,7 +306,7 @@ def rotate_vectors_to_new_axis(
 
 
 def compute_helix_and_transverse_angles(
-    vector_field_2d: np.ndarray, center_point: tuple[int, int, int], new_axis_vec
+    vector_field_2d: np.ndarray, center_point: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Computes helix and transverse angles from a 2D vector field.
@@ -354,7 +354,6 @@ def compute_helix_and_transverse_angles(
     transverse_angle = np.arctan(
         reshaped_rotated_vector_field[0, :, :] / reshaped_rotated_vector_field[1, :, :]
     )
-    helix_angle = helix_angle * -np.sign(new_axis_vec[0])
     helix_angle = np.rad2deg(helix_angle)
     transverse_angle = np.rad2deg(transverse_angle)
 
