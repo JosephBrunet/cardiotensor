@@ -57,6 +57,7 @@ jobs:
               mkdocs-git-revision-date-localized-plugin \
               mkdocstrings==0.24.0 \
               mkdocstrings-python==1.8.0 \
+              griffe>=0.36.0 \
               pymdown-extensions
       - run: |
           echo "Verifying mkdocstrings versions..."
