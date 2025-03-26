@@ -78,7 +78,7 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
 
     # Compute the centroid (mean position of all points)
     centroid = np.mean(points, axis=0)
-    
+
     # Center the points by subtracting the centroid
     centered_points = points - centroid
 
