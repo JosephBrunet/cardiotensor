@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://mydomain.org/mysite/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/citing/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/citing/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/contributing/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/contributing/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/getting-started/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/getting-started/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/getting-started/examples/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/getting-started/examples/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/getting-started/first-steps/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/getting-started/first-steps/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/getting-started/installation/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/getting-started/installation/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/reference/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/reference/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/reference/api/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/reference/api/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/reference/cli/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/reference/cli/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
     <url>
-         <loc>https://mydomain.org/mysite/reference/configuration/</loc>
+         <loc>https://josephbrunet.github.io/cardiotensor/reference/configuration/</loc>
          <lastmod>2025-03-27</lastmod>
     </url>
 </urlset>
