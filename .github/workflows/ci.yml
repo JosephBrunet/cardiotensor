@@ -55,7 +55,7 @@ jobs:
               mkdocs-autorefs \
               mkdocs-section-index \
               mkdocs-git-revision-date-localized-plugin \
-              mkdocstrings>=0.24.0 \
+              mkdocstrings==0.24.0 \
               mkdocstrings-python==1.14.0 \
               griffe>=1.6 \
               pymdown-extensions
