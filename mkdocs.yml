@@ -135,8 +135,6 @@ plugins:
       default_handler: python
       handlers:
         python:
-          rendering:
-            show_root_heading: yes
           paths: [src]
           options:
             show_submodules: true

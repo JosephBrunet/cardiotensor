@@ -306,7 +306,8 @@ def rotate_vectors_to_new_axis(
 
 
 def compute_helix_and_transverse_angles(
-    vector_field_2d: np.ndarray, center_point: tuple[int, int, int],
+    vector_field_2d: np.ndarray,
+    center_point: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Computes helix and transverse angles from a 2D vector field.

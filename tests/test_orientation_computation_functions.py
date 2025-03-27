@@ -115,7 +115,9 @@ def test_write_vector_field():
         write_vector_field(
             vector_field_slice, start_index=0, output_dir=str(temp_dir), slice_idx=0
         )
-        assert (temp_dir / "eigen_vec/eigen_vec_000000.npy").exists(), "Vector field not saved"
+        assert (temp_dir / "eigen_vec/eigen_vec_000000.npy").exists(), (
+            "Vector field not saved"
+        )
         print("test_write_vector_field passed.")
 
 

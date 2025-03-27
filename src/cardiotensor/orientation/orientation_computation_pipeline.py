@@ -352,7 +352,8 @@ def compute_slice_angles_and_anisotropy(
             vector_field_slice, center_vec
         )
         img_helix, img_intrusion = compute_helix_and_transverse_angles(
-            vector_field_slice_rotated, center_point,
+            vector_field_slice_rotated,
+            center_point,
         )
 
     # Visualization in test mode
