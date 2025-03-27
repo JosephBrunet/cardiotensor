@@ -54,7 +54,7 @@ def test_process_vector_block(tmp_path, mock_vector_files):
     )
 
     # Output file should be created inside output_dir/bin2/eigen_vec/
-    output_file = output_dir / f"eigen_vec/eigen_vec_000000.npy"
+    output_file = output_dir / "eigen_vec/eigen_vec_000000.npy"
     assert output_file.exists()
 
     data = np.load(output_file)
