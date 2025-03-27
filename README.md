@@ -39,14 +39,18 @@ cd cardiotensor
 pip install .
 ```
 
-## Requirements
+⚠️ Require python 3.10 or newer
 
-- Python 3.10 or newer
+
+## Documentation
+
+cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](https://github.com/JosephBrunet/cardiotensor)
+
+Additionally, the command line reference documentation can be viewed with uv help.
 
 ## Getting Started
 
 Have a look at our simple [./example/](./examples/README.md) that runs you through all the commands of the package
-
 
 
 ## More Information
