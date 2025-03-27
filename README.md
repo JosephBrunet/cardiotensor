@@ -44,7 +44,7 @@ pip install .
 
 ## Documentation
 
-cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](https://github.com/JosephBrunet/cardiotensor)
+cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](https://www.josephbrunet.fr/cardiotensor/)
 
 Additionally, the command line reference documentation can be viewed with uv help.
 
