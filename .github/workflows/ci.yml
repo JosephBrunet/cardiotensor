@@ -65,10 +65,10 @@ jobs:
           pip show mkdocstrings-python
       - run: pip show griffe
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - run: mkdocs gh-deploy --force
+
+      # - name: Setup tmate session for ssh and debug
+      #   uses: mxschmitt/action-tmate@v3
 
   nox:
     runs-on: ubuntu-latest
