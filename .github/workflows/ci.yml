@@ -10,6 +10,27 @@ permissions:
   contents: write
 
 jobs:
+  go-tests:
+      runs-on: ubuntu-latest
+
+      permissions:
+        id-token: write
+        contents: read
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+
+        - name: Run Go tests
+          runs: |
+            go test ./...
+
+        - name: Breakpoint if tests failed
+          if: failure()
+          uses: namespacelabs/breakpoint-action@v0
+          with:
+            duration: 30m
+            authorized-users: JosephBrunet
   lint:
     runs-on: ubuntu-latest
 
