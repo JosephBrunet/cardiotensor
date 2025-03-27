@@ -46,8 +46,6 @@ pip install .
 
 cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](https://www.josephbrunet.fr/cardiotensor/)
 
-Additionally, the command line reference documentation can be viewed with uv help.
-
 ## Getting Started
 
 Have a look at our simple [./example/](./examples/README.md) that runs you through all the commands of the package
