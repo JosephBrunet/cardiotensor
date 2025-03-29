@@ -173,7 +173,7 @@ def calculate_structure_tensor(
     if use_gpu:
         print("GPU activated")
         if not devices:  # Assign default GPU and CPU devices if the list is empty
-            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"] + num_cpus * ["cpu"]
+            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"]
 
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
