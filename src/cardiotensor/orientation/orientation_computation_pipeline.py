@@ -182,7 +182,7 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time
-    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=USE_GPU)
+    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, TRUNCATE=TRUNCATE, use_gpu=USE_GPU)
     print(f"Vector shape: {vec.shape}")
 
     if is_mask:
