@@ -74,6 +74,7 @@ def compute_orientation(
     AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
+    USE_GPU = params.get("USE_GPU", use_gpu)
 
     print("\n---------------------------------")
     print("READING VOLUME INFORMATION\n")
@@ -181,7 +182,7 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time
-    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)
+    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=USE_GPU)
     print(f"Vector shape: {vec.shape}")
 
     if is_mask:
