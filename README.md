@@ -48,7 +48,7 @@ cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](htt
 
 ## Getting Started
 
-Have a look at our simple [./example/](./examples/README.md) that runs you through all the commands of the package
+Have a look at our simple [example](https://www.josephbrunet.fr/cardiotensor/getting-started/examples/) that runs you through all the commands of the package
 
 
 ## More Information
@@ -57,7 +57,7 @@ This package uses the [structure-tensor](https://github.com/Skielex/structure-te
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](./LICENSE.md) file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE.md) file for details.
 
 ## Contributing
 

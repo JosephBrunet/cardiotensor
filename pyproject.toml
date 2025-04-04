@@ -8,11 +8,11 @@ requires = [
 [project]
 
 name = "cardiotensor"
-version = "1.0.0"
+version = "1.0.1"
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 authors = [{email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"}]
 keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
-license = {file = "LICENSE.md"}
+license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
 
@@ -29,7 +29,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
 ]
 dependencies = [
     "PyQt5",
