@@ -1,11 +1,6 @@
 <h1 align="center">Cardiotensor</h1>
 
 <p align="center">
-    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_dark.png" alt="Logo" width="200px" style="max-width: 150px">
-    <!-- <br>
-    <em>Figure: Image caption</em> -->
-</p>
-<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_dark.png">
     <source media="(prefers-color-scheme: light)" srcset="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_light.png">
