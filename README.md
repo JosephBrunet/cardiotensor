@@ -1,7 +1,7 @@
 <h1 align="center">Cardiotensor</h1>
 
 <p align="center">
-    <img src="https://github.com/JosephBrunet/cardiotensor/blob/main/assets/logos/heart_logo_dark.png" alt="Logo" width="200px" style="max-width: 150px">
+    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_dark.png" alt="Logo" width="200px" style="max-width: 150px">
     <!-- <br>
     <em>Figure: Image caption</em> -->
 </p>
@@ -13,12 +13,11 @@
 [![Doc](https://img.shields.io/badge/docs-dev-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b0e80972e3104ffa890532738882f42e)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
-![Python Version](https://img.shields.io/badge/python->3.10-blue.svg)
+[![Python Version](https://img.shields.io/pypi/pyversions/cardiotensor.svg)](https://pypi.python.org/pypi/cardiotensor)
 [![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
 
-
 <p align="center">
-    <img src="https://github.com/JosephBrunet/cardiotensor/blob/main/assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
+    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
     <br>
     <em>Helical angle map of a heart scanned using synchrtron X-ray imaging.</em>
 </p>
@@ -57,7 +56,7 @@ This package uses the [structure-tensor](https://github.com/Skielex/structure-te
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE.md) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE) file for details.
 
 ## Contributing
 
