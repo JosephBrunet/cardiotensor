@@ -5,6 +5,13 @@
     <!-- <br>
     <em>Figure: Image caption</em> -->
 </p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_light.png">
+    <img alt="Cardiotensor logo" src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/logos/heart_logo_light.png" width="200px">
+  </picture>
+</p>
 <br />
 
 <p align="center">A Python package for calculating 3D cardiomyocyte orientations in heart images.</p>
