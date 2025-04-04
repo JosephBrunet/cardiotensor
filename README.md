@@ -16,7 +16,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b0e80972e3104ffa890532738882f42e)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/github/license/JosephBrunet/cardiotensor)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 [![Python Version](https://img.shields.io/pypi/pyversions/cardiotensor.svg)](https://pypi.python.org/pypi/cardiotensor)
-[![PyPI version](https://img.shields.io/pypi/v/caridotensor.svg)](https://pypi.org/project/cardiotensor/)
+[![PyPI version](https://img.shields.io/pypi/v/cardiotensor.svg)](https://pypi.org/project/cardiotensor/)
 
 <p align="center">
     <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
@@ -49,7 +49,7 @@ cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](htt
 
 ## Getting Started
 
-Have a look at our simple [example](https://www.josephbrunet.fr/cardiotensor/getting-started/examples/) that runs you through all the commands of the package
+Have a look at our [simple example](https://www.josephbrunet.fr/cardiotensor/getting-started/examples/) that runs you through all the commands of the package
 
 
 ## More Information
