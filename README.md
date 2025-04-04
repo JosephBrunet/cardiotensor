@@ -18,7 +18,7 @@
 
 
 <p align="center">
-    <img src="assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
+    <img src="https://github.com/JosephBrunet/cardiotensor/blob/main/assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 80%">
     <br>
     <em>Helical angle map of a heart scanned using synchrtron X-ray imaging.</em>
 </p>
