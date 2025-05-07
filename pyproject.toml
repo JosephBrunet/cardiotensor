@@ -42,6 +42,7 @@ dependencies = [
     "structure-tensor>=0.3.0",
     "tifffile",
     'pandas',
+    "zarr",
 ]
 
 [project.optional-dependencies]
