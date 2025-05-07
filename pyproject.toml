@@ -6,20 +6,28 @@ requires = [
 ]
 
 [project]
-authors = [
-    {email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"},
-]
+
+name = "cardiotensor"
+version = "1.0.3"
+description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
+authors = [{email = "j.brunet@ucl.ac.uk", name = "Joseph Brunet"}]
+keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.10"
+
 classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
-    "Typing :: Typed",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Environment :: Console",
-    "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
 ]
 dependencies = [
     "PyQt5",
@@ -35,13 +43,6 @@ dependencies = [
     "tifffile",
     'pandas',
 ]
-description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
-keywords = []
-license = {file = "LICENSE.md"}
-name = "cardiotensor"
-readme = "README.md"
-requires-python = ">=3.10"
-version = "1.0.0"
 
 [project.optional-dependencies]
 cupy = ["cupy>=8"]
@@ -72,9 +73,9 @@ cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
 cardio-vtk = "cardiotensor.scripts.vtk_writer:script"
 
 [project.urls]
-Documentation = "https://github.com/JosephBrunet/cardiotensor"
+Repository = "https://github.com/JosephBrunet/cardiotensor"
+Documentation = "https://www.josephbrunet.fr/cardiotensor/"
 Issues = "https://github.com/JosephBrunet/cardiotensor/issues"
-Source = "https://JosephBrunet.github.io//cardiotensor"
 
 [tool.black]
 line-length = 88
