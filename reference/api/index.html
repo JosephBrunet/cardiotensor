@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
     
     
       
@@ -30,7 +30,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2afb09e1.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -332,8 +332,9 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../getting-started/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -342,8 +343,14 @@
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
@@ -461,8 +468,9 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -471,8 +479,14 @@
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
@@ -6118,7 +6132,7 @@ Default is [1.0, 1.0, 1.0].</p>
 
 
 </a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">calculate_structure_tensor</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="volume (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(volume))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(volume)">volume</a></span><span class="p">:</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="SIGMA (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(SIGMA))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(SIGMA)">SIGMA</a></span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="RHO (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(RHO))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(RHO)">RHO</a></span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="devices (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(devices))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(devices)">devices</a></span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="block_size (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(block_size))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(block_size)">block_size</a></span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="use_gpu (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(use_gpu))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(use_gpu)">use_gpu</a></span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n"><span title="cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(dtype)">dtype</span></span><span class="p">:</span> <span class="n"><span title="type">type</span></span> <span class="o">=</span> <span class="n"><span title="numpy.float32">float32</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">,</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">calculate_structure_tensor</span><span class="p">(</span><span class="n"><a class="autorefs autorefs-internal" title="volume (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(volume))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(volume)">volume</a></span><span class="p">:</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="SIGMA (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(SIGMA))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(SIGMA)">SIGMA</a></span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="RHO (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(RHO))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(RHO)">RHO</a></span><span class="p">:</span> <span class="n"><span title="float">float</span></span><span class="p">,</span> <span class="n"><span title="cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(TRUNCATE)">TRUNCATE</span></span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="devices (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(devices))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(devices)">devices</a></span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="block_size (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(block_size))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(block_size)">block_size</a></span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="use_gpu (cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(use_gpu))" href="#cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(use_gpu)">use_gpu</a></span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n"><span title="cardiotensor.orientation.orientation_computation_functions.calculate_structure_tensor(dtype)">dtype</span></span><span class="p">:</span> <span class="n"><span title="type">type</span></span> <span class="o">=</span> <span class="n"><span title="numpy.float32">float32</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">,</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
