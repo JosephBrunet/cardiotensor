@@ -140,6 +140,7 @@ def calculate_structure_tensor(
     volume: np.ndarray,
     SIGMA: float,
     RHO: float,
+    TRUNCATE: float = 4.0,
     devices: list[str] | None = None,
     block_size: int = 200,
     use_gpu: bool = False,
@@ -172,7 +173,7 @@ def calculate_structure_tensor(
     if use_gpu:
         print("GPU activated")
         if not devices:  # Assign default GPU and CPU devices if the list is empty
-            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"] + num_cpus * ["cpu"]
+            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"]
 
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
@@ -180,7 +181,7 @@ def calculate_structure_tensor(
             RHO,
             devices=devices,
             block_size=block_size,
-            truncate=4.0,
+            truncate=TRUNCATE,
             structure_tensor=None,
             eigenvectors=dtype,
             eigenvalues=dtype,
@@ -193,7 +194,7 @@ def calculate_structure_tensor(
             RHO,
             devices=num_cpus * ["cpu"],
             block_size=block_size,
-            truncate=4.0,
+            truncate=TRUNCATE,
             structure_tensor=None,
             eigenvectors=dtype,
             eigenvalues=dtype,

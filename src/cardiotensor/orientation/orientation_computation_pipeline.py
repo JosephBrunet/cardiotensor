@@ -69,11 +69,14 @@ def compute_orientation(
     OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
     WRITE_VECTORS = params.get("WRITE_VECTORS", False)
     WRITE_ANGLES = params.get("WRITE_ANGLES", True)
-    SIGMA = params.get("SIGMA", 3.0)
-    RHO = params.get("RHO", 1.0)
+    SIGMA = params.get("SIGMA", 1.0)
+    RHO = params.get("RHO", 3.0)
+    TRUNCATE = params.get("TRUNCATE", 4.0)
+    PADDING = params.get("PADDING", 1.0)
     AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
+    USE_GPU = params.get("USE_GPU", use_gpu)
 
     print("\n---------------------------------")
     print("READING VOLUME INFORMATION\n")
@@ -131,8 +134,10 @@ def compute_orientation(
 
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
-    padding_start = math.ceil(RHO)
-    padding_end = math.ceil(RHO)
+    
+    if PADDING < TRUNCATE:
+        print("Warning: PADDING should be equal to TRUNCATE")
+    padding_start = padding_end = math.ceil(PADDING * RHO)
     if not IS_TEST:
         if padding_start > start_index:
             padding_start = start_index
@@ -181,7 +186,7 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATING STRUCTURE TENSOR")
     t1 = time.perf_counter()  # start time
-    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, use_gpu=use_gpu)
+    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, TRUNCATE=TRUNCATE, use_gpu=USE_GPU)
     print(f"Vector shape: {vec.shape}")
 
     if is_mask:
