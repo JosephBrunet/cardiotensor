@@ -9,7 +9,7 @@ import numpy as np
 import SimpleITK as sitk
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
-
+import zarr
 
 class DataReader:
     def __init__(self, path: str | Path):
@@ -20,7 +20,7 @@ class DataReader:
             path (str | Path): Path to the volume directory or file.
         """
         self.path = Path(path)
-        self.supported_extensions = ["tif", "tiff", "jp2", "png", "npy"]
+        self.supported_extensions = ["tif", "tiff", "jp2", "png", "npy", "zarr"]
         self.volume_info = self._get_volume_info()
         self.shape = self._get_volume_shape()
 
@@ -39,8 +39,11 @@ class DataReader:
 
         if not self.path.exists():
             raise ValueError(f"The path does not exist: {self.path}")
-
-        if self.path.is_dir():
+        if self.path.is_file() and self.path.suffix == ".mhd":
+            volume_info["type"] = "mhd"
+        elif self.path.is_dir() and ((path / ".zarray").exists() or (path / ".zgroup").exists() or (path / ".zmetadata").exists() or (path / "zarr.json").exists()):
+            volume_info["type"] = "zarr"
+        elif self.path.is_dir():
             volume_info["stack"] = True
             image_files = {
                 ext: sorted(self.path.glob(f"*.{ext}"))
@@ -60,9 +63,6 @@ class DataReader:
                 )
             volume_info["file_list"] = sorted(volume_info["file_list"])
 
-        elif self.path.is_file() and self.path.suffix == ".mhd":
-            volume_info["type"] = "mhd"
-
         if volume_info["type"] == "":
             raise ValueError(f"Unsupported volume type for path: {self.path}")
 
@@ -75,12 +75,13 @@ class DataReader:
         Returns:
             Tuple[int, int, int]: Dimensions of the volume (z, y, x).
         """
-        if not self.volume_info["stack"]:  # Single file (e.g., .mhd)
-            if self.volume_info["type"] == "mhd":
-                image = sitk.ReadImage(str(self.path))
-                return tuple(image.GetSize())  # Return (z, y, x)
-
-        elif self.volume_info["stack"]:  # Stack of images
+        if self.volume_info["type"] == "mhd":
+            image = sitk.ReadImage(str(self.path))
+            return tuple(image.GetSize())  # Return (z, y, x)
+        elif self.volume_info["type"] == "zarr":
+            zarr_store = zarr.open(str(self.path))
+            return zarr_store.shape
+        else:  # Stack of images
             first_image = self._custom_image_reader(self.volume_info["file_list"][0])
             return (
                 len(self.volume_info["file_list"]),
@@ -188,6 +189,8 @@ class DataReader:
         """
         if file_path.suffix == ".npy":
             return np.load(file_path)
+        if self.volume_info["type"] == "zarr":
+            return zarr.load(file_path)
         return cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
 
     def _load_image_stack(
