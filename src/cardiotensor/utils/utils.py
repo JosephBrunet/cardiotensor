@@ -65,6 +65,8 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         # STRUCTURE TENSOR CALCULATION
         "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
         "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
+        "TRUNCATE": config.getfloat("STRUCTURE TENSOR CALCULATION", "TRUNCATE", fallback=4.0),
+        "VERTICAL_PADDING": config.getfloat("STRUCTURE TENSOR CALCULATION", "VERTICAL_PADDING", fallback=None),
         "N_CHUNK": config.getint(
             "STRUCTURE TENSOR CALCULATION", "N_CHUNK", fallback=100
         ),

@@ -72,7 +72,7 @@ def compute_orientation(
     SIGMA = params.get("SIGMA", 1.0)
     RHO = params.get("RHO", 3.0)
     TRUNCATE = params.get("TRUNCATE", 4.0)
-    PADDING = params.get("PADDING", 1.0)
+    VERTICAL_PADDING = params.get("VERTICAL_PADDING", None)
     AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
@@ -135,9 +135,10 @@ def compute_orientation(
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
     
-    if PADDING < TRUNCATE:
-        print("Warning: PADDING should be equal to TRUNCATE")
-    padding_start = padding_end = math.ceil(PADDING * RHO)
+    if VERTICAL_PADDING is None:
+        VERTICAL_PADDING = RHO
+
+    padding_start = padding_end = math.ceil(VERTICAL_PADDING)
     if not IS_TEST:
         if padding_start > start_index:
             padding_start = start_index
