@@ -74,7 +74,7 @@ def script() -> None:
             sys.exit("No file selected!")
         start_index = 0
         end_index = None
-        use_gpu = True
+        use_gpu = False
         reverse = False
 
     else:
