@@ -101,80 +101,75 @@ class DataReader:
 
         Args:
             start_index (int): Start index for slicing (for stacks).
-            end_index (int): End index for slicing (for stacks). If 0, loads the entire stack.
+            end_index (int): End index for slicing (for stacks). If None, loads the entire stack.
             unbinned_shape (tuple): Shape of the volume without downsampling. Default is None (no binning).
 
         Returns:
-            np.ndarray: Loaded volume data.
+            np.ndarray: Loaded (and possibly resized) volume data.
         """
 
         if end_index is None:
             end_index = self.shape[0]
 
+        # compute how much we’ll need to zoom later
         binning_factor = 1.0
         if unbinned_shape is not None:
             binning_factor = unbinned_shape[0] / self.shape[0]
             print(f"Mask bining factor: {binning_factor}")
 
+        # if we’re going to zoom, adjust the requested slice range to include padding
         if binning_factor != 1.0:
-            start_index_ini = start_index
-            end_index_ini = end_index
-            start_index = int((start_index_ini / binning_factor) - 1)
-            if start_index < 0:
-                start_index = 0
-            end_index = int((end_index_ini / binning_factor) + 1)
-            if end_index > self.shape[0]:
-                end_index = self.shape[0]
+            start_index_ini, end_index_ini = start_index, end_index
+            start_index = int(start_index_ini / binning_factor) - 1
+            start_index = max(start_index, 0)
+            end_index = int(end_index_ini / binning_factor) + 1
+            end_index = min(end_index, self.shape[0])
+            print(f"Mask start index padded: {start_index} - Mask end index padded: {end_index}")
 
-            print(
-                f"Mask start index padded: {start_index} - Mask end index padded : {end_index}"
-            )
-
-        if self.volume_info["stack"] == False:
+        # load the raw volume
+        if not self.volume_info["stack"]:
+            # single-file (e.g. .mhd)
             if self.volume_info["type"] == "mhd":
                 volume, _ = _load_raw_data_with_mhd(self.path)
                 volume = volume[start_index:end_index, :, :]
-        elif self.volume_info["stack"] == True:
-            # if end_index is None:
-            #     end_index = len(self.volume_info["file_list"])
+        else:
+            # image stack
             volume = self._load_image_stack(
                 self.volume_info["file_list"], start_index, end_index
             )
-        else:
-            raise ValueError("Unsupported volume type.")
 
+        # if we need to upsample + crop + resize each slice back to unbinned_shape:
         if binning_factor != 1.0 and unbinned_shape is not None:
             print("Resizing mask")
-            volume = zoom(
-                volume,
-                zoom=binning_factor,
-                order=0,
+            # 1) zoom the 3D block
+            volume = zoom(volume, zoom=binning_factor, order=0)
+
+            # 2) figure out where our original slice window ended up
+            start_up = int(abs(start_index * binning_factor - start_index_ini))
+            end_up = start_up + (end_index_ini - start_index_ini)
+            start_up = max(start_up, 0)
+            end_up = min(end_up, volume.shape[0])
+
+            # 3) crop to just those slices
+            volume = volume[start_up:end_up, :, :]
+
+            # 4) allocate exactly the target (unbinned) shape and resize each slice
+            volume_resized = np.empty(
+                (volume.shape[0], unbinned_shape[1], unbinned_shape[2]),
+                dtype=volume.dtype
             )
-
-            start_index_bin_upscaled = int(
-                np.abs(start_index * binning_factor - start_index_ini)
-            )
-            end_index_bin_upscaled = start_index_bin_upscaled + (
-                end_index_ini - start_index_ini
-            )
-
-            if start_index_bin_upscaled < 0:
-                start_index_bin_upscaled = 0
-            if end_index_bin_upscaled > volume.shape[0]:
-                end_index_bin_upscaled = volume.shape[0]
-
-            volume = volume[start_index_bin_upscaled:end_index_bin_upscaled, :]
-
-            volume_resized = np.empty_like(volume)
             for i in range(volume.shape[0]):
-                # Resize the slice to match the corresponding slice of the volume
                 volume_resized[i] = cv2.resize(
                     volume[i],
                     (unbinned_shape[2], unbinned_shape[1]),
                     interpolation=cv2.INTER_LINEAR,
                 )
 
+            # 5) replace volume with the resized version
+            volume = volume_resized
+
         return volume
+
 
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
