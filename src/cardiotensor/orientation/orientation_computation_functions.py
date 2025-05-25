@@ -19,6 +19,15 @@ except ImportError:
 
 print(f"USE_GPU: {USE_GPU}")
 
+
+from PyQt5.QtWidgets import QApplication
+import sys
+app = QApplication.instance()
+if app is None:
+    app = QApplication(sys.argv)
+
+
+
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 
 from cardiotensor.utils.utils import convert_to_8bit
@@ -165,7 +174,6 @@ def calculate_structure_tensor(
 
     num_cpus = os.cpu_count() or 4  # Default to 4 if os.cpu_count() returns None
     num_cpus = max(num_cpus, 4)
-    print(f"Number of CPUs used: {num_cpus}")
 
     if devices is None:  # Initialize devices if not provided
         devices = []
@@ -188,6 +196,8 @@ def calculate_structure_tensor(
         )
     else:
         print("GPU not activated")
+        print(f"Number of CPUs used: {num_cpus}")
+
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
             SIGMA,
