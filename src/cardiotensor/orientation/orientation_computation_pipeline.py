@@ -136,7 +136,7 @@ def compute_orientation(
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
     
     if VERTICAL_PADDING is None:
-        VERTICAL_PADDING = RHO
+        VERTICAL_PADDING = TRUNCATE * RHO + 0.5
 
     padding_start = padding_end = math.ceil(VERTICAL_PADDING)
     if not IS_TEST:
