@@ -48,12 +48,7 @@ def compute_orientation(
     """
 
     print("\n---------------------------------")
-    print(f"🤖 - Processing slices {start_index} to {end_index}")
-
-    print("\n---------------------------------")
     print(f"READING PARAMETER FILE : {conf_file_path}\n")
-
-    print(f"Start index, End index : {start_index}, {end_index}\n")
 
     try:
         params = read_conf_file(conf_file_path)
