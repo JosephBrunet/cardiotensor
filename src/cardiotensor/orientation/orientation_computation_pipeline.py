@@ -73,6 +73,11 @@ def compute_orientation(
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
     USE_GPU = params.get("USE_GPU", use_gpu)
 
+    if SIGMA > RHO:
+        raise ValueError(
+            "SIGMA must be less than or equal to RHO. Please check your configuration file."
+        )    
+            
     print("\n---------------------------------")
     print("READING VOLUME INFORMATION\n")
     print(f"Volume path: {VOLUME_PATH}")
@@ -131,7 +136,7 @@ def compute_orientation(
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
     
     if VERTICAL_PADDING is None:
-        VERTICAL_PADDING = RHO
+        VERTICAL_PADDING = TRUNCATE * RHO + 0.5
 
     padding_start = padding_end = math.ceil(VERTICAL_PADDING)
     if not IS_TEST:
