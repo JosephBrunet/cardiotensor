@@ -20,11 +20,14 @@ except ImportError:
 print(f"USE_GPU: {USE_GPU}")
 
 
-from PyQt5.QtWidgets import QApplication
-import sys
-app = QApplication.instance()
-if app is None:
-    app = QApplication(sys.argv)
+try:
+    from PyQt5.QtWidgets import QApplication
+    import sys
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+except:
+    pass
 
 
 
