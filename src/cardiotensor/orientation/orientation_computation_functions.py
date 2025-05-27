@@ -137,6 +137,37 @@ def adjust_start_end_index(
     return start_index_padded, end_index_padded
 
 
+import os
+import platform
+import subprocess
+
+def get_gpu_count() -> int:
+    # Try reading CUDA_VISIBLE_DEVICES
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if visible:
+        ids = [x for x in visible.split(",") if x.strip().isdigit()]
+        if ids:
+            return len(ids)
+
+    # Try nvidia-smi
+    try:
+        smi_command = "nvidia-smi"
+        if platform.system() == "Windows":
+            # Use full path if needed
+            smi_command = r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe"
+        
+        result = subprocess.run(
+            [smi_command, "-L"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return len([line for line in result.stdout.strip().splitlines() if "GPU" in line])
+    except Exception as e:
+        return 0
+
+
+
 def calculate_structure_tensor(
     volume: np.ndarray,
     SIGMA: float,
@@ -159,7 +190,7 @@ def calculate_structure_tensor(
         use_gpu (bool): If True, uses GPU for calculations. Default is False.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray]: Structure tensor, eigenvalues, and eigenvectors.
+        tuple[np.ndarray, np.ndarray]: Eigenvalues and eigenvectors of the structure tensor.
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -170,48 +201,55 @@ def calculate_structure_tensor(
     if devices is None:  # Initialize devices if not provided
         devices = []
 
-    try:
-        import cupy as cp
-        _ = cp.zeros((1,))  # allocate to confirm GPU functionality
-        num_gpus = cp.cuda.runtime.getDeviceCount()
-        use_gpu = True
-        print(f"✅ GPU support detected: {num_gpus} GPU(s) available.")
-    except Exception as e:
-        use_gpu = False
-        print(f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}")
-
-
     if use_gpu:
-        print("GPU activated")
-        if not devices:  # Assign default GPU and CPU devices if the list is empty
+        print("🔍 Checking for GPU support...")
+        try:
+            import cupy
+            from cupy.cuda import driver
+
+            num_gpus = get_gpu_count()
+            print(f"✅ Detected {num_gpus} GPU(s)")
+            
+            # Build default devices list based on available GPUs
+            if not devices:
+                # Example: 16 tasks per GPU (tweak this as needed)
+                devices = []
+                for i in range(num_gpus):
+                    devices.extend([f"cuda:{i}"] * 16)
+                # print(f"Devices for GPU computation: {devices}")
+                
+        except Exception as e:
+            use_gpu = False
+            print(f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}")
+
+
+
             devices = 16 * ["cuda:0"] + 16 * ["cuda:1"]
 
-        S, val, vec = parallel_structure_tensor_analysis(
-            volume,
-            SIGMA,
-            RHO,
-            devices=devices,
-            block_size=block_size,
-            truncate=TRUNCATE,
-            structure_tensor=None,
-            eigenvectors=dtype,
-            eigenvalues=dtype,
-        )
-    else:
-        print("GPU not activated")
-        print(f"Number of CPUs used: {num_cpus}")
 
-        S, val, vec = parallel_structure_tensor_analysis(
-            volume,
-            SIGMA,
-            RHO,
-            devices=num_cpus * ["cpu"],
-            block_size=block_size,
-            truncate=TRUNCATE,
-            structure_tensor=None,
-            eigenvectors=dtype,
-            eigenvalues=dtype,
-        )  # vec has shape =(3,x,y,z) in the order of (z,y,x)
+
+
+    # Dispatch
+    if use_gpu:
+        print("🚀 GPU activated")
+    else:
+        print("🧠 GPU not activated, using CPU")
+        print(f"Number of CPUs used: {num_cpus}")
+        devices = num_cpus * ["cpu"]
+
+    S, val, vec = parallel_structure_tensor_analysis(
+        volume,
+        SIGMA,
+        RHO,
+        devices=devices,
+        block_size=block_size,
+        truncate=TRUNCATE,
+        structure_tensor=None,
+        eigenvectors=dtype,
+        eigenvalues=dtype,
+    ) 
+    
+    # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
     return val, vec
 
