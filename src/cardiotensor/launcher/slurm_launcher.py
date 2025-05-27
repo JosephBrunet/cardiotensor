@@ -65,11 +65,10 @@ def submit_job_to_slurm(
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
-###SBATCH --gres=gpu:2
 #SBATCH --mem={math.ceil(mem_needed)}G
 #SBATCH --job-name={job_name}
 #SBATCH --time=2:00:00
-#SBATCH --array=1-{N_jobs}%400
+#SBATCH --array=1-{N_jobs}%100
 
 echo ------------------------------------------------------
 echo SLURM_NNODES: $SLURM_NNODES
@@ -89,10 +88,13 @@ echo ------------------------------------------------------
 
 START_INDEX=$(( (SLURM_ARRAY_TASK_ID - 1) * {IMAGES_PER_JOB} + {start_image}))
 END_INDEX=$(( SLURM_ARRAY_TASK_ID * {IMAGES_PER_JOB} + {start_image}))
-if [ $END_INDEX -ge {total_images} ]; then END_INDEX={total_images} - 1; fi
+if [ $END_INDEX -ge {total_images} ]; then END_INDEX=$(( {total_images} - 1 )); fi
 echo Start index, End index : $START_INDEX: $END_INDEX
 
 echo mem used {math.ceil(mem_needed)}G
+
+# Fix Qt headless error
+export QT_QPA_PLATFORM=offscreen
 
 # Starting python script
 echo cardio-tensor {conf_file_path} --start_index $START_INDEX --end_index $END_INDEX
@@ -224,7 +226,7 @@ def slurm_launcher(conf_file_path: str) -> None:
     )
 
     # Split the index_intervals into batches of max length 1000
-    N_job_max_per_array = 999
+    N_job_max_per_array = 400
     batched_intervals = [
         index_intervals[i : i + N_job_max_per_array]
         for i in range(0, len(index_intervals), N_job_max_per_array)
@@ -242,6 +244,7 @@ def slurm_launcher(conf_file_path: str) -> None:
 
     # Launch each batch
     for batch in batched_intervals:
+                       
         start, end = batch[0][0], batch[-1][1]
         job_id = submit_job_to_slurm(
             python_file_path,
