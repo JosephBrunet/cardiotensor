@@ -21,7 +21,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "conf_file_path", type=str, help="Path to the configuration file"
     )
-    parser.add_argument("N_slice", type=int, help="Slice number")
+    parser.add_argument(
+        "--N_slice", type=int, default=None, help="Slice number (optional)"
+    )
     parser.add_argument("--N_line", type=int, default=5, help="Number of lines")
     parser.add_argument(
         "--angle_range", type=float, default=20, help="Angle range in degrees"
