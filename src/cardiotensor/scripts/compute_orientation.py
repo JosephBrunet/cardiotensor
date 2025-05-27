@@ -98,39 +98,57 @@ def script() -> None:
     N_CHUNK = params.get("N_CHUNK", 100)
     IS_TEST = params.get("TEST", False)
 
-    data_reader = DataReader(VOLUME_PATH)
-    volume_shape = data_reader.shape
-
     # Set end_index to total_images if it's zero
+    data_reader = DataReader(VOLUME_PATH)
+    total_slices = data_reader.shape[0]
     if end_index is None:
-        end_index = volume_shape[0]
+        end_index = total_slices
+        
+    # Handle test mode: single invocation without chunking
+    if IS_TEST:
+        print("⚙️  TEST mode: processing slices {0}–{1}".format(start_index, end_index - 1))
+        t0 = time.time()
+        compute_orientation(
+            conf_file_path,
+            start_index=start_index,
+            end_index=end_index,
+            use_gpu=use_gpu,
+        )
+        print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
+        return
 
-    if not IS_TEST:
-        # If reverse is True, run the loop in reverse order; otherwise, run normally
-        if reverse:
-            for idx in range(end_index, start_index, -N_CHUNK):
-                start_time = time.time()
-                compute_orientation(
-                    conf_file_path,
-                    start_index=max(idx - N_CHUNK, 0),
-                    end_index=idx,
-                    use_gpu=use_gpu,
-                )
-                print("--- %s seconds ---" % (time.time() - start_time))
-        else:
-            for idx in range(start_index, end_index, N_CHUNK):
-                start_time = time.time()
-                compute_orientation(
-                    conf_file_path,
-                    start_index=idx,
-                    end_index=min(idx + N_CHUNK, end_index),
-                    use_gpu=use_gpu,
-                )
-                print("--- %s seconds ---" % (time.time() - start_time))
-
+    # Build chunks list
+    chunks = []
+    if reverse:
+        for e in range(end_index, start_index, -N_CHUNK):
+            s = max(e - N_CHUNK, start_index)
+            chunks.append((s, e))
     else:
-        start_time = time.time()
-        compute_orientation(conf_file_path, start_index, end_index, use_gpu=use_gpu)
-        print("--- %s seconds ---" % (time.time() - start_time))
+        for s in range(start_index, end_index, N_CHUNK):
+            e = min(s + N_CHUNK, end_index)
+            chunks.append((s, e))
+
+    print(f"Will process {len(chunks)} chunks{' in reverse' if reverse else ''}.")
+
+        
+    
+    # Execute chunks
+    for idx, (s, e) in enumerate(chunks, start=1):
+        print("=" * 60)
+        print(f"▶️  Chunk {idx}/{len(chunks)}: slices {s}–{e-1}")
+        print("=" * 60)
+        t0 = time.time()
+
+        compute_orientation(
+            conf_file_path,
+            start_index=s,
+            end_index=e,
+            use_gpu=use_gpu,
+        )
+
+        elapsed = time.time() - t0
+        print(f"✅ Finished chunk {idx}/{len(chunks)} in {elapsed:.1f}s\n")
+
+    print("🤖 All chunks complete!")
 
     return None
