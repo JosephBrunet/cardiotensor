@@ -8,17 +8,6 @@ import numpy as np
 import tifffile
 from scipy.interpolate import CubicSpline
 
-# Optional GPU support
-try:
-    import cupy as cp  # noqa: F401
-
-    USE_GPU = True
-    print("GPU support enabled.")
-except ImportError:
-    USE_GPU = False
-
-print(f"USE_GPU: {USE_GPU}")
-
 
 try:
     from PyQt5.QtWidgets import QApplication
@@ -180,6 +169,17 @@ def calculate_structure_tensor(
 
     if devices is None:  # Initialize devices if not provided
         devices = []
+
+    try:
+        import cupy as cp
+        _ = cp.zeros((1,))  # allocate to confirm GPU functionality
+        num_gpus = cp.cuda.runtime.getDeviceCount()
+        use_gpu = True
+        print(f"✅ GPU support detected: {num_gpus} GPU(s) available.")
+    except Exception as e:
+        use_gpu = False
+        print(f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}")
+
 
     if use_gpu:
         print("GPU activated")
