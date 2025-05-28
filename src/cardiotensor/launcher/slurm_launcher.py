@@ -244,7 +244,6 @@ def slurm_launcher(conf_file_path: str) -> None:
 
     # Launch each batch
     for batch in batched_intervals:
-                       
         start, end = batch[0][0], batch[-1][1]
         job_id = submit_job_to_slurm(
             python_file_path,
