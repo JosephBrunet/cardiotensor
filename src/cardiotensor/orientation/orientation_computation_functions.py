@@ -8,16 +8,16 @@ import numpy as np
 import tifffile
 from scipy.interpolate import CubicSpline
 
-
 try:
-    from PyQt5.QtWidgets import QApplication
     import sys
+
+    from PyQt5.QtWidgets import QApplication
+
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
 except:
     pass
-
 
 
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
@@ -137,9 +137,9 @@ def adjust_start_end_index(
     return start_index_padded, end_index_padded
 
 
-import os
 import platform
 import subprocess
+
 
 def get_gpu_count() -> int:
     # Try reading CUDA_VISIBLE_DEVICES
@@ -155,17 +155,18 @@ def get_gpu_count() -> int:
         if platform.system() == "Windows":
             # Use full path if needed
             smi_command = r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe"
-        
+
         result = subprocess.run(
             [smi_command, "-L"],
             capture_output=True,
             text=True,
             check=True,
         )
-        return len([line for line in result.stdout.strip().splitlines() if "GPU" in line])
-    except Exception as e:
+        return len(
+            [line for line in result.stdout.strip().splitlines() if "GPU" in line]
+        )
+    except Exception:
         return 0
-
 
 
 def calculate_structure_tensor(
@@ -194,8 +195,10 @@ def calculate_structure_tensor(
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    
-    num_cpus = max(os.cpu_count() or 4, 4) # Default to 4 if os.cpu_count() returns None
+
+    num_cpus = max(
+        os.cpu_count() or 4, 4
+    )  # Default to 4 if os.cpu_count() returns None
 
     devices = devices or []
     num_gpus = 0
@@ -203,20 +206,20 @@ def calculate_structure_tensor(
     if use_gpu:
         print("🔍 Checking for GPU support...")
         try:
-            import cupy
             num_gpus = get_gpu_count()
             print(f"Detected {num_gpus} GPU(s)")
         except Exception as e:
             use_gpu = False
-            print(f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}")
+            print(
+                f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}"
+            )
 
-    
     if not devices:
         if use_gpu and num_gpus > 0:
-            print(f"Using {num_gpus} GPUs for computation")           
+            print(f"Using {num_gpus} GPUs for computation")
             devices = []
             for i in range(num_gpus):
-                devices.extend([f"cuda:{i}"] * 16) 
+                devices.extend([f"cuda:{i}"] * 16)
         else:
             print(f"Using {num_cpus} CPU for computation")
             devices = ["cpu"] * num_cpus
@@ -227,7 +230,7 @@ def calculate_structure_tensor(
     if use_gpu and num_gpus > 0:
         device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
     else:
-        device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"  
+        device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
     print(f"---  Devices: {device_str}")
 
     S, val, vec = parallel_structure_tensor_analysis(
@@ -240,9 +243,9 @@ def calculate_structure_tensor(
         structure_tensor=None,
         eigenvectors=dtype,
         eigenvalues=dtype,
-    ) 
+    )
     print("Structure tensor computation completed\n")
-    
+
     # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
     return val, vec

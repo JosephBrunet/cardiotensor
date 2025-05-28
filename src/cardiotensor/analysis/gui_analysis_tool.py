@@ -63,10 +63,10 @@ class Window(QWidget):
     def __init__(
         self,
         conf_file_path: str,
-        N_slice: int = None,
+        N_slice: int | None = None,
         N_line: int = 5,
         angle_range: float = 20,
-        image_mode: str = 'HA',
+        image_mode: str = "HA",
     ) -> None:
         super().__init__()
 
@@ -104,7 +104,7 @@ class Window(QWidget):
         MASK_PATH = params.get("MASK_PATH", "")
         OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
         if self.N_slice is None:
-            self.N_slice = params.get("N_SLICE_TEST")
+            self.N_slice = params.get("N_SLICE_TEST", 0)
 
         self.MASK_PATH = MASK_PATH
         self.OUTPUT_DIR = OUTPUT_DIR

@@ -75,28 +75,28 @@ def compute_orientation(
 
     # Print summary
     print(f"""
-    ➡️  Key Parameters:
-        - Volume path:    {VOLUME_PATH}
-        - Mask path:      {MASK_PATH or '[None]'}
-        - Output dir:     {OUTPUT_DIR}
-        - Output format:  {OUTPUT_FORMAT}
-        - Output type:    {OUTPUT_TYPE}
-        - Sigma / Rho:    {SIGMA} / {RHO}
-        - Truncate:       {TRUNCATE}
-        - Write angles:   {WRITE_ANGLES}
-        - Write vectors:  {WRITE_VECTORS}
-        - Use GPU:        {USE_GPU}
-    """)  
-    
+Parameters:
+    - Volume path:    {VOLUME_PATH}
+    - Mask path:      {MASK_PATH or "[None]"}
+    - Output dir:     {OUTPUT_DIR}
+    - Output format:  {OUTPUT_FORMAT}
+    - Output type:    {OUTPUT_TYPE}
+    - Sigma / Rho:    {SIGMA} / {RHO}
+    - Truncate:       {TRUNCATE}
+    - Write angles:   {WRITE_ANGLES}
+    - Write vectors:  {WRITE_VECTORS}
+    - Use GPU:        {USE_GPU}
+    """)
+
     if SIGMA > RHO:
         raise ValueError(
             "SIGMA must be less than or equal to RHO. Please check your configuration file."
-        )  
-            
+        )
+
     print("\n" + "-" * 40)
     print("READING VOLUME INFORMATION\n")
     print("-" * 40 + "\n")
-    
+
     print(f"Volume path: {VOLUME_PATH}")
 
     data_reader = DataReader(VOLUME_PATH)
@@ -151,7 +151,7 @@ def compute_orientation(
 
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
-    
+
     if VERTICAL_PADDING is None:
         VERTICAL_PADDING = TRUNCATE * RHO + 0.5
 
@@ -205,8 +205,10 @@ def compute_orientation(
     print("CALCULATING STRUCTURE TENSOR\n")
     print("-" * 40 + "\n")
     t1 = time.perf_counter()  # start time
-    val, vec = calculate_structure_tensor(volume, SIGMA, RHO, TRUNCATE=TRUNCATE, use_gpu=USE_GPU)
-    
+    val, vec = calculate_structure_tensor(
+        volume, SIGMA, RHO, TRUNCATE=TRUNCATE, use_gpu=USE_GPU
+    )
+
     print(f"Vector field shape: {vec.shape}")
 
     if is_mask:

@@ -16,15 +16,10 @@ def script() -> None:
     """
     Executes the main pipeline for computing orientation using configuration parameters.
 
-    This function supports two modes of operation:
-    1. Interactive mode: Opens a file dialog to select a configuration file if no arguments are provided.
-    2. Command-line mode: Parses command-line arguments to specify the configuration file, start and end indices,
-       and whether to use GPU for computations.
-
-    Returns:
-        None
+    Supports:
+    1. Interactive mode: Opens a file dialog if no CLI args provided.
+    2. CLI mode: Parses arguments.
     """
-    # Set up the argument parser with a description
     parser = argparse.ArgumentParser(
         description=(
             "This script computes orientation for a 3D volume based on the provided configuration file. "
@@ -33,7 +28,7 @@ def script() -> None:
         )
     )
 
-    # Add arguments to the parser
+    # Explicit Optional for end_index
     parser.add_argument(
         "conf_file_path",
         type=str,
@@ -49,7 +44,7 @@ def script() -> None:
     parser.add_argument(
         "--end_index",
         type=int,
-        default=None,
+        default=None,  # Must be Optional[int]
         help="Ending index for processing (default: None, processes all data).",
     )
     parser.add_argument(
@@ -67,46 +62,44 @@ def script() -> None:
     if len(sys.argv) < 2:
         parser.print_help()
         Tk().withdraw()
-        conf_file_path = askopenfilename(
+        conf_file_path: str = askopenfilename(
             initialdir=f"{os.getcwd()}/param_files", title="Select file"
         )
         if not conf_file_path:
             sys.exit("No file selected!")
-        start_index = 0
-        end_index = None
-        use_gpu = False
-        reverse = False
-
+        start_index: int = 0
+        end_index: int | None = None
+        use_gpu: bool = False
+        reverse: bool = False
     else:
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
         start_index = args.start_index
-        end_index = args.end_index
+        end_index = args.end_index  # Optional[int]
         use_gpu = args.gpu
         reverse = args.reverse
 
+    # Exception variable 'e' must NOT be reused outside except
     try:
         params = read_conf_file(conf_file_path)
-    except Exception as e:
-        print(f"⚠️  Error reading parameter file '{conf_file_path}': {e}")
+    except Exception as err:
+        print(f"⚠️  Error reading parameter file '{conf_file_path}': {err}")
         sys.exit(1)
 
-    # Extracting parameters safely using .get() with defaults where necessary
     VOLUME_PATH = params.get("IMAGES_PATH", "")
     if reverse is False:
         reverse = params.get("REVERSE", False)
     N_CHUNK = params.get("N_CHUNK", 100)
     IS_TEST = params.get("TEST", False)
 
-    # Set end_index to total_images if it's zero
     data_reader = DataReader(VOLUME_PATH)
     total_slices = data_reader.shape[0]
     if end_index is None:
         end_index = total_slices
-        
-    # Handle test mode: single invocation without chunking
+
+    # TEST mode
     if IS_TEST:
-        print("⚙️  TEST mode: processing slices {0}–{1}".format(start_index, end_index - 1))
+        print(f"⚙️  TEST mode: processing slices {start_index}–{end_index - 1}")
         t0 = time.time()
         compute_orientation(
             conf_file_path,
@@ -130,12 +123,10 @@ def script() -> None:
 
     print(f"Will process {len(chunks)} chunks{' in reverse' if reverse else ''}.")
 
-        
-    
     # Execute chunks
     for idx, (s, e) in enumerate(chunks, start=1):
         print("=" * 60)
-        print(f"▶️  Chunk {idx}/{len(chunks)}: slices {s}–{e-1}")
+        print(f"▶️  Chunk {idx}/{len(chunks)}: slices {s}–{e - 1}")
         print("=" * 60)
         t0 = time.time()
 

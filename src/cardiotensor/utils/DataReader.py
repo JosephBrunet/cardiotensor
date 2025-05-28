@@ -124,7 +124,9 @@ class DataReader:
             start_index = max(start_index, 0)
             end_index = int(end_index_ini / binning_factor) + 1
             end_index = min(end_index, self.shape[0])
-            print(f"Mask start index padded: {start_index} - Mask end index padded: {end_index}")
+            print(
+                f"Mask start index padded: {start_index} - Mask end index padded: {end_index}"
+            )
 
         # load the raw volume
         if not self.volume_info["stack"]:
@@ -156,7 +158,7 @@ class DataReader:
             # 4) allocate exactly the target (unbinned) shape and resize each slice
             volume_resized = np.empty(
                 (volume.shape[0], unbinned_shape[1], unbinned_shape[2]),
-                dtype=volume.dtype
+                dtype=volume.dtype,
             )
             for i in range(volume.shape[0]):
                 volume_resized[i] = cv2.resize(
@@ -169,7 +171,6 @@ class DataReader:
             volume = volume_resized
 
         return volume
-
 
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
