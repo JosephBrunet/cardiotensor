@@ -86,11 +86,18 @@ echo SLURM_MEM_PER_CPU: $SLURM_MEM_PER_CPU
 echo SLURM_MEM_PER_NODE: $SLURM_MEM_PER_NODE
 echo ------------------------------------------------------
 
-START_INDEX=$(( (SLURM_ARRAY_TASK_ID - 1) * {IMAGES_PER_JOB} + {start_image}))
-END_INDEX=$(( SLURM_ARRAY_TASK_ID * {IMAGES_PER_JOB} + {start_image}))
-if [ $END_INDEX -ge {total_images} ]; then END_INDEX=$(( {total_images} - 1 )); fi
-echo Start index, End index : $START_INDEX: $END_INDEX
 
+IMAGES_PER_JOB={IMAGES_PER_JOB}
+START_IMAGE={start_image}
+TOTAL_IMAGES={total_images+ start_image}
+
+START_INDEX=$(( (SLURM_ARRAY_TASK_ID - 1) * $IMAGES_PER_JOB + $START_IMAGE ))
+END_INDEX=$(( SLURM_ARRAY_TASK_ID * $IMAGES_PER_JOB + $START_IMAGE - 1 ))
+
+# Cap END_INDEX to the last image index (zero-based)
+if [ $END_INDEX -ge $TOTAL_IMAGES ]; then END_INDEX=$(( $TOTAL_IMAGES + $START_IMAGE - 1 )); fi
+
+echo Start index, End index : $START_INDEX: $END_INDEX
 echo mem used {math.ceil(mem_needed)}G
 
 # Fix Qt headless error
