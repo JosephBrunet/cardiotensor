@@ -194,48 +194,41 @@ def calculate_structure_tensor(
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
+    
+    num_cpus = max(os.cpu_count() or 4, 4) # Default to 4 if os.cpu_count() returns None
 
-    num_cpus = os.cpu_count() or 4  # Default to 4 if os.cpu_count() returns None
-    num_cpus = max(num_cpus, 4)
-
-    if devices is None:  # Initialize devices if not provided
-        devices = []
+    devices = devices or []
+    num_gpus = 0
 
     if use_gpu:
         print("🔍 Checking for GPU support...")
         try:
             import cupy
-            from cupy.cuda import driver
-
             num_gpus = get_gpu_count()
-            print(f"✅ Detected {num_gpus} GPU(s)")
-            
-            # Build default devices list based on available GPUs
-            if not devices:
-                # Example: 16 tasks per GPU (tweak this as needed)
-                devices = []
-                for i in range(num_gpus):
-                    devices.extend([f"cuda:{i}"] * 16)
-                # print(f"Devices for GPU computation: {devices}")
-                
+            print(f"Detected {num_gpus} GPU(s)")
         except Exception as e:
             use_gpu = False
             print(f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}")
 
+    
+    if not devices:
+        if use_gpu and num_gpus > 0:
+            print(f"Using {num_gpus} GPUs for computation")           
+            devices = []
+            for i in range(num_gpus):
+                devices.extend([f"cuda:{i}"] * 16) 
+        else:
+            print(f"Using {num_cpus} CPU for computation")
+            devices = ["cpu"] * num_cpus
 
-
-            devices = 16 * ["cuda:0"] + 16 * ["cuda:1"]
-
-
-
-
-    # Dispatch
-    if use_gpu:
-        print("🚀 GPU activated")
+    print("\nStarting structure tensor computation...")
+    print(f"---  Volume shape: {volume.shape}")
+    print(f"---  Sigma: {SIGMA}, Rho: {RHO}, Block size: {block_size}")
+    if use_gpu and num_gpus > 0:
+        device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
     else:
-        print("🧠 GPU not activated, using CPU")
-        print(f"Number of CPUs used: {num_cpus}")
-        devices = num_cpus * ["cpu"]
+        device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"  
+    print(f"---  Devices: {device_str}")
 
     S, val, vec = parallel_structure_tensor_analysis(
         volume,
@@ -248,6 +241,7 @@ def calculate_structure_tensor(
         eigenvectors=dtype,
         eigenvalues=dtype,
     ) 
+    print("Structure tensor computation completed\n")
     
     # vec has shape =(3,x,y,z) in the order of (z,y,x)
 
