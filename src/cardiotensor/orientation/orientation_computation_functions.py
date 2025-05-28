@@ -8,16 +8,16 @@ import numpy as np
 import tifffile
 from scipy.interpolate import CubicSpline
 
-try:
-    import sys
+# try:
+#     import sys
 
-    from PyQt5.QtWidgets import QApplication
+#     from PyQt5.QtWidgets import QApplication
 
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
-except:
-    pass
+#     app = QApplication.instance()
+#     if app is None:
+#         app = QApplication(sys.argv)
+# except:
+#     pass
 
 
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
