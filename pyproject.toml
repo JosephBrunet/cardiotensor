@@ -33,6 +33,7 @@ dependencies = [
     "structure-tensor>=0.3.0",
     "tifffile",
     'pandas',
+    "zarr",
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
