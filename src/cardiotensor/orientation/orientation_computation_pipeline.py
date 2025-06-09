@@ -260,7 +260,6 @@ Parameters:
         else:
             num_procs = mp.cpu_count()
 
-        # Then use num_procs when creating the pool
         with mp.Pool(processes=num_procs) as pool:
             with alive_bar(
                 num_slices, title="Processing slices (Multiprocess)", bar="smooth"
