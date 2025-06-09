@@ -298,7 +298,7 @@ def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:
         + (l2 - mean_eigenvalue) ** 2
         + (l3 - mean_eigenvalue) ** 2
     )
-    denominator = np.sqrt(l1**2 + l2**2 + l3**2)
+    denominator = np.sqrt(l1**2 + l2**2 + l3**2) + 1e-10
     img_FA = np.sqrt(3 / 2) * (numerator / denominator)
 
     return img_FA
