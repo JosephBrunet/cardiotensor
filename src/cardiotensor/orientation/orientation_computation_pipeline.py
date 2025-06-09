@@ -254,7 +254,13 @@ Parameters:
             """Callback function to update progress bar."""
             bar()
 
-        with mp.Pool(processes=mp.cpu_count()) as pool:
+        # Limit the number of processors used to avoid exceeing the max number of handlers in Windows
+        if sys.platform.startswith("win"):
+            num_procs = min(mp.cpu_count(), 59)
+        else:
+            num_procs = mp.cpu_count()
+
+        with mp.Pool(processes=num_procs) as pool:
             with alive_bar(
                 num_slices, title="Processing slices (Multiprocess)", bar="smooth"
             ) as bar:
