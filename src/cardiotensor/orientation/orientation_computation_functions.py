@@ -8,6 +8,9 @@ import numpy as np
 import tifffile
 from scipy.interpolate import CubicSpline
 
+from tqdm import tqdm
+
+
 # try:
 #     import sys
 
@@ -233,17 +236,27 @@ def calculate_structure_tensor(
         device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
     print(f"---  Devices: {device_str}")
 
-    S, val, vec = parallel_structure_tensor_analysis(
-        volume,
-        SIGMA,
-        RHO,
-        devices=devices,
-        block_size=block_size,
-        truncate=TRUNCATE,
-        structure_tensor=None,
-        eigenvectors=dtype,
-        eigenvalues=dtype,
-    )
+        
+    class TqdmTotal(tqdm):
+        def update_with_total(self, n=1, total=None):
+            if total is not None:
+                self.total = total
+            return self.update(1)
+
+    with TqdmTotal(desc="Computing structure tensors", unit="block") as t:  
+        S, val, vec = parallel_structure_tensor_analysis(
+            volume,
+            SIGMA,
+            RHO,
+            devices=devices,
+            block_size=block_size,
+            truncate=TRUNCATE,
+            structure_tensor=None,
+            eigenvectors=dtype,
+            eigenvalues=dtype,
+            progress_callback_fn=t.update_with_total,
+        )
+        
     print("Structure tensor computation completed\n")
 
     # vec has shape =(3,x,y,z) in the order of (z,y,x)
