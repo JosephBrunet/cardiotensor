@@ -259,7 +259,7 @@ def calculate_structure_tensor(
         
     print("Structure tensor computation completed\n")
 
-    # vec has shape =(3,x,y,z) in the order of (z,y,x)
+    # vec has shape =(3,z,y,x) in the order of (x,y,z)
 
     return val, vec
 
