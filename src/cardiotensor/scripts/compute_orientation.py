@@ -48,11 +48,6 @@ def script() -> None:
         help="Ending index for processing (default: None, processes all data).",
     )
     parser.add_argument(
-        "--gpu",
-        action="store_true",
-        help="Activate GPU acceleration for computations.",
-    )
-    parser.add_argument(
         "--reverse",
         action="store_true",
         help="Start the orientation computation from the end of the volume",
@@ -69,14 +64,12 @@ def script() -> None:
             sys.exit("No file selected!")
         start_index: int = 0
         end_index: int | None = None
-        use_gpu: bool = False
         reverse: bool = False
     else:
         args = parser.parse_args()
         conf_file_path = args.conf_file_path
         start_index = args.start_index
         end_index = args.end_index  # Optional[int]
-        use_gpu = args.gpu
         reverse = args.reverse
 
     # Exception variable 'e' must NOT be reused outside except
@@ -105,7 +98,6 @@ def script() -> None:
             conf_file_path,
             start_index=start_index,
             end_index=end_index,
-            use_gpu=use_gpu,
         )
         print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
         return
@@ -134,7 +126,6 @@ def script() -> None:
             conf_file_path,
             start_index=s,
             end_index=e,
-            use_gpu=use_gpu,
         )
 
         elapsed = time.time() - t0
