@@ -153,7 +153,10 @@ def convert_to_8bit(
     # Normalize and scale to 8-bit range
     img_normalized = (img - minimum) / (maximum - minimum) * 255
 
+    # Convert NaN and Inf values to numbers
+    img_cleaned = np.nan_to_num(img_normalized, nan=0.0, posinf=255.0, neginf=0.0)
+
     # Clip values to ensure they are in 8-bit range
-    img_clipped = np.clip(img_normalized, 0, 255)
+    img_clipped = np.clip(img_cleaned, 0, 255)
 
     return img_clipped.astype(np.uint8)
