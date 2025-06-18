@@ -1,10 +1,11 @@
 import ast
 import configparser
 import os
+
 from typing import Any
 
 import numpy as np
-
+from pathlib import Path
 
 def read_conf_file(file_path: str) -> dict[str, Any]:
     """
@@ -21,6 +22,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         ValueError: If expected numerical or array values are incorrectly formatted.
     """
 
+    file_path = str(Path(file_path).resolve())  # Ensure the file path is absolute
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
 
@@ -57,10 +59,21 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
                 f"Invalid coordinate format for {option} in [{section}]: {value}"
             ) from e
 
+
+    # Read the two paths
+    images_path = config.get("DATASET", "IMAGES_PATH").strip()
+    mask_path = config.get("DATASET", "MASK_PATH", fallback="").strip()
+
+    # Existence check (file or directory)
+    if not os.path.exists(images_path):
+        raise FileNotFoundError(f"The IMAGES_PATH '{images_path}' does not exist.")
+    if mask_path and not os.path.exists(mask_path):
+        raise FileNotFoundError(f"The MASK_PATH '{mask_path}' does not exist.")
+
     return {
         # DATASET
-        "IMAGES_PATH": config.get("DATASET", "IMAGES_PATH").strip(),
-        "MASK_PATH": config.get("DATASET", "MASK_PATH", fallback="").strip(),
+        "IMAGES_PATH": images_path,
+        "MASK_PATH": mask_path,
         "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
         # STRUCTURE TENSOR CALCULATION
         "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
