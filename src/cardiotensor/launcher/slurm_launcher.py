@@ -60,7 +60,7 @@ def submit_job_to_slurm(
     print(f"\nN_jobs = {N_jobs}, IMAGES_PER_JOB = {IMAGES_PER_JOB}")
 
     slurm_script_content = f"""#!/bin/bash -l
-#SBATCH --output={log_dir}/slurm-%x-%j.out
+#SBATCH --output={log_dir}/slurm-%x-%A_%a.out
 #SBATCH --partition=low
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -68,7 +68,7 @@ def submit_job_to_slurm(
 #SBATCH --mem={math.ceil(mem_needed)}G
 #SBATCH --job-name={job_name}
 #SBATCH --time=2:00:00
-#SBATCH --array=1-{N_jobs}%100
+#SBATCH --array=1-{N_jobs}%50
 
 echo ------------------------------------------------------
 echo SLURM_NNODES: $SLURM_NNODES
@@ -92,7 +92,7 @@ START_IMAGE={start_image}
 TOTAL_IMAGES={total_images+ start_image}
 
 START_INDEX=$(( (SLURM_ARRAY_TASK_ID - 1) * $IMAGES_PER_JOB + $START_IMAGE ))
-END_INDEX=$(( SLURM_ARRAY_TASK_ID * $IMAGES_PER_JOB + $START_IMAGE - 1 ))
+END_INDEX=$(( SLURM_ARRAY_TASK_ID * $IMAGES_PER_JOB + $START_IMAGE ))
 
 # Cap END_INDEX to the last image index (zero-based)
 if [ $END_INDEX -ge $TOTAL_IMAGES ]; then END_INDEX=$(( $TOTAL_IMAGES + $START_IMAGE - 1 )); fi
@@ -233,7 +233,7 @@ def slurm_launcher(conf_file_path: str) -> None:
     )
 
     # Split the index_intervals into batches of max length 1000
-    N_job_max_per_array = 400
+    N_job_max_per_array = 999
     batched_intervals = [
         index_intervals[i : i + N_job_max_per_array]
         for i in range(0, len(index_intervals), N_job_max_per_array)
@@ -252,6 +252,13 @@ def slurm_launcher(conf_file_path: str) -> None:
     # Launch each batch
     for batch in batched_intervals:
         start, end = batch[0][0], batch[-1][1]
+        
+        
+        if is_chunk_done(OUTPUT_DIR, start, end, output_format=params.get("OUTPUT_FORMAT", "jp2")):
+            print(f"✅ Chunk {start}-{end} already done. Skipping.")
+            continue
+
+        
         job_id = submit_job_to_slurm(
             python_file_path,
             conf_file_path,
@@ -263,7 +270,37 @@ def slurm_launcher(conf_file_path: str) -> None:
         print(
             f"Submitted job for batch starting at {start} and ending at {end} (job ID: {job_id})"
         )
+        time.sleep(400)
 
     monitor_job_output(OUTPUT_DIR, data_reader.shape[0], conf_file_path)
 
     return
+
+
+
+
+
+
+
+def is_chunk_done(output_dir: str, start: int, end: int, output_format: str = "jp2") -> bool:
+    """
+    Check if all output files (HA, IA, FA) for a given chunk are already present.
+
+    Args:
+        output_dir (str): Base output directory containing HA/IA/FA folders.
+        start (int): Start index of the chunk (inclusive).
+        end (int): End index of the chunk (exclusive).
+        output_format (str): File extension for the output images (e.g., "jp2", "tif").
+
+    Returns:
+        bool: True if all expected output files exist, False otherwise.
+    """
+    for idx in range(start, end):
+        expected_files = [
+            f"{output_dir}/HA/HA_{idx:06d}.{output_format}",
+            f"{output_dir}/IA/IA_{idx:06d}.{output_format}",
+            f"{output_dir}/FA/FA_{idx:06d}.{output_format}",
+        ]
+        if not all(os.path.exists(f) for f in expected_files):
+            return False
+    return True
