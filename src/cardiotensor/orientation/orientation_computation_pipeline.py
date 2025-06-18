@@ -32,7 +32,6 @@ def compute_orientation(
     conf_file_path: str,
     start_index: int = 0,
     end_index: int | None = None,
-    use_gpu: bool = False,
 ) -> None:
     """
     Compute the orientation for a volume dataset based on the configuration.
@@ -47,8 +46,10 @@ def compute_orientation(
         None
     """
 
-    print("\n---------------------------------")
-    print(f"READING PARAMETER FILE : {conf_file_path}\n")
+    print("\n" + "-" * 40)
+    print(f"READING PARAMETER FILE : {conf_file_path}")
+    print("-" * 40 + "\n")
+
 
     try:
         params = read_conf_file(conf_file_path)
@@ -94,7 +95,7 @@ Parameters:
         )
 
     print("\n" + "-" * 40)
-    print("READING VOLUME INFORMATION\n")
+    print("READING VOLUME INFORMATION")
     print("-" * 40 + "\n")
 
     print(f"Volume path: {VOLUME_PATH}")
@@ -202,7 +203,7 @@ Parameters:
         volume[mask == 0] = 0
 
     print("\n" + "-" * 40)
-    print("CALCULATING STRUCTURE TENSOR\n")
+    print("CALCULATING STRUCTURE TENSOR")
     print("-" * 40 + "\n")
     t1 = time.perf_counter()  # start time
     val, vec = calculate_structure_tensor(
@@ -243,7 +244,7 @@ Parameters:
     print(f"finished calculating structure tensors in {t2 - t1} seconds")
 
     print("\n" + "-" * 40)
-    print("ANGLE & ANISOTROPY CALCULATION\n")
+    print("ANGLE & ANISOTROPY CALCULATION")
     print("-" * 40 + "\n")
 
     if MULTIPROCESS and not IS_TEST:
