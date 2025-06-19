@@ -8,8 +8,8 @@ import numpy as np
 from alive_progress import alive_bar
 from skimage.measure import block_reduce
 
-from cardiotensor.utils.utils import convert_to_8bit
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.utils import convert_to_8bit
 
 
 def process_vector_block(
@@ -31,7 +31,7 @@ def process_vector_block(
         output_dir (Path): Path to the output directory.
         idx (int): Index of the current block.
     """
-    
+
     try:
         output_file = output_dir / "eigen_vec" / f"eigen_vec_{idx:06d}.npy"
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,9 @@ def process_vector_block(
             return
 
         array = np.empty((3, len(block), h, w), dtype=np.float32)
-        bin_array = np.empty((3, math.ceil(h / bin_factor), math.ceil(w / bin_factor)), dtype=np.float32)
+        bin_array = np.empty(
+            (3, math.ceil(h / bin_factor), math.ceil(w / bin_factor)), dtype=np.float32
+        )
 
         for i, p in enumerate(block):
             array[:, i, :, :] = np.load(p)
@@ -54,11 +56,11 @@ def process_vector_block(
             )
 
         np.save(output_file, bin_array.astype(np.float32))
-        
+
     except Exception as e:
         print(f"Error processing block {idx}: {e}")
         # print(f"Failed to process files: {[str(p) for p in block]}")
-        raise e 
+        raise e
 
 
 def downsample_vector_volume(
@@ -101,10 +103,9 @@ def downsample_vector_volume(
     _, h, w = sample.shape
 
     tasks = [
-        (block, bin_factor, h, w, bin_dir, idx)
-        for idx, block in enumerate(blocks)
+        (block, bin_factor, h, w, bin_dir, idx) for idx, block in enumerate(blocks)
     ]
-    
+
     with mp.Pool(processes=min(mp.cpu_count(), 16)) as pool:
         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
             results = [
@@ -117,14 +118,7 @@ def downsample_vector_volume(
                 result.wait()
 
 
-
-import math
-import multiprocessing as mp
 from pathlib import Path
-
-import numpy as np
-from skimage.measure import block_reduce
-from alive_progress import alive_bar
 
 
 def _process_chunk(
@@ -163,9 +157,7 @@ def _process_chunk(
     downsampled = np.empty((3, Hc, Wc), dtype=np.float32)
     for comp in range(3):
         downsampled_comp = block_reduce(
-            avg_unit[comp],
-            block_size=(bin_factor, bin_factor),
-            func=np.mean
+            avg_unit[comp], block_size=(bin_factor, bin_factor), func=np.mean
         )
         downsampled[comp] = downsampled_comp
 
@@ -204,7 +196,9 @@ def chunked_downsample_vector_volume_mp(
     # Determine H, W from the first slice
     sample = np.load(all_files[0])
     if sample.ndim != 3 or sample.shape[0] != 3:
-        raise RuntimeError(f"Expected each .npy to have shape (3, H, W), but got {sample.shape}")
+        raise RuntimeError(
+            f"Expected each .npy to have shape (3, H, W), but got {sample.shape}"
+        )
     _, H, W = sample.shape
 
     Z_full = len(all_files)
@@ -244,12 +238,11 @@ def chunked_downsample_vector_volume_mp(
                 r.wait()
 
 
-
-
-
-def process_image_block(file_list, block_idx, bin_factor, out_file, min_value, max_value):
+def process_image_block(
+    file_list, block_idx, bin_factor, out_file, min_value, max_value
+):
     """
-    Process a Z-block of images by averaging along the Z axis, 
+    Process a Z-block of images by averaging along the Z axis,
     downsampling in XY, converting to 8-bit, and writing to disk.
 
     Args:
@@ -272,14 +265,14 @@ def process_image_block(file_list, block_idx, bin_factor, out_file, min_value, m
         array[i] = img
 
     mean_z = np.nanmean(array, axis=0)
-    downsampled = block_reduce(mean_z, block_size=(bin_factor, bin_factor), func=np.mean)
-    downsampled_8bit = convert_to_8bit(downsampled, min_value=min_value, max_value=max_value)
+    downsampled = block_reduce(
+        mean_z, block_size=(bin_factor, bin_factor), func=np.mean
+    )
+    downsampled_8bit = convert_to_8bit(
+        downsampled, min_value=min_value, max_value=max_value
+    )
     cv2.imwrite(str(out_file), downsampled_8bit)
     return True
-
-
-
-
 
 
 def downsample_volume(
@@ -310,7 +303,7 @@ def downsample_volume(
     Returns:
         None
     """
-    
+
     reader = DataReader(input_path)
     Z, H, W = reader.shape
     file_list = reader.volume_info["file_list"]
@@ -319,7 +312,6 @@ def downsample_volume(
     bin_dir = output_dir / f"bin{bin_factor}"
     out_dir = bin_dir / subfolder
     out_dir.mkdir(parents=True, exist_ok=True)
-
 
     # Early exit if all output files already exist
     expected_files = [
@@ -333,7 +325,9 @@ def downsample_volume(
     for block_idx in range(num_blocks):
         out_file = out_dir / f"{subfolder}_{block_idx:06d}.{out_ext}"
         if not out_file.exists():
-            tasks.append((file_list, block_idx, bin_factor, out_file, min_value, max_value))
+            tasks.append(
+                (file_list, block_idx, bin_factor, out_file, min_value, max_value)
+            )
 
     if not tasks:
         print(f"✔️ All downsampled blocks already exist for '{subfolder}'. Skipping.")
@@ -342,7 +336,9 @@ def downsample_volume(
     with mp.Pool(processes=mp.cpu_count()) as pool:
         with alive_bar(len(tasks), title=f"Downsampling '{subfolder}' volume") as bar:
             results = [
-                pool.apply_async(process_image_block, args=task, callback=lambda _: bar())
+                pool.apply_async(
+                    process_image_block, args=task, callback=lambda _: bar()
+                )
                 for task in tasks
             ]
             for r in results:

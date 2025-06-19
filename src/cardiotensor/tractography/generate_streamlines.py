@@ -1,11 +1,9 @@
 import numpy as np
-from typing import List, Tuple
 from alive_progress import alive_bar
-from typing import List, Tuple, Optional
+
 
 def trilinear_interpolate_vector(
-    vector_field: np.ndarray,
-    pt: Tuple[float, float, float]
+    vector_field: np.ndarray, pt: tuple[float, float, float]
 ) -> np.ndarray:
     """
     Given a fractional (z,y,x), returns the trilinearly‐interpolated 3‐vector
@@ -15,9 +13,12 @@ def trilinear_interpolate_vector(
     _, Z, Y, X = vector_field.shape
 
     # Clamp floor and ceil to valid ranges
-    z0 = int(np.floor(zf)); z1 = min(z0 + 1, Z - 1)
-    y0 = int(np.floor(yf)); y1 = min(y0 + 1, Y - 1)
-    x0 = int(np.floor(xf)); x1 = min(x0 + 1, X - 1)
+    z0 = int(np.floor(zf))
+    z1 = min(z0 + 1, Z - 1)
+    y0 = int(np.floor(yf))
+    y1 = min(y0 + 1, Y - 1)
+    x0 = int(np.floor(xf))
+    x1 = min(x0 + 1, X - 1)
 
     dz = zf - z0
     dy = yf - y0
@@ -47,9 +48,9 @@ def trilinear_interpolate_vector(
     c = c0 * (1 - dz) + c1 * dz
     return c  # shape (3,)
 
+
 def trilinear_interpolate_scalar(
-    volume: np.ndarray,
-    pt: Tuple[float, float, float]
+    volume: np.ndarray, pt: tuple[float, float, float]
 ) -> float:
     """
     Trilinearly interpolate a scalar volume at fractional point (z, y, x).
@@ -58,9 +59,12 @@ def trilinear_interpolate_scalar(
     zf, yf, xf = pt
     Z, Y, X = volume.shape
 
-    z0 = int(np.floor(zf)); z1 = min(z0 + 1, Z - 1)
-    y0 = int(np.floor(yf)); y1 = min(y0 + 1, Y - 1)
-    x0 = int(np.floor(xf)); x1 = min(x0 + 1, X - 1)
+    z0 = int(np.floor(zf))
+    z1 = min(z0 + 1, Z - 1)
+    y0 = int(np.floor(yf))
+    y1 = min(y0 + 1, Y - 1)
+    x0 = int(np.floor(xf))
+    x1 = min(x0 + 1, X - 1)
 
     dz = zf - z0
     dy = yf - y0
@@ -87,18 +91,16 @@ def trilinear_interpolate_scalar(
     return float(c)
 
 
-
-
 def trace_streamline(
-    start_pt: Tuple[float, float, float],
+    start_pt: tuple[float, float, float],
     vector_field: np.ndarray,
-    fa_volume: Optional[np.ndarray] = None,
+    fa_volume: np.ndarray | None = None,
     fa_threshold: float = 0.1,
     step_length: float = 0.5,
-    max_steps: Optional[int] = 1000,
+    max_steps: int | None = 1000,
     angle_threshold: float = 60.0,
     eps: float = 1e-10,
-) -> List[Tuple[float, float, float]]:
+) -> list[tuple[float, float, float]]:
     """
     Trace one streamline from `start_pt` (z,y,x) in the continuous vector_field.
     - Interpolate & normalize each sub‐step
@@ -107,10 +109,11 @@ def trace_streamline(
     - If max_steps is None, trace until a stopping condition is hit (no hard limit).
     """
     Z, Y, X = vector_field.shape[1:]
-    coords: List[Tuple[float, float, float]] = [(float(start_pt[0]), float(start_pt[1]), float(start_pt[2]))]
+    coords: list[tuple[float, float, float]] = [
+        (float(start_pt[0]), float(start_pt[1]), float(start_pt[2]))
+    ]
     current_pt = np.array(start_pt, dtype=np.float64)
     prev_dir: np.ndarray | None = None  # previous “unit vector”
-
 
     def interp_unit(pt: np.ndarray) -> np.ndarray | None:
         """Return a normalized direction vector at fractional pt, or None if invalid."""
@@ -120,8 +123,8 @@ def trace_streamline(
         norm = np.linalg.norm(vec)
         if norm < eps:
             return None
-        return np.array([vec[2], vec[1], vec[0]]) / norm # flip to (z,y,x) order
-    
+        return np.array([vec[2], vec[1], vec[0]]) / norm  # flip to (z,y,x) order
+
     step_count = 0
     while max_steps is None or step_count < max_steps:
         step_count += 1
@@ -164,9 +167,9 @@ def trace_streamline(
         increment = (step_length / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
         next_pt = current_pt + increment
         next_dir = k1
-        
+
         # ------
-    
+
         zn, yn, xn = next_pt
         if not (0 <= zn < Z and 0 <= yn < Y and 0 <= xn < X):
             break
@@ -178,33 +181,32 @@ def trace_streamline(
     return coords
 
 
-
 def generate_streamlines_from_vector_field(
     vector_field: np.ndarray,
     seed_points: np.ndarray,
-    fa_volume: Optional[np.ndarray] = None,
+    fa_volume: np.ndarray | None = None,
     fa_threshold: float = 0.1,
     step_length: float = 0.5,
-    max_steps: Optional[int] = None,
+    max_steps: int | None = None,
     angle_threshold: float = 60.0,
     min_length_pts: int = 10,
-) -> List[List[Tuple[float, float, float]]]:
+) -> list[list[tuple[float, float, float]]]:
     """
     Given a 3D vector_field (shape = (3, Z, Y, X)) and a set of integer‐seed voxels,
     returns a list of streamlines (each streamline = a list of float (z,y,x) points),
     filtered so that only those longer than `min_length_pts` are kept.
     Displays a progress bar during processing.
     """
-    all_streamlines: List[List[Tuple[float, float, float]]] = []
+    all_streamlines: list[list[tuple[float, float, float]]] = []
     total_seeds = len(seed_points)
 
     with alive_bar(total_seeds, title="Tracing Streamlines") as bar:
-        for (zi, yi, xi) in seed_points:
+        for zi, yi, xi in seed_points:
             start = (float(zi), float(yi), float(xi))
             pts = trace_streamline(
                 start_pt=start,
                 vector_field=vector_field,
-                fa_volume = fa_volume,
+                fa_volume=fa_volume,
                 fa_threshold=fa_threshold,
                 step_length=step_length,
                 max_steps=max_steps,

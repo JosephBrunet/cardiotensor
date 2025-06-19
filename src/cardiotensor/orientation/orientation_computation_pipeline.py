@@ -50,7 +50,6 @@ def compute_orientation(
     print(f"READING PARAMETER FILE : {conf_file_path}")
     print("-" * 40 + "\n")
 
-
     try:
         params = read_conf_file(conf_file_path)
     except Exception as e:
@@ -72,7 +71,7 @@ def compute_orientation(
     AXIS_PTS = params.get("AXIS_POINTS", None)
     IS_TEST = params.get("TEST", False)
     N_SLICE_TEST = params.get("N_SLICE_TEST", None)
-    USE_GPU = params.get("USE_GPU", use_gpu)
+    USE_GPU = params.get("USE_GPU", True)
 
     # Print summary
     print(f"""
