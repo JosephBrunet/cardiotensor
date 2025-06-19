@@ -8,64 +8,67 @@ from cardiotensor.utils.utils import convert_to_8bit, read_conf_file
 
 def test_read_conf_file():
     """Test the read_conf_file function."""
-    conf_content = """
-    [DATASET]
-    IMAGES_PATH = /path/to/images
-    MASK_PATH = /path/to/masks
-    VOXEL_SIZE = 0.5
+    # Create temporary folders to simulate existing paths
+    with tempfile.TemporaryDirectory() as tmp_images, tempfile.TemporaryDirectory() as tmp_masks, tempfile.TemporaryDirectory() as tmp_output:
+        conf_content = f"""
+        [DATASET]
+        IMAGES_PATH = {tmp_images}
+        MASK_PATH = {tmp_masks}
+        VOXEL_SIZE = 0.5
 
-    [OUTPUT]
-    OUTPUT_PATH = /path/to/output
-    OUTPUT_FORMAT = jp2
-    OUTPUT_TYPE = volume
+        [OUTPUT]
+        OUTPUT_PATH = {tmp_output}
+        OUTPUT_FORMAT = jp2
+        OUTPUT_TYPE = volume
 
-    [STRUCTURE TENSOR CALCULATION]
-    SIGMA = 1.5
-    RHO = 2.0
-    N_CHUNK = 50
-    USE_GPU = True
-    WRITE_VECTORS = True
-    REVERSE = True
+        [STRUCTURE TENSOR CALCULATION]
+        SIGMA = 1.5
+        RHO = 2.0
+        N_CHUNK = 50
+        USE_GPU = True
+        WRITE_VECTORS = True
+        REVERSE = True
 
-    [ANGLE CALCULATION]
-    WRITE_ANGLES = True
-    AXIS_POINTS = (10,20,30), (40,50,60)
+        [ANGLE CALCULATION]
+        WRITE_ANGLES = True
+        AXIS_POINTS = (10,20,30), (40,50,60)
 
-    [TEST]
-    TEST = True
-    N_SLICE_TEST = 10
-    """
-    with tempfile.NamedTemporaryFile(suffix=".conf", delete=False) as temp_file:
-        temp_file.write(conf_content.encode())
-        temp_file_path = temp_file.name
+        [TEST]
+        TEST = True
+        N_SLICE_TEST = 10
+        """
+        with tempfile.NamedTemporaryFile(suffix=".conf", delete=False) as temp_file:
+            temp_file.write(conf_content.encode())
+            temp_file_path = temp_file.name
 
-    try:
-        config = read_conf_file(temp_file_path)
+        try:
+            config = read_conf_file(temp_file_path)
 
-        assert config["IMAGES_PATH"] == "/path/to/images"
-        assert config["MASK_PATH"] == "/path/to/masks"
-        assert config["VOXEL_SIZE"] == 0.5
+            assert config["IMAGES_PATH"] == tmp_images
+            assert config["MASK_PATH"] == tmp_masks
+            assert config["VOXEL_SIZE"] == 0.5
 
-        assert config["OUTPUT_PATH"] == "/path/to/output"
-        assert config["OUTPUT_FORMAT"] == "jp2"
-        assert config["OUTPUT_TYPE"] == "volume"
+            assert config["OUTPUT_PATH"] == tmp_output
+            assert config["OUTPUT_FORMAT"] == "jp2"
+            assert config["OUTPUT_TYPE"] == "volume"
 
-        assert config["SIGMA"] == 1.5
-        assert config["RHO"] == 2.0
-        assert config["N_CHUNK"] == 50
-        assert config["USE_GPU"] is True
-        assert config["WRITE_VECTORS"] is True
-        assert config["REVERSE"] is True
+            assert config["SIGMA"] == 1.5
+            assert config["RHO"] == 2.0
+            assert config["N_CHUNK"] == 50
+            assert config["USE_GPU"] is True
+            assert config["WRITE_VECTORS"] is True
+            assert config["REVERSE"] is True
 
-        assert config["WRITE_ANGLES"] is True
-        assert config["AXIS_POINTS"] == [(10, 20, 30), (40, 50, 60)]
+            assert config["WRITE_ANGLES"] is True
+            assert config["AXIS_POINTS"] == [(10, 20, 30), (40, 50, 60)]
 
-        assert config["TEST"] is True
-        assert config["N_SLICE_TEST"] == 10
+            assert config["TEST"] is True
+            assert config["N_SLICE_TEST"] == 10
 
-        print("✅ read_conf_file test passed.")
-    finally:
-        os.remove(temp_file_path)
+            print("✅ read_conf_file test passed.")
+        finally:
+            os.remove(temp_file_path)
+
 
 
 def test_convert_to_8bit():

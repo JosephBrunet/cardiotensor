@@ -1,11 +1,11 @@
 import ast
 import configparser
 import os
-
+from pathlib import Path
 from typing import Any
 
 import numpy as np
-from pathlib import Path
+
 
 def read_conf_file(file_path: str) -> dict[str, Any]:
     """
@@ -58,7 +58,6 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
             raise ValueError(
                 f"Invalid coordinate format for {option} in [{section}]: {value}"
             ) from e
-
 
     # Read the two paths
     images_path = config.get("DATASET", "IMAGES_PATH").strip()

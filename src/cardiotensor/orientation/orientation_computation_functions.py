@@ -8,22 +8,16 @@ import numpy as np
 import tifffile
 from scipy.interpolate import CubicSpline
 
-from tqdm import tqdm
-
-
 # try:
 #     import sys
-
 #     from PyQt5.QtWidgets import QApplication
-
 #     app = QApplication.instance()
 #     if app is None:
 #         app = QApplication(sys.argv)
 # except:
 #     pass
-
-
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
+from tqdm import tqdm
 
 from cardiotensor.utils.utils import convert_to_8bit
 
@@ -236,14 +230,13 @@ def calculate_structure_tensor(
         device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
     print(f"---  Devices: {device_str}")
 
-        
     class TqdmTotal(tqdm):
         def update_with_total(self, n=1, total=None):
             if total is not None:
                 self.total = total
             return self.update(1)
 
-    with TqdmTotal(desc="Computing structure tensors", unit="block") as t:  
+    with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
             SIGMA,
@@ -256,7 +249,7 @@ def calculate_structure_tensor(
             eigenvalues=dtype,
             progress_callback_fn=t.update_with_total,
         )
-        
+
     print("Structure tensor computation completed\n")
 
     # vec has shape =(3,z,y,x) in the order of (x,y,z)

@@ -135,7 +135,6 @@ class DataReader:
                 volume, _ = _load_raw_data_with_mhd(self.path)
                 volume = volume[start_index:end_index, :, :]
         else:
-                        
             # image stack
             volume = self._load_image_stack(
                 self.volume_info["file_list"], start_index, end_index
@@ -229,13 +228,11 @@ class DataReader:
                         f"Inconsistent file shape at index {idx}: Expected {first_shape}, got {data.shape}"
                     )
 
-        
         # Combine into a NumPy array
         if self.volume_info["type"] == "npy":
             volume = np.stack(computed_data, axis=1)
         else:
             volume = np.stack(computed_data, axis=0)
-        
 
         return volume
 

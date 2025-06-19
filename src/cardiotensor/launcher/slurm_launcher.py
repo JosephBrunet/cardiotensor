@@ -89,7 +89,7 @@ echo ------------------------------------------------------
 
 IMAGES_PER_JOB={IMAGES_PER_JOB}
 START_IMAGE={start_image}
-TOTAL_IMAGES={total_images+ start_image}
+TOTAL_IMAGES={total_images + start_image}
 
 START_INDEX=$(( (SLURM_ARRAY_TASK_ID - 1) * $IMAGES_PER_JOB + $START_IMAGE ))
 END_INDEX=$(( SLURM_ARRAY_TASK_ID * $IMAGES_PER_JOB + $START_IMAGE ))
@@ -252,13 +252,13 @@ def slurm_launcher(conf_file_path: str) -> None:
     # Launch each batch
     for batch in batched_intervals:
         start, end = batch[0][0], batch[-1][1]
-        
-        
-        if is_chunk_done(OUTPUT_DIR, start, end, output_format=params.get("OUTPUT_FORMAT", "jp2")):
+
+        if is_chunk_done(
+            OUTPUT_DIR, start, end, output_format=params.get("OUTPUT_FORMAT", "jp2")
+        ):
             print(f"✅ Chunk {start}-{end} already done. Skipping.")
             continue
 
-        
         job_id = submit_job_to_slurm(
             python_file_path,
             conf_file_path,
@@ -277,12 +277,9 @@ def slurm_launcher(conf_file_path: str) -> None:
     return
 
 
-
-
-
-
-
-def is_chunk_done(output_dir: str, start: int, end: int, output_format: str = "jp2") -> bool:
+def is_chunk_done(
+    output_dir: str, start: int, end: int, output_format: str = "jp2"
+) -> bool:
     """
     Check if all output files (HA, IA, FA) for a given chunk are already present.
 

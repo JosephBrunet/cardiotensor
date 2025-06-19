@@ -1,6 +1,7 @@
-import numpy as np
-import fury
 import random
+
+import fury
+import numpy as np
 
 
 def compute_elevation_angles(streamlines):
@@ -15,7 +16,9 @@ def compute_elevation_angles(streamlines):
         normalized = np.divide(vecs, norms, where=norms != 0)
         z_components = normalized[:, 2]
         elev = np.arcsin(z_components) * 180.0 / np.pi
-        elev = np.concatenate([elev, [elev[-1]]])  # repeat last value to match point count
+        elev = np.concatenate(
+            [elev, [elev[-1]]]
+        )  # repeat last value to match point count
         all_angles.append(elev.astype(np.float32))
     return all_angles
 
@@ -52,7 +55,7 @@ def show_streamlines(
     downsampled_colors = []
     idx = 0
     for sl in streamlines_xyz:
-        color_slice = color_values[idx:idx + len(sl)]
+        color_slice = color_values[idx : idx + len(sl)]
         ds_sl = downsample_streamline(sl, downsample_factor)
         ds_cl = downsample_streamline(color_slice, downsample_factor)
 
@@ -77,7 +80,9 @@ def show_streamlines(
 
     # Cap max
     if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
-        selected_idx = sorted(random.sample(range(len(streamlines_xyz)), max_streamlines))
+        selected_idx = sorted(
+            random.sample(range(len(streamlines_xyz)), max_streamlines)
+        )
         streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
         color_values = [color_values[i] for i in selected_idx]
 
@@ -96,11 +101,30 @@ def show_streamlines(
     scene = fury.window.Scene()
 
     if mode == "tube":
-        actor = fury.actor.streamtube(streamlines_xyz, flat_colors, linewidth=line_width, opacity=1, lookup_colormap=lut)
+        actor = fury.actor.streamtube(
+            streamlines_xyz,
+            flat_colors,
+            linewidth=line_width,
+            opacity=1,
+            lookup_colormap=lut,
+        )
     elif mode == "fake_tube":
-        actor = fury.actor.line(streamlines_xyz, flat_colors, linewidth=line_width, fake_tube=True, depth_cue=True)
+        actor = fury.actor.line(
+            streamlines_xyz,
+            flat_colors,
+            linewidth=line_width,
+            fake_tube=True,
+            depth_cue=True,
+        )
     elif mode == "line":
-        actor = fury.actor.line(streamlines_xyz, flat_colors, linewidth=line_width, fake_tube=False, depth_cue=False, lookup_colormap=lut)
+        actor = fury.actor.line(
+            streamlines_xyz,
+            flat_colors,
+            linewidth=line_width,
+            fake_tube=False,
+            depth_cue=False,
+            lookup_colormap=lut,
+        )
     else:
         raise ValueError(f"Unknown mode: {mode}")
 

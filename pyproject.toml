@@ -25,6 +25,7 @@ dependencies = [
     "SimpleITK",
     "alive_progress",
     "dask",
+    "fury",
     "glymur",
     "matplotlib",
     "numpy>=1.20",
@@ -33,7 +34,7 @@ dependencies = [
     "structure-tensor>=0.3.0",
     "tifffile",
     'pandas',
-    "fury",
+    "tqdm",
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
@@ -65,17 +66,13 @@ git = [
 ]
 
 [project.scripts]
+cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
+cardio-export-amira = "cardiotensor.scripts.export_to_amira:script"
+cardio-export-vtk = "cardiotensor.scripts.export_to_vtk:script"
+cardio-generate-streamlines = "cardiotensor.scripts.generate_streamlines:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
-
-cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
-
-cardio-export-vtk = "cardiotensor.scripts.export_to_vtk:script"
-cardio-export-amira = "cardiotensor.scripts.export_to_amira:script"
-
-cardio-generate-streamlines = "cardiotensor.scripts.generate_streamlines:script"
 cardio-visualize-streamlines = "cardiotensor.scripts.visualize_streamlines:script"
-
 
 [project.urls]
 Documentation = "https://www.josephbrunet.fr/cardiotensor/"
