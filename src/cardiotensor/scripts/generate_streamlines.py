@@ -8,22 +8,20 @@ Usage:
     cardio-generate <path_to_conf.conf> [--start <int>] [--end <int>] [--bin <int>] [--seeds <int>]
 """
 
-import sys
 import argparse
-from pathlib import Path
 import math
+import sys
+from pathlib import Path
+
 import numpy as np
 
-from nibabel.streamlines import Tractogram, save as save_trk
-from nibabel.affines import from_matvec
-import vtk
-from vtk.util import numpy_support
-
-
-from cardiotensor.tractography.generate_streamlines import generate_streamlines_from_vector_field
+from cardiotensor.tractography.generate_streamlines import (
+    generate_streamlines_from_vector_field,
+)
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.utils import read_conf_file
+
 
 def script():
     parser = argparse.ArgumentParser(
@@ -34,13 +32,21 @@ def script():
     parser.add_argument("--end", type=int, default=None, help="End slice index.")
     parser.add_argument("--bin", type=int, default=1, help="Downsampling factor.")
     parser.add_argument("--seeds", type=int, default=20000, help="Number of seeds.")
-    parser.add_argument("--fa-threshold", type=float, default=0.1, help="Minimum FA to continue tracing.")
+    parser.add_argument(
+        "--fa-threshold",
+        type=float,
+        default=0.1,
+        help="Minimum FA to continue tracing.",
+    )
     parser.add_argument("--step", type=float, default=1, help="Step length in voxels.")
-    parser.add_argument("--max_steps", type=int, default=None, help="Max steps (default no max).")
+    parser.add_argument(
+        "--max_steps", type=int, default=None, help="Max steps (default no max)."
+    )
     parser.add_argument("--angle", type=float, default=60.0, help="Angle threshold.")
-    parser.add_argument("--min_len", type=int, default=10, help="Min streamline length.")
+    parser.add_argument(
+        "--min_len", type=int, default=10, help="Min streamline length."
+    )
     # parser.add_argument("--save-trk", action="store_true", help="Also save streamlines in TrackVis .trk format")
-
 
     args = parser.parse_args()
 
@@ -89,7 +95,9 @@ def script():
 
     print("Loading vector field...")
     vec_reader = DataReader(vec_load_dir)
-    vector_slices = vec_reader.load_volume(start_index=start_binned, end_index=end_binned)
+    vector_slices = vec_reader.load_volume(
+        start_index=start_binned, end_index=end_binned
+    )
 
     if vector_slices.ndim == 4 and vector_slices.shape[0] == 3:
         vector_field = vector_slices
@@ -111,11 +119,11 @@ def script():
         mask_volume = mask_reader.load_volume(
             start_index=start_binned,
             end_index=end_binned,
-            unbinned_shape=vec_reader.shape[1:]  # (Z, Y, X)
+            unbinned_shape=vec_reader.shape[1:],  # (Z, Y, X)
         )
-                
-        mask = (mask_volume > 0).astype(np.uint8)        
-                
+
+        mask = (mask_volume > 0).astype(np.uint8)
+
         vector_field[:, mask == 0] = np.nan
 
     # Seed mask from FA
@@ -129,7 +137,7 @@ def script():
             subfolder="FA",
             out_ext="tif",
             min_value=0,
-            max_value=255
+            max_value=255,
         )
         fa_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "FA"
     else:
@@ -150,13 +158,15 @@ def script():
         print("⚠️ Not enough valid seed points.")
         sys.exit(1)
 
-    chosen_indices = valid_indices[np.random.choice(valid_indices.shape[0], num_seeds, replace=False)]
+    chosen_indices = valid_indices[
+        np.random.choice(valid_indices.shape[0], num_seeds, replace=False)
+    ]
 
     # Trace streamlines
     streamlines = generate_streamlines_from_vector_field(
         vector_field=vector_field,
         seed_points=chosen_indices,
-        fa_volume = fa_volume,
+        fa_volume=fa_volume,
         fa_threshold=args.fa_threshold,
         step_length=args.step,
         max_steps=args.max_steps,
@@ -190,7 +200,7 @@ def script():
     def sample_ha_along(pts_list):
         ha_vals = []
         Z, Y, X = HA_volume.shape
-        for (z, y, x) in pts_list:
+        for z, y, x in pts_list:
             zi, yi, xi = map(int, [round(z), round(y), round(x)])
             zi = max(0, min(zi, Z - 1))
             yi = max(0, min(yi, Y - 1))
@@ -205,10 +215,15 @@ def script():
 
     # Save output
     out_path = OUTPUT_DIR / "streamlines.npz"
-    np.savez_compressed(out_path, streamlines=np.array(streamlines, dtype=object), ha_values=np.array(all_ha, dtype=np.float32))
+    np.savez_compressed(
+        out_path,
+        streamlines=np.array(streamlines, dtype=object),
+        ha_values=np.array(all_ha, dtype=np.float32),
+    )
 
-    print(f"✅ Saved {len(streamlines)} streamlines and {len(all_ha)} HA values to {out_path}")
-
+    print(
+        f"✅ Saved {len(streamlines)} streamlines and {len(all_ha)} HA values to {out_path}"
+    )
 
 
 if __name__ == "__main__":

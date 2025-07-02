@@ -24,50 +24,98 @@ Options:
     --width / --height    Render window or screenshot size in pixels [default: 800 x 800]
 """
 
-import sys
 import argparse
-import numpy as np
+import sys
 from pathlib import Path
 
-from cardiotensor.utils.utils import read_conf_file
+import numpy as np
+
 from cardiotensor.tractography.visualize_streamlines import show_streamlines
+from cardiotensor.utils.utils import read_conf_file
 
 
 def script():
-    parser = argparse.ArgumentParser(description="Visualize streamlines from .npz file.")
-    parser.add_argument("conf_file", type=str, help="Path to the .conf file used for generation.")
+    parser = argparse.ArgumentParser(
+        description="Visualize streamlines from .npz file."
+    )
+    parser.add_argument(
+        "conf_file", type=str, help="Path to the .conf file used for generation."
+    )
 
-    parser.add_argument("--color-by", choices=["ha", "elevation"], default="ha",
-                        help="Color streamlines by helix angle (ha) or elevation angle (elevation). Default: ha.")
+    parser.add_argument(
+        "--color-by",
+        choices=["ha", "elevation"],
+        default="ha",
+        help="Color streamlines by helix angle (ha) or elevation angle (elevation). Default: ha.",
+    )
 
-    parser.add_argument("--mode", choices=["tube", "fake_tube", "line"], default="tube",
-                        help="Rendering style: tube (default), fake_tube, or line.")
+    parser.add_argument(
+        "--mode",
+        choices=["tube", "fake_tube", "line"],
+        default="tube",
+        help="Rendering style: tube (default), fake_tube, or line.",
+    )
 
-    parser.add_argument("--line-width", type=float, default=4,
-                        help="Line or tube thickness in pixels. Default: 4.")
+    parser.add_argument(
+        "--line-width",
+        type=float,
+        default=4,
+        help="Line or tube thickness in pixels. Default: 4.",
+    )
 
-    parser.add_argument("--subsample", type=int, default=1,
-                        help="Randomly keep 1 in every N streamlines. Default: 1 (keep all).")
+    parser.add_argument(
+        "--subsample",
+        type=int,
+        default=1,
+        help="Randomly keep 1 in every N streamlines. Default: 1 (keep all).",
+    )
 
-    parser.add_argument("--min-length", type=int, default=None,
-                        help="Minimum number of points per streamline. If not set, no filtering is applied.")
+    parser.add_argument(
+        "--min-length",
+        type=int,
+        default=None,
+        help="Minimum number of points per streamline. If not set, no filtering is applied.",
+    )
 
-    parser.add_argument("--downsample-factor", type=int, default=1,
-                        help="Downsample points within each streamline by this factor. Default: 1 (no downsampling).")
+    parser.add_argument(
+        "--downsample-factor",
+        type=int,
+        default=1,
+        help="Downsample points within each streamline by this factor. Default: 1 (no downsampling).",
+    )
 
-    parser.add_argument("--max-streamlines", type=int, default=None,
-                        help="Maximum number of streamlines to render. If not set, no limit is applied.")
+    parser.add_argument(
+        "--max-streamlines",
+        type=int,
+        default=None,
+        help="Maximum number of streamlines to render. If not set, no limit is applied.",
+    )
 
-    parser.add_argument("--no-interactive", action="store_true",
-                        help="Run in headless mode (no GUI). Requires --screenshot to be set.")
+    parser.add_argument(
+        "--no-interactive",
+        action="store_true",
+        help="Run in headless mode (no GUI). Requires --screenshot to be set.",
+    )
 
-    parser.add_argument("--screenshot", type=str, default=None,
-                        help="Path to PNG screenshot (used only if --no-interactive is set).")
+    parser.add_argument(
+        "--screenshot",
+        type=str,
+        default=None,
+        help="Path to PNG screenshot (used only if --no-interactive is set).",
+    )
 
-    parser.add_argument("--width", type=int, default=800,
-                        help="Window or screenshot width in pixels. Default: 800.")
-    parser.add_argument("--height", type=int, default=800,
-                        help="Window or screenshot height in pixels. Default: 800.")
+    parser.add_argument(
+        "--width",
+        type=int,
+        default=800,
+        help="Window or screenshot width in pixels. Default: 800.",
+    )
+    parser.add_argument(
+        "--height",
+        type=int,
+        default=800,
+        help="Window or screenshot height in pixels. Default: 800.",
+    )
 
     args = parser.parse_args()
     conf_path = Path(args.conf_file)
@@ -103,15 +151,18 @@ def script():
     ]
 
     if args.color_by == "elevation":
-        from cardiotensor.tractography.visualize_streamlines import compute_elevation_angles
+        from cardiotensor.tractography.visualize_streamlines import (
+            compute_elevation_angles,
+        )
+
         color_values = compute_elevation_angles(streamlines_xyz)
     else:
         ha_values = data.get("ha_values")
-        
+
         if ha_values is None:
             print("❌ 'ha_values' array missing in .npz.")
             sys.exit(1)
-            
+
         # Convert from [0, 255] to [-90, 90]
         ha_values = ha_values.astype(np.float32)
         color_values = (ha_values / 255.0) * 180.0 - 90.0

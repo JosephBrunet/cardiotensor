@@ -1,25 +1,47 @@
 import argparse
+import math
 import sys
 from pathlib import Path
-from cardiotensor.utils.plot_vector_field import plot_vector_field_with_fury
-from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import read_conf_file
-from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
+
 import numpy as np
-import math
+
+from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
+from cardiotensor.utils.plot_vector_field import plot_vector_field_with_fury
+from cardiotensor.utils.utils import read_conf_file
 
 
 def script():
-    parser = argparse.ArgumentParser(description="Plot 3D vector field using FURY from configuration file.")
+    parser = argparse.ArgumentParser(
+        description="Plot 3D vector field using FURY from configuration file."
+    )
     parser.add_argument("conf_file", type=Path, help="Path to configuration file")
-    parser.add_argument("--stride", type=int, default=1, help="Stride to downsample vectors for display (default: 10)")
-    parser.add_argument("--bin", type=int, default=1, help="Binning factor used during preprocessing (default: 1)")
-    parser.add_argument("--size-arrow", type=float, default=1, help="Factor used for arrow size (default: 1)")
+    parser.add_argument(
+        "--stride",
+        type=int,
+        default=1,
+        help="Stride to downsample vectors for display (default: 10)",
+    )
+    parser.add_argument(
+        "--bin",
+        type=int,
+        default=1,
+        help="Binning factor used during preprocessing (default: 1)",
+    )
+    parser.add_argument(
+        "--size-arrow",
+        type=float,
+        default=1,
+        help="Factor used for arrow size (default: 1)",
+    )
     parser.add_argument("--start", type=int, default=None, help="Start slice index")
     parser.add_argument("--end", type=int, default=None, help="End slice index")
-    parser.add_argument("--save", type=Path, help="Optional path to save rendered image")
-    parser.add_argument("--vtk", action="store_true", help="Export the vector field to VTK for ParaView")
-
+    parser.add_argument(
+        "--save", type=Path, help="Optional path to save rendered image"
+    )
+    parser.add_argument(
+        "--vtk", action="store_true", help="Export the vector field to VTK for ParaView"
+    )
 
     args = parser.parse_args()
 
@@ -50,7 +72,6 @@ def script():
         print(f"⚠️ No eigenvector directory at {eigen_dir}")
         sys.exit(1)
 
-
     bin_factor = args.bin
     if bin_factor > 1:
         downsample_vector_volume(eigen_dir, bin_factor, OUTPUT_DIR)
@@ -61,10 +82,12 @@ def script():
         vec_load_dir = eigen_dir
         start_binned = start_idx
         end_binned = end_idx
-    
+
     print("Loading vector field...")
     vec_reader = DataReader(vec_load_dir)
-    vector_slices = vec_reader.load_volume(start_index=start_binned, end_index=end_binned)
+    vector_slices = vec_reader.load_volume(
+        start_index=start_binned, end_index=end_binned
+    )
 
     # If your vector_field is in shape (3, Z, Y, X), convert it:
     if vector_slices.shape[0] == 3:
@@ -73,7 +96,7 @@ def script():
     print("Ensuring Z-components are positive...")
     neg_mask = vector_field[2] < 0
     vector_field[:, neg_mask] *= -1
-    
+
     if MASK_PATH:
         print("Applying mask from config...")
         mask_reader = DataReader(MASK_PATH)
@@ -84,13 +107,12 @@ def script():
         mask_volume = mask_reader.load_volume(
             start_index=start_binned,
             end_index=end_binned,
-            unbinned_shape=vec_reader.shape[1:]  # (Z, Y, X)
+            unbinned_shape=vec_reader.shape[1:],  # (Z, Y, X)
         )
-                
-        mask = (mask_volume > 0).astype(np.uint8)        
-           
-        vector_field[mask == 0, :] = np.nan
 
+        mask = (mask_volume > 0).astype(np.uint8)
+
+        vector_field[mask == 0, :] = np.nan
 
     # Load HA for sampling
     HA_dir = OUTPUT_DIR / "HA"
@@ -115,17 +137,23 @@ def script():
     ha_reader = DataReader(ha_load_dir)
     HA_volume = ha_reader.load_volume(start_index=start_binned, end_index=end_binned)
 
-    plot_vector_field_with_fury(vector_field, size_arrow=args.size_arrow, stride=args.stride, ha_volume=HA_volume, save_path=args.save)
-
+    plot_vector_field_with_fury(
+        vector_field,
+        size_arrow=args.size_arrow,
+        stride=args.stride,
+        ha_volume=HA_volume,
+        save_path=args.save,
+    )
 
     if args.vtk:
         print("💾 Exporting vector field to VTK...")
         from cardiotensor.utils.vector_vtk_export import export_vector_field_to_vtk
+
         vtk_path = OUTPUT_DIR / "paraview.vtk"
         export_vector_field_to_vtk(
             vector_field=vector_field,
             HA_volume=HA_volume,
             voxel_size=VOXEL_SIZE * bin_factor,
             stride=args.stride,
-            save_path=vtk_path
+            save_path=vtk_path,
         )

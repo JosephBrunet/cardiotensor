@@ -9,7 +9,11 @@ from cardiotensor.utils.utils import convert_to_8bit, read_conf_file
 def test_read_conf_file():
     """Test the read_conf_file function."""
     # Create temporary folders to simulate existing paths
-    with tempfile.TemporaryDirectory() as tmp_images, tempfile.TemporaryDirectory() as tmp_masks, tempfile.TemporaryDirectory() as tmp_output:
+    with (
+        tempfile.TemporaryDirectory() as tmp_images,
+        tempfile.TemporaryDirectory() as tmp_masks,
+        tempfile.TemporaryDirectory() as tmp_output,
+    ):
         conf_content = f"""
         [DATASET]
         IMAGES_PATH = {tmp_images}
@@ -68,7 +72,6 @@ def test_read_conf_file():
             print("✅ read_conf_file test passed.")
         finally:
             os.remove(temp_file_path)
-
 
 
 def test_convert_to_8bit():

@@ -1,7 +1,15 @@
 import numpy as np
-from fury import window, actor, colormap
+from fury import actor, colormap, window
 
-def plot_vector_field_with_fury(vector_field, size_arrow=1, ha_volume=None, stride=10, voxel_size=1.0, save_path=None):
+
+def plot_vector_field_with_fury(
+    vector_field,
+    size_arrow=1,
+    ha_volume=None,
+    stride=10,
+    voxel_size=1.0,
+    save_path=None,
+):
     """
     Visualize a 3D vector field using FURY with optional HA-based coloring.
 
@@ -28,7 +36,6 @@ def plot_vector_field_with_fury(vector_field, size_arrow=1, ha_volume=None, stri
     norms = np.linalg.norm(vectors_flat, axis=1)
     valid_mask = norms > 0
 
-
     centers = coords_flat[valid_mask] * voxel_size
     directions = vectors_flat[valid_mask] / norms[valid_mask, None]
 
@@ -37,7 +44,7 @@ def plot_vector_field_with_fury(vector_field, size_arrow=1, ha_volume=None, stri
         ha_sub = ha_volume[0:Z:stride, 0:Y:stride, 0:X:stride]
         ha_flat = ha_sub.reshape(-1)
         ha_values = ha_flat[valid_mask]
-        color_array = colormap.create_colormap(ha_values, name='plasma', auto=True)
+        color_array = colormap.create_colormap(ha_values, name="plasma", auto=True)
     else:
         color_array = np.tile([1.0, 0.0, 0.0], (centers.shape[0], 1))
 
@@ -46,7 +53,9 @@ def plot_vector_field_with_fury(vector_field, size_arrow=1, ha_volume=None, stri
         return
 
     print("Creating arrow actor...")
-    arrow_actor = actor.arrow(centers, directions, colors=color_array, scales=10*size_arrow)
+    arrow_actor = actor.arrow(
+        centers, directions, colors=color_array, scales=10 * size_arrow
+    )
     scene = window.Scene()
     scene.add(arrow_actor)
 
