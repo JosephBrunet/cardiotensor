@@ -42,7 +42,7 @@ license = {file = "LICENSE"}
 name = "cardiotensor"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "1.0.3"
+version = "1.0.4"
 
 [project.optional-dependencies]
 cupy = ["cupy>=8"]
@@ -67,7 +67,7 @@ git = [
 
 [project.scripts]
 cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
-cardio-export-vector-field = "cardiotensor.scripts.visualize_vector_field:script"
+cardio-visualize-vector = "cardiotensor.scripts.visualize_vector_field:script"
 cardio-generate-streamlines = "cardiotensor.scripts.generate_streamlines:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
