@@ -533,6 +533,24 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#visualizing-vector-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      Visualizing Vector field
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generating-and-visualizing-streamlines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating and visualizing streamlines
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -837,6 +855,24 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#visualizing-vector-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      Visualizing Vector field
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generating-and-visualizing-streamlines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating and visualizing streamlines
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -897,12 +933,14 @@
 </ol>
 <h2 id="running-the-examples"><a class="toclink" href="#running-the-examples">Running the Examples</a></h2>
 <h3 id="installation"><a class="toclink" href="#installation">Installation</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See <a href="../installation/">Installation</a></p>
+</div>
 <ol>
 <li>
 <p>Clone the repository and install the package:
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/JosephBrunet/cardiotensor.git
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>cardiotensor
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>.
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>cardiotensor
 </code></pre></div></p>
 </li>
 <li>
@@ -917,7 +955,7 @@
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For information about conf file see the section <a href="configuration.md">Configuration file</a></p>
+<p>For information about conf file see the section <a href="../../reference/configuration/">Configuration file</a></p>
 </div>
 <ol>
 <li>Run the following command:
@@ -926,13 +964,9 @@
 <li>The output will be displayed as a plot for a single slice:</li>
 </ol>
 <figure>
-  <img alt="Test Slice Result" src="../../assets/images/result_test_slice.png" />
-<br />
-<!-- { width="300" } -->
+<img alt="Test Slice Result" src="../../assets/images/result_test_slice.png" width="70%" />
 
-
-<br />
-<figcaption>Image caption</figcaption>
+<figcaption>Result from processing a single test slice.</figcaption>
 </figure>
 <h3 id="processing-the-entire-volume"><a class="toclink" href="#processing-the-entire-volume">Processing the Entire Volume</a></h3>
 <ol>
@@ -940,7 +974,7 @@
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For information about conf file see the section <a href="configuration.md">Configuration file</a></p>
+<p>For information about conf file see the section <a href="../../reference/configuration/">Configuration file</a></p>
 </div>
 <ol>
 <li>Run the command:
@@ -948,9 +982,10 @@
 </code></pre></div></li>
 <li>Outputs will be saved in the <code>./output</code> directory with the following structure:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./output
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── HA   # Helix angle results
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>├── IA   # Intrusion angle results
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>└── FA   # Fractional anisotropy results
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── HA          # Helix angle results
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>├── IA          # Intrusion angle results
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>├── FA          # Fractional anisotropy results
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>└── eigen_vec   # 3rd Eigenvectors
 </code></pre></div></li>
 </ol>
 <h3 id="visualizing-transmural-profiles"><a class="toclink" href="#visualizing-transmural-profiles">Visualizing Transmural Profiles</a></h3>
@@ -968,24 +1003,88 @@
 <li>Adjust parameters like <code>Angle range</code> and <code>Number of lines</code>.</li>
 <li>Plot and export the profile.
 <figure markdown="span">
-<img alt="Analyse GUI" src="../../assets/images/analyse_GUI.png" />
-<!-- { width="300" } -->
-<!-- <figcaption>Image caption</figcaption> -->
+<img alt="Analyse GUI" src="../../assets/images/analyse_GUI.png" width="100%" />
+<figcaption>Graphical interface for defining transmural profiles.</figcaption>
 </figure></li>
 </ul>
-<p>The generated profile will resemble:
-<figure markdown="span">
-<img alt="Transmural profile" src="../../assets/images/transmural_profile.png" />
-<!-- { width="300" } -->
-<!-- <figcaption>Image caption</figcaption> -->
+<p>The generated profile will resemble:</p>
+<p><figure markdown="span">
+<img alt="Transmural profile" src="../../assets/images/transmural_profile.png" width="70%" />
+<figcaption>Example of a generated transmural profile.</figcaption>
 </figure></p>
-<h2 id="notes"><a class="toclink" href="#notes">Notes</a></h2>
+</li>
+</ol>
+<h3 id="visualizing-vector-field"><a class="toclink" href="#visualizing-vector-field">Visualizing Vector field</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>WRITE_VECTORS must be equal to True in the <a href="../../reference/configuration/">Configuration file</a></p>
+</div>
+<p>Once the structure tensor and eigenvectors have been calculated on the whole volume.</p>
+<ol>
+<li>
+<p>Use the <code>cardio-visualize-vector</code> command:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>cardio-visualize-vector<span class="w"> </span>parameters_example.conf<span class="w"> </span>--start<span class="w"> </span><span class="m">120</span><span class="w"> </span>--stride<span class="w"> </span><span class="m">6</span><span class="w"> </span>
+</code></pre></div></p>
+<ul>
+<li>
+<p><code>--start</code>
+: Show vectors only from slice 120 to the last slice.</p>
 </li>
 <li>
-<p>The provided dataset is for demonstration purposes only.</p>
+<p><code>--stride 6</code>
+: Show only 1 vector out of every 6.</p>
 </li>
-<li>Modify parameters in <code>parameters_example.conf</code> (e.g., <code>SIGMA</code>, <code>RHO</code>) to suit your data.</li>
+</ul>
+</li>
+<li>
+<p>The plot will appear and you will be able to rotate it by dragging left click</p>
+<p><figure markdown="span">
+<img alt="Vector visualization" src="../../assets/images/vectors_example.png" width="70%" />
+<figcaption>Vector field visualization from computed structure tensors using Fury.</figcaption>
+</figure></p>
+</li>
 </ol>
+<h3 id="generating-and-visualizing-streamlines"><a class="toclink" href="#generating-and-visualizing-streamlines">Generating and visualizing streamlines</a></h3>
+<ol>
+<li>
+<p>Use the <code>cardio-visualize-vector</code> command to generate the streamlines:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>cardio-generate-streamlines<span class="w"> </span>parameters_example.conf<span class="w"> </span>--seeds<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--start<span class="w"> </span><span class="m">150</span>
+</code></pre></div></p>
+<ul>
+<li>
+<p><code>--start</code>
+: Show vectors only from slice 120 to the last slice.</p>
+</li>
+<li>
+<p><code>--seeds</code>
+: Number of seeds to start streamlines</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The streamlines are generated in <code>output/streamlines.npz</code></p>
+</div>
+</li>
+<li>
+<p>Use the <code>cardio-visualize-streamlines</code> command to plot the streamlines:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>parameters_example.conf<span class="w"> </span>--line-width<span class="w"> </span><span class="m">1</span>
+</code></pre></div></p>
+<ul>
+<li><code>--line-width</code>
+: The width of the streamline in the plot.</li>
+</ul>
+</li>
+</ol>
+<figure>
+<img alt="streamline visualization" src="../../assets/images/streamline_example.png" width="70%" />
+
+<figcaption>Streamline visualization using Fury.</figcaption>
+</figure>
+<h2 id="notes"><a class="toclink" href="#notes">Notes</a></h2>
+<ul>
+<li>The provided dataset is for demonstration purposes only.</li>
+<li>Modify parameters in <code>parameters_example.conf</code> (e.g., <code>SIGMA</code>, <code>RHO</code>) to suit your data.</li>
+</ul>
 
 
 
@@ -1008,7 +1107,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 12, 2025 10:29:35 UTC"><span class="timeago" datetime="2025-01-12T10:29:35+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 12, 2025 10:29:35 UTC">2025-01-12</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 2, 2025 13:53:38 UTC"><span class="timeago" datetime="2025-07-02T13:53:38+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 2, 2025 13:53:38 UTC">2025-07-02</span>
   </span>
 
     

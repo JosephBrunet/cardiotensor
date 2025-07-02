@@ -570,9 +570,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3d-visualization-with-export" class="md-nav__link">
+  <a href="#3d-visualization" class="md-nav__link">
     <span class="md-ellipsis">
-      3D Visualization with Export
+      3D Visualization
     </span>
   </a>
   
@@ -581,7 +581,7 @@
         <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next steps
+      Next Steps
     </span>
   </a>
   
@@ -738,9 +738,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3d-visualization-with-export" class="md-nav__link">
+  <a href="#3d-visualization" class="md-nav__link">
     <span class="md-ellipsis">
-      3D Visualization with Export
+      3D Visualization
     </span>
   </a>
   
@@ -749,7 +749,7 @@
         <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next steps
+      Next Steps
     </span>
   </a>
   
@@ -777,32 +777,41 @@
 <h1 id="commands"><a class="toclink" href="#commands">Commands</a></h1>
 <p>Cardiotensor provides powerful features for analyzing 3D cardiac imaging data, from processing imaging volumes and calculating orientation to managing large-scale projects with support for multiple configurations and platforms.</p>
 <h2 id="orientation-computation"><a class="toclink" href="#orientation-computation">Orientation Computation</a></h2>
-<p>Compute myocytes orientation for a volume using a specified configuration file.</p>
+<p>Compute myocyte orientation from a 3D volume using a configuration file.</p>
 <ul>
-<li><code>cardio-tensor</code></li>
+<li><code>cardio-tensor</code><br />
+  Computes structure tensor, helix/transverse angle, FA, and eigenvectors.</li>
 </ul>
-<p>See the <a href="./examples.md">example</a> to get started.</p>
+<p>See the <a href="../../getting-started/examples/">example</a> to get started.</p>
 <hr />
 <h2 id="transmural-analysis"><a class="toclink" href="#transmural-analysis">Transmural Analysis</a></h2>
-<p>GUI to plot angle profiles across the heart.</p>
+<p>Plot angle profiles across the heart wall using an interactive GUI.</p>
 <ul>
-<li><code>cardio-analysis</code></li>
+<li><code>cardio-analysis</code><br />
+  Define transmural lines, adjust sampling, and export results.</li>
 </ul>
-<p>See the <a href="././examples.md#visualizing-transmural-profiles">example</a> on how to visualize transmural profile to get started.</p>
+<p>See the <a href="../../getting-started/examples/#visualizing-transmural-profiles">example</a> for details.</p>
 <hr />
-<h2 id="3d-visualization-with-export"><a class="toclink" href="#3d-visualization-with-export">3D Visualization with Export</a></h2>
-<p>Visualize results in 3D by exporting vectors to Amira or Paraview:</p>
+<h2 id="3d-visualization"><a class="toclink" href="#3d-visualization">3D Visualization</a></h2>
+<p>Visualize results in 3D using vector fields and streamlines.</p>
 <ul>
-<li><code>cardio-amira</code>: Export to Amira</li>
-<li><code>cardio-vtk</code>: Export to Paraview</li>
+<li>
+<p><code>cardio-visualize-vector</code><br />
+  Render vector fields using Fury. Optionally export to ParaView (VTK format).</p>
+</li>
+<li>
+<p><code>cardio-generate-streamlines</code><br />
+  Generate streamlines from the vector field. Outputs <code>.npz</code> files compatible with Amira.</p>
+</li>
+<li>
+<p><code>cardio-visualize-streamlines</code><br />
+  Visualize streamlines in 3D using Fury. Can also export to ParaView.</p>
+</li>
 </ul>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Still under testing.</p>
-</div>
+<p>See the <a href="../../getting-started/examples/#generating-and-visualizing-streamlines">example</a> for usage.</p>
 <hr />
-<h2 id="next-steps"><a class="toclink" href="#next-steps">Next steps</a></h2>
-<p>Read the <a href="./examples.md">example</a> for an introduction to each feature.</p>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a></h2>
+<p>Read the <a href="../../getting-started/examples/">example</a> for an introduction to each feature.</p>
 
 
 
@@ -825,7 +834,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 24, 2025 15:47:13 UTC"><span class="timeago" datetime="2025-02-24T15:47:13+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 24, 2025 15:47:13 UTC">2025-02-24</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 2, 2025 13:53:38 UTC"><span class="timeago" datetime="2025-07-02T13:53:38+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 2, 2025 13:53:38 UTC">2025-07-02</span>
   </span>
 
     
