@@ -23,11 +23,13 @@ The `./examples/` directory contains:
 
 ### Installation
 
+!!! note
+
+    See [Installation](installation.md)
+
 1. Clone the repository and install the package:
     ```console
-    $ git clone https://github.com/JosephBrunet/cardiotensor.git
-    $ cd cardiotensor
-    $ pip install .
+    $ pip install cardiotensor
     ```
 
 2. Navigate to the `examples` directory:
@@ -41,17 +43,17 @@ The `./examples/` directory contains:
 
 !!! note
 
-    For information about conf file see the section [Configuration file](configuration.md)
+    For information about conf file see the section [Configuration file](../reference/configuration.md)
 
 2. Run the following command:
     ```console
     $ cardio-tensor ./parameters_example.conf
     ```
 3. The output will be displayed as a plot for a single slice:
+
 <figure markdown="span">
-  ![Test Slice Result](../assets/images/result_test_slice.png)
-  <!-- { width="300" } -->
-  <figcaption>Image caption</figcaption>
+![Test Slice Result](../assets/images/result_test_slice.png){ width="70%" }
+<figcaption>Result from processing a single test slice.</figcaption>
 </figure>
 
 ### Processing the Entire Volume
@@ -60,7 +62,7 @@ The `./examples/` directory contains:
 
 !!! note
 
-    For information about conf file see the section [Configuration file](configuration.md)
+    For information about conf file see the section [Configuration file](../reference/configuration.md)
 
 2. Run the command:
     ```console
@@ -69,9 +71,10 @@ The `./examples/` directory contains:
 3. Outputs will be saved in the `./output` directory with the following structure:
     ```
     ./output
-    ├── HA   # Helix angle results
-    ├── IA   # Intrusion angle results
-    └── FA   # Fractional anisotropy results
+    ├── HA          # Helix angle results
+    ├── IA          # Intrusion angle results
+    ├── FA          # Fractional anisotropy results
+    └── eigen_vec   # 3rd Eigenvectors
     ```
 
 ### Visualizing Transmural Profiles
@@ -87,17 +90,79 @@ The `./examples/` directory contains:
     - Adjust parameters like `Angle range` and `Number of lines`.
     - Plot and export the profile.
     <figure markdown="span">
-    ![Analyse GUI](../assets/images/analyse_GUI.png)
-    <!-- { width="300" } -->
-    <!-- <figcaption>Image caption</figcaption> -->
+    ![Analyse GUI](../assets/images/analyse_GUI.png){ width="100%" }
+    <figcaption>Graphical interface for defining transmural profiles.</figcaption>
     </figure>
 
     The generated profile will resemble:
+
     <figure markdown="span">
-    ![Transmural profile](../assets/images/transmural_profile.png)
-    <!-- { width="300" } -->
-    <!-- <figcaption>Image caption</figcaption> -->
+    ![Transmural profile](../assets/images/transmural_profile.png){ width="70%" }
+    <figcaption>Example of a generated transmural profile.</figcaption>
     </figure>
+
+### Visualizing Vector field
+
+!!! note
+
+    WRITE_VECTORS must be equal to True in the [Configuration file](../reference/configuration.md)
+
+Once the structure tensor and eigenvectors have been calculated on the whole volume.
+
+1. Use the `cardio-visualize-vector` command:
+    ```console
+    $ cardio-visualize-vector parameters_example.conf --start 120 --stride 6 
+    ```
+
+    - `--start`
+    : Show vectors only from slice 120 to the last slice.
+
+    - `--stride 6`
+    : Show only 1 vector out of every 6.
+
+
+2. The plot will appear and you will be able to rotate it by dragging left click
+
+    <figure markdown="span">
+    ![Vector visualization](../assets/images/vectors_example.png){ width="70%" }
+    <figcaption>Vector field visualization from computed structure tensors using Fury.</figcaption>
+    </figure>
+
+
+### Generating and visualizing streamlines
+
+1. Use the `cardio-visualize-vector` command to generate the streamlines:
+    ```console
+    $ cardio-generate-streamlines parameters_example.conf --seeds 10000 --start 150
+    ```
+
+    - `--start`
+    : Show vectors only from slice 120 to the last slice.
+
+    - `--seeds`
+    : Number of seeds to start streamlines
+
+    !!! note
+
+        The streamlines are generated in ```output/streamlines.npz```
+
+
+2. Use the `cardio-visualize-streamlines` command to plot the streamlines:
+    ```console
+    $ cardio-visualize-streamlines parameters_example.conf --line-width 1
+    ```
+
+    - `--line-width`
+    : The width of the streamline in the plot.
+
+
+<figure markdown="span">
+![streamline visualization](../assets/images/streamline_example.png){ width="70%" }
+<figcaption>Streamline visualization using Fury.</figcaption>
+</figure>
+
+
+
 ## Notes
 
 - The provided dataset is for demonstration purposes only.
