@@ -67,8 +67,7 @@ git = [
 
 [project.scripts]
 cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
-cardio-export-amira = "cardiotensor.scripts.export_to_amira:script"
-cardio-export-vtk = "cardiotensor.scripts.export_to_vtk:script"
+cardio-export-vector-field = "cardiotensor.scripts.visualize_vector_field:script"
 cardio-generate-streamlines = "cardiotensor.scripts.generate_streamlines:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"
