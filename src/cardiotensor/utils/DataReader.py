@@ -73,8 +73,10 @@ class DataReader:
         Retrieves the size (dimensions) of the volume.
 
         Returns:
-            Tuple[int, int, int]: Dimensions of the volume (z, y, x).
+            Tuple[int, int, int]: Dimensions of the volume (z, y, x) for scalar data,
+                                or (z, y, x, 3) for vector field.
         """
+
         if not self.volume_info["stack"]:  # Single file (e.g., .mhd)
             if self.volume_info["type"] == "mhd":
                 image = sitk.ReadImage(str(self.path))
@@ -82,13 +84,19 @@ class DataReader:
 
         elif self.volume_info["stack"]:  # Stack of images
             first_image = self._custom_image_reader(self.volume_info["file_list"][0])
+            shape = first_image.shape
+
+            if self.volume_info["type"] == "npy" and shape[0] == 3 and len(shape) == 3:
+                return (3, len(self.volume_info["file_list"]), shape[1], shape[2])  # Spatial dims + vector components
+                        
             return (
                 len(self.volume_info["file_list"]),
-                first_image.shape[0],
-                first_image.shape[1],
+                shape[0],
+                shape[1],
             )
 
         raise ValueError("Unable to determine volume dimensions.")
+
 
     def load_volume(
         self,
