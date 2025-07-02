@@ -13,11 +13,11 @@ def trilinear_interpolate_vector(
     _, Z, Y, X = vector_field.shape
 
     # Clamp floor and ceil to valid ranges
-    z0 = int(np.floor(zf))
+    z0 = max(min(int(np.floor(zf)), Z - 1), 0)
     z1 = min(z0 + 1, Z - 1)
-    y0 = int(np.floor(yf))
+    y0 = max(min(int(np.floor(yf)), Y - 1), 0)
     y1 = min(y0 + 1, Y - 1)
-    x0 = int(np.floor(xf))
+    x0 = max(min(int(np.floor(xf)), X - 1), 0)
     x1 = min(x0 + 1, X - 1)
 
     dz = zf - z0
