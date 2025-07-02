@@ -14,6 +14,12 @@ from pathlib import Path
 import math
 import numpy as np
 
+from nibabel.streamlines import Tractogram, save as save_trk
+from nibabel.affines import from_matvec
+import vtk
+from vtk.util import numpy_support
+
+
 from cardiotensor.tractography.generate_streamlines import generate_streamlines_from_vector_field
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
@@ -33,6 +39,8 @@ def script():
     parser.add_argument("--max_steps", type=int, default=None, help="Max steps (default no max).")
     parser.add_argument("--angle", type=float, default=60.0, help="Angle threshold.")
     parser.add_argument("--min_len", type=int, default=10, help="Min streamline length.")
+    # parser.add_argument("--save-trk", action="store_true", help="Also save streamlines in TrackVis .trk format")
+
 
     args = parser.parse_args()
 
@@ -99,13 +107,11 @@ def script():
         print("Applying mask from config...")
         mask_reader = DataReader(MASK_PATH)
 
-        Z_vec_total = vec_reader.shape[0]
-
         # Load the corresponding mask volume, resampled to match vector field shape
         mask_volume = mask_reader.load_volume(
             start_index=start_binned,
             end_index=end_binned,
-            unbinned_shape=(Z_vec_total,vector_field.shape[2],vector_field.shape[3])  # (Z, Y, X)
+            unbinned_shape=vec_reader.shape[1:]  # (Z, Y, X)
         )
                 
         mask = (mask_volume > 0).astype(np.uint8)        
@@ -138,7 +144,7 @@ def script():
     fa_volume = fa_reader.load_volume(start_index=start_binned, end_index=end_binned)
     seed_mask = (fa_volume > 0.4).astype(np.uint8)
 
-    print(f"Seed mask shape: {seed_mask.shape}")
+    print(f"Selecting {num_seeds} random seed points from mask...")
     valid_indices = np.argwhere(seed_mask > 0)
     if valid_indices.shape[0] < num_seeds:
         print("⚠️ Not enough valid seed points.")
@@ -202,6 +208,8 @@ def script():
     np.savez_compressed(out_path, streamlines=np.array(streamlines, dtype=object), ha_values=np.array(all_ha, dtype=np.float32))
 
     print(f"✅ Saved {len(streamlines)} streamlines and {len(all_ha)} HA values to {out_path}")
+
+
 
 if __name__ == "__main__":
     script()
