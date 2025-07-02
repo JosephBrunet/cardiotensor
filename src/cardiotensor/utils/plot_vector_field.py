@@ -1,7 +1,7 @@
 import numpy as np
 from fury import window, actor, colormap
 
-def plot_vector_field_with_fury(vector_field, ha_volume=None, stride=10, voxel_size=1.0, save_path=None):
+def plot_vector_field_with_fury(vector_field, size_arrow=1, ha_volume=None, stride=10, voxel_size=1.0, save_path=None):
     """
     Visualize a 3D vector field using FURY with optional HA-based coloring.
 
@@ -12,10 +12,10 @@ def plot_vector_field_with_fury(vector_field, ha_volume=None, stride=10, voxel_s
         voxel_size (float): Physical voxel size for proper arrow scaling.
         save_path (Path, optional): If provided, save the image to this path.
     """
-    print("🔄 Starting FURY vector field visualization...")
+    print("Starting FURY vector field visualization...")
     Z, Y, X, _ = vector_field.shape
 
-    print("📐 Creating coordinate grid...")
+    print("Creating coordinate grid...")
     zz, yy, xx = np.mgrid[0:Z:stride, 0:Y:stride, 0:X:stride]
     coords = np.stack((zz, yy, xx), axis=-1)
     vectors = vector_field[0:Z:stride, 0:Y:stride, 0:X:stride]
@@ -46,7 +46,7 @@ def plot_vector_field_with_fury(vector_field, ha_volume=None, stride=10, voxel_s
         return
 
     print("Creating arrow actor...")
-    arrow_actor = actor.arrow(centers, directions, colors=color_array, scales=20)
+    arrow_actor = actor.arrow(centers, directions, colors=color_array, scales=10*size_arrow)
     scene = window.Scene()
     scene.add(arrow_actor)
 

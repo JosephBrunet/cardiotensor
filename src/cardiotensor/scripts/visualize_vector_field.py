@@ -12,8 +12,9 @@ import math
 def script():
     parser = argparse.ArgumentParser(description="Plot 3D vector field using FURY from configuration file.")
     parser.add_argument("conf_file", type=Path, help="Path to configuration file")
-    parser.add_argument("--stride", type=int, default=10, help="Stride to downsample vectors for display")
-    parser.add_argument("--bin", type=int, default=1, help="Binning factor used during preprocessing")
+    parser.add_argument("--stride", type=int, default=1, help="Stride to downsample vectors for display (default: 10)")
+    parser.add_argument("--bin", type=int, default=1, help="Binning factor used during preprocessing (default: 1)")
+    parser.add_argument("--size-arrow", type=float, default=1, help="Factor used for arrow size (default: 1)")
     parser.add_argument("--start", type=int, default=None, help="Start slice index")
     parser.add_argument("--end", type=int, default=None, help="End slice index")
     parser.add_argument("--save", type=Path, help="Optional path to save rendered image")
@@ -114,7 +115,7 @@ def script():
     ha_reader = DataReader(ha_load_dir)
     HA_volume = ha_reader.load_volume(start_index=start_binned, end_index=end_binned)
 
-    plot_vector_field_with_fury(vector_field, stride=args.stride, ha_volume=HA_volume, save_path=args.save)
+    plot_vector_field_with_fury(vector_field, size_arrow=args.size_arrow, stride=args.stride, ha_volume=HA_volume, save_path=args.save)
 
 
     if args.vtk:

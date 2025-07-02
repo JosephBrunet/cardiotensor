@@ -4,37 +4,43 @@ Cardiotensor provides powerful features for analyzing 3D cardiac imaging data, f
 
 ## Orientation Computation
 
-Compute myocytes orientation for a volume using a specified configuration file.
+Compute myocyte orientation from a 3D volume using a configuration file.
 
-- `cardio-tensor`
+- `cardio-tensor`  
+  Computes structure tensor, helix/transverse angle, FA, and eigenvectors.
 
-See the [example](./examples.md) to get started.
+See the [example](../getting-started/examples.md) to get started.
 
 ---
 
 ## Transmural Analysis
 
-GUI to plot angle profiles across the heart.
+Plot angle profiles across the heart wall using an interactive GUI.
 
-- `cardio-analysis`
+- `cardio-analysis`  
+  Define transmural lines, adjust sampling, and export results.
 
-See the [example](././examples.md#visualizing-transmural-profiles) on how to visualize transmural profile to get started.
-
----
-
-## 3D Visualization with Export
-
-Visualize results in 3D by exporting vectors to Amira or Paraview:
-
-- `cardio-amira`: Export to Amira
-- `cardio-vtk`: Export to Paraview
-
-!!! warning
-
-    Still under testing.
+See the [example](../getting-started/examples.md#visualizing-transmural-profiles) for details.
 
 ---
 
-## Next steps
+## 3D Visualization
 
-Read the [example](./examples.md) for an introduction to each feature.
+Visualize results in 3D using vector fields and streamlines.
+
+- `cardio-visualize-vector`  
+  Render vector fields using Fury. Optionally export to ParaView (VTK format).
+
+- `cardio-generate-streamlines`  
+  Generate streamlines from the vector field. Outputs `.npz` files compatible with Amira.
+
+- `cardio-visualize-streamlines`  
+  Visualize streamlines in 3D using Fury. Can also export to ParaView.
+
+See the [example](../getting-started/examples.md#generating-and-visualizing-streamlines) for usage.
+
+---
+
+## Next Steps
+
+Read the [example](../getting-started/examples.md) for an introduction to each feature.
