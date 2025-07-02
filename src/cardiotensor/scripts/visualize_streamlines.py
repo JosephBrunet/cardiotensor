@@ -43,7 +43,7 @@ def script():
     parser.add_argument("--mode", choices=["tube", "fake_tube", "line"], default="tube",
                         help="Rendering style: tube (default), fake_tube, or line.")
 
-    parser.add_argument("--line-width", type=int, default=4,
+    parser.add_argument("--line-width", type=float, default=4,
                         help="Line or tube thickness in pixels. Default: 4.")
 
     parser.add_argument("--subsample", type=int, default=1,
