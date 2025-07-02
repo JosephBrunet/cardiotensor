@@ -101,8 +101,6 @@ def script():
         print("Applying mask from config...")
         mask_reader = DataReader(MASK_PATH)
 
-        Z_vec_total = vec_reader.shape[1]
-
         # Load the corresponding mask volume, resampled to match vector field shape
         mask_volume = mask_reader.load_volume(
             start_index=start_binned,

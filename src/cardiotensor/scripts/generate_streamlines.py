@@ -60,7 +60,7 @@ def script():
 
     VOLUME_PATH = params.get("IMAGES_PATH", "")
     OUTPUT_DIR = Path(params.get("OUTPUT_PATH", "./output"))
-    VOXEL_SIZE = params.get("VOXEL_SIZE", 1)
+    # VOXEL_SIZE = params.get("VOXEL_SIZE", 1)
     MASK_PATH = params.get("MASK_PATH", "")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
