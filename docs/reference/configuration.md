@@ -60,8 +60,8 @@ REVERSE = False
 # Whether to save the helical and intrusion angles and fractional anisotropy (True/False)
 WRITE_ANGLES = True
 
-# Coordinates of points along the left ventricle axis. 
-# The first point should be coordinates of the mitral valve point in the volume ([X, Y, Z]) 
+# Coordinates of points along the left ventricle axis.
+# The first point should be coordinates of the mitral valve point in the volume ([X, Y, Z])
 # The last point should be coordinates of the apex point in the volume ([X, Y, Z])
 # Intermediate points will be interpolated to create a curved centre line.
 AXIS_POINTS = [104,110,116], [41,87,210], [68,95,162]

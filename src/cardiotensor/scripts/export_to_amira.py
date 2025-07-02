@@ -54,7 +54,7 @@ def script() -> None:
     bin_factor = args.bin
     num_ini_points = args.num_ini_points
     num_steps = args.num_steps
-    max_length  = args.max_length 
+    max_length = args.max_length
     angle_threshold = args.angle_threshold
     segment_min_length_threshold = args.segment_min_length_threshold
 
@@ -65,7 +65,7 @@ def script() -> None:
         bin_factor,
         num_ini_points,
         num_steps,
-        max_length ,
+        max_length,
         angle_threshold,
         segment_min_length_threshold,
     )

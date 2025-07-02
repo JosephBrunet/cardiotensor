@@ -111,7 +111,7 @@ Once the structure tensor and eigenvectors have been calculated on the whole vol
 
 1. Use the `cardio-visualize-vector` command:
     ```console
-    $ cardio-visualize-vector parameters_example.conf --start 120 --stride 6 
+    $ cardio-visualize-vector parameters_example.conf --start 120 --stride 6
     ```
 
     - `--start`

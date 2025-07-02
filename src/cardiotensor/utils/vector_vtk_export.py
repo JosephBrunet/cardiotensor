@@ -1,17 +1,18 @@
 from pathlib import Path
+
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 def export_vector_field_to_vtk(
     vector_field: np.ndarray,
     HA_volume: np.ndarray,
     voxel_size: float,
     stride: int = 32,
-    save_path: Path = None
+    save_path: Path = None,
 ) -> Path:
     if vector_field.ndim != 4 or vector_field.shape[-1] != 3:
         raise ValueError("vector_field must have shape (Z, Y, X, 3)")
-    
+
     print("Preparing data for VTK export...")
 
     # Flip negative Z vectors
@@ -23,7 +24,7 @@ def export_vector_field_to_vtk(
 
     # Apply stride-based downsampling
     print(f"Downsampling vector field with stride={stride}...")
-    
+
     vector_field = vector_field[::stride, ::stride, ::stride, :]
     HA_volume = HA_volume[::stride, ::stride, ::stride]
 
@@ -34,9 +35,9 @@ def export_vector_field_to_vtk(
     cellData = {
         "eigenVectors": vector_field,
         "HA_angles": HA_volume,
-        "mask": mask_volume
+        "mask": mask_volume,
     }
-    
+
     # Save to VTK
     if save_path is None:
         save_path = Path("paraview.vtk")
@@ -45,11 +46,10 @@ def export_vector_field_to_vtk(
         aspectRatio=[voxel_size * stride] * 3,  # adjust spacing due to stride
         origin=[0.0, 0.0, 0.0],
         cellData=cellData,
-        fileName=str(save_path)
+        fileName=str(save_path),
     )
     print("Export complete.")
     return save_path
-
 
 
 def writeStructuredVTK(
@@ -57,7 +57,7 @@ def writeStructuredVTK(
     origin: list[float] = [0.0, 0.0, 0.0],
     cellData: dict[str, np.ndarray] = {},
     pointData: dict[str, np.ndarray] = {},
-    fileName: str = "output.vtk"
+    fileName: str = "output.vtk",
 ) -> None:
     dimensions = []
     if not (cellData or pointData):

@@ -87,8 +87,13 @@ class DataReader:
             shape = first_image.shape
 
             if self.volume_info["type"] == "npy" and shape[0] == 3 and len(shape) == 3:
-                return (3, len(self.volume_info["file_list"]), shape[1], shape[2])  # Spatial dims + vector components
-                        
+                return (
+                    3,
+                    len(self.volume_info["file_list"]),
+                    shape[1],
+                    shape[2],
+                )  # Spatial dims + vector components
+
             return (
                 len(self.volume_info["file_list"]),
                 shape[0],
@@ -96,7 +101,6 @@ class DataReader:
             )
 
         raise ValueError("Unable to determine volume dimensions.")
-
 
     def load_volume(
         self,

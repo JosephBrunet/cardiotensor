@@ -43,7 +43,7 @@ def find_consecutive_points(
     start_point: tuple[int, int, int],
     vector_field: np.ndarray,
     num_steps: int = 4,
-    max_length : float = 10,
+    max_length: float = 10,
     angle_threshold: float = 60,
 ) -> list[tuple]:
     """
@@ -71,7 +71,7 @@ def find_consecutive_points(
             and 0 <= y < vector_field.shape[2]
             and 0 <= x < vector_field.shape[3]
         ):
-            direction_vector = vector_field[:, z, y, x] * max_length/num_steps
+            direction_vector = vector_field[:, z, y, x] * max_length / num_steps
             if np.isnan(direction_vector).any():
                 break
             if direction_vector_tmp.any():
@@ -185,7 +185,7 @@ def amira_writer(
     bin_factor: int | None = None,
     num_ini_points: int = 20000,
     num_steps: int = 1000000,
-    max_length : float = 20.0,
+    max_length: float = 20.0,
     angle_threshold: float = 60.0,
     segment_min_length_threshold: int = 10,
 ) -> None:
@@ -288,7 +288,7 @@ def amira_writer(
                 point,
                 vector_field,
                 num_steps=num_steps,
-                max_length =max_length ,
+                max_length=max_length,
                 angle_threshold=angle_threshold,
             )
             consecutive_points = [
@@ -374,10 +374,6 @@ def scale_points(
     return scaled_points
 
 
-
-
-
-
 def amira_writer(
     conf_file_path: str,
     start_index: int | None = None,
@@ -385,18 +381,14 @@ def amira_writer(
     bin_factor: int | None = None,
     num_ini_points: int = 20000,
     num_steps: int = 1000000,
-    max_length : float = 20.0,
+    max_length: float = 20.0,
     angle_threshold: float = 60.0,
     segment_min_length_threshold: int = 10,
 ) -> None:
-    
-    
-    
-    from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-    from dipy.tracking.streamline import length, transform_streamlines
     import fury
     import numpy as np
-
+    from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
+    from dipy.tracking.streamline import length, transform_streamlines
 
     # Set to True to open interactive windows (one per visualization).
     interactive = True
@@ -404,9 +396,7 @@ def amira_writer(
     # 1. Download and load bundle data & FA map for subject "subj_1"
     fetch_bundles_2_subjects()
     dix = read_bundles_2_subjects(
-        subj_id="subj_1",
-        metrics=["fa"],
-        bundles=["cg.left", "cst.right"]
+        subj_id="subj_1", metrics=["fa"], bundles=["cg.left", "cst.right"]
     )
 
     fa = dix["fa"]
@@ -457,17 +447,13 @@ def amira_writer(
     scene.clear()
     scene.set_camera(**camera_params)
 
-    hue = (0.0, 0.0)         # red only
+    hue = (0.0, 0.0)  # red only
     saturation = (0.0, 1.0)  # white to red
     lut_cmap = fury.actor.colormap_lookup_table(
-        hue_range=hue,
-        saturation_range=saturation
+        hue_range=hue, saturation_range=saturation
     )
     stream_actor3 = fury.actor.line(
-        bundle_native,
-        fa,
-        linewidth=0.1,
-        lookup_colormap=lut_cmap
+        bundle_native, fa, linewidth=0.1, lookup_colormap=lut_cmap
     )
     bar2 = fury.actor.scalar_bar(lut_cmap)
     scene.add(stream_actor3)
@@ -498,18 +484,15 @@ def amira_writer(
     scene.set_camera(**camera_params)
 
     lengths = length(bundle_native)
-    hue = (0.5, 0.5)         # blue only
+    hue = (0.5, 0.5)  # blue only
     saturation = (0.0, 1.0)  # black to white
     lut_cmap_len = fury.actor.colormap_lookup_table(
         scale_range=(lengths.min(), lengths.max()),
         hue_range=hue,
-        saturation_range=saturation
+        saturation_range=saturation,
     )
     stream_actor5 = fury.actor.line(
-        bundle_native,
-        lengths,
-        linewidth=0.1,
-        lookup_colormap=lut_cmap_len
+        bundle_native, lengths, linewidth=0.1, lookup_colormap=lut_cmap_len
     )
     bar3 = fury.actor.scalar_bar(lut_cmap_len)
     scene.add(stream_actor5)
@@ -529,11 +512,7 @@ def amira_writer(
     colors = [np.random.rand(*streamline.shape) for streamline in bundle_native]
     # Concatenate into a single array of shape (N_points_total, 3)
     concatenated_colors = np.vstack(colors)
-    stream_actor6 = fury.actor.line(
-        bundle_native,
-        concatenated_colors,
-        linewidth=0.2
-    )
+    stream_actor6 = fury.actor.line(bundle_native, concatenated_colors, linewidth=0.2)
     scene.add(stream_actor6)
 
     if interactive:
@@ -546,11 +525,7 @@ def amira_writer(
     scene.clear()
     scene.set_camera(**camera_params)
 
-    stream_actor7 = fury.actor.line(
-        bundle_native,
-        linewidth=0.5,
-        depth_cue=True
-    )
+    stream_actor7 = fury.actor.line(bundle_native, linewidth=0.5, depth_cue=True)
     scene.add(stream_actor7)
 
     if interactive:
@@ -563,11 +538,7 @@ def amira_writer(
     scene.clear()
     scene.set_camera(**camera_params)
 
-    stream_actor8 = fury.actor.line(
-        bundle_native,
-        linewidth=3,
-        fake_tube=True
-    )
+    stream_actor8 = fury.actor.line(bundle_native, linewidth=3, fake_tube=True)
     scene.add(stream_actor8)
 
     if interactive:
@@ -581,10 +552,7 @@ def amira_writer(
     scene.set_camera(**camera_params)
 
     stream_actor9 = fury.actor.line(
-        bundle_native,
-        linewidth=3,
-        depth_cue=True,
-        fake_tube=True
+        bundle_native, linewidth=3, depth_cue=True, fake_tube=True
     )
     scene.add(stream_actor9)
 
@@ -598,34 +566,14 @@ def amira_writer(
     scene.clear()
     scene.set_camera(**camera_params)
 
-    stream_actor10 = fury.actor.streamtube(
-        bundle_native,
-        linewidth=0.5
-    )
+    stream_actor10 = fury.actor.streamtube(bundle_native, linewidth=0.5)
     scene.add(stream_actor10)
 
     if interactive:
         fury.window.show(scene, size=(600, 600), reset_camera=False)
     fury.window.record(scene=scene, out_path="bundle10.png", size=(600, 600))
 
-    
-    
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    
-    
-    
-    
+
 def amira_writer(
     conf_file_path: str,
     start_index: int | None = None,
@@ -633,14 +581,14 @@ def amira_writer(
     bin_factor: int | None = None,
     num_ini_points: int = 20000,
     num_steps: int = 1000000,
-    max_length : float = 20.0,
+    max_length: float = 20.0,
     angle_threshold: float = 60.0,
     segment_min_length_threshold: int = 10,
 ) -> None:
-    from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-    from dipy.tracking.streamline import length, transform_streamlines
     import fury
     import numpy as np
+    from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
+    from dipy.tracking.streamline import transform_streamlines
 
     # Set to True if you want an interactive FURY window.
     interactive = True
@@ -648,9 +596,7 @@ def amira_writer(
     # 1. Download and load bundle data & FA map for subject "subj_1"
     fetch_bundles_2_subjects()
     dix = read_bundles_2_subjects(
-        subj_id="subj_1",
-        metrics=["fa"],
-        bundles=["cg.left", "cst.right"]
+        subj_id="subj_1", metrics=["fa"], bundles=["cg.left", "cst.right"]
     )
 
     fa = dix["fa"]
@@ -735,7 +681,7 @@ def amira_writer(
                 pt,
                 vector_field,
                 num_steps=num_steps,
-                max_length =max_length ,
+                max_length=max_length,
                 angle_threshold=angle_threshold,
             )
             # Shift back up by start_index along Z
@@ -751,14 +697,12 @@ def amira_writer(
 
     HA_angle: list[float] = []
     for seg in consecutive_points_list:
-        for (z, y, x) in seg:
-            HA_angle.append(
-                float(HA_volume[int(z - start_index), int(y), int(x)])
-            )
+        for z, y, x in seg:
+            HA_angle.append(float(HA_volume[int(z - start_index), int(y), int(x)]))
 
     z_angle: list[float] = []
     for seg in consecutive_points_list:
-        for (z, y, x) in seg:
+        for z, y, x in seg:
             vec = vector_field[:, int(z - start_index), int(y), int(x)]
             theta = np.arccos(abs(vec[0]) / np.linalg.norm(vec))
             z_angle.append(np.degrees(theta))
@@ -772,7 +716,7 @@ def amira_writer(
         [(pt[2], pt[1], pt[0]) for pt in seg] for seg in consecutive_points_list
     ]
 
-     # =============================================================================
+    # =============================================================================
     # PART B: Plot your streamlines, coloring each vertex by its HA_angle
     # =============================================================================
 
@@ -785,7 +729,7 @@ def amira_writer(
     # 3. Create a lookup table (LUT) spanning the HA range (e.g. –90° to +90° or your actual min/max)
     lut_ha = fury.actor.colormap_lookup_table(
         scale_range=(float(HA_array.min()), float(HA_array.max())),
-        hue_range=(0.0, 0.7),         # for example: map low HA→red, high HA→blue
+        hue_range=(0.0, 0.7),  # for example: map low HA→red, high HA→blue
         saturation_range=(0.5, 1.0),  # adjust as you like
     )
 
@@ -800,7 +744,7 @@ def amira_writer(
     # 5. Create a “line” actor, passing HA_array so that FURY colors each vertex by its HA
     line_actor = fury.actor.line(
         streamlines,
-        HA_array,            # per‐vertex scalar array → colormap index
+        HA_array,  # per‐vertex scalar array → colormap index
         linewidth=0.5,
         lookup_colormap=lut_ha,
     )
@@ -808,13 +752,14 @@ def amira_writer(
 
     scene.add(line_actor)
     scene.add(scalar_bar)
-    
+
     scene.reset_camera()
     scene.camera_info()
-
 
     # 6. Show or record
     if interactive:
         fury.window.show(scene, size=(800, 800), reset_camera=False)
     else:
-        fury.window.record(scene=scene, out_path="my_streamlines_by_HA.png", size=(800, 800))
+        fury.window.record(
+            scene=scene, out_path="my_streamlines_by_HA.png", size=(800, 800)
+        )
