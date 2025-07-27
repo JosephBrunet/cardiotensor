@@ -23,6 +23,13 @@ nav:
     - Installation: getting-started/installation.md
     - First steps: getting-started/first-steps.md
     - Example: getting-started/examples.md
+  - Getting Technical:
+    - getting-technical/index.md
+    - Conventions: getting-technical/conventions.md
+    - Structure Tensor: getting-technical/structure_tensor.md
+    - Angles: getting-technical/angles.md
+    - Fractional Anisotropy: getting-technical/fractional_anisotropy.md
+    - Tractography: getting-technical/tractography.md
   - Reference:
     - reference/index.md
     - Commands: reference/cli.md
@@ -89,12 +96,16 @@ extra:
       link: https://x.com/Joseph__Brunet
 
 extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css
   - stylesheets/extra.css
   - stylesheets/mkdocstrings.css
 
+
 extra_javascript:
   - javascripts/extra.js
-
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js
+  - javascripts/math-render.js
 
 markdown_extensions:
   - admonition
@@ -116,6 +127,9 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
 
 
 
