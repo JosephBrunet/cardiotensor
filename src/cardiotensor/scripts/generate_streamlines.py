@@ -83,6 +83,11 @@ def script():
         print(f"⚠️ No eigenvector directory at {eigen_dir}")
         sys.exit(1)
 
+
+    #---------------------------------
+    # BINNING
+
+
     if bin_factor > 1:
         downsample_vector_volume(eigen_dir, bin_factor, OUTPUT_DIR)
         vec_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "eigen_vec"
@@ -93,41 +98,6 @@ def script():
         start_binned = start_idx
         end_binned = end_idx
 
-    print("Loading vector field...")
-    vec_reader = DataReader(vec_load_dir)
-    vector_slices = vec_reader.load_volume(
-        start_index=start_binned, end_index=end_binned
-    )
-
-    if vector_slices.ndim == 4 and vector_slices.shape[0] == 3:
-        vector_field = vector_slices
-    elif vector_slices.ndim == 4 and vector_slices.shape[-1] == 3:
-        vector_field = np.moveaxis(vector_slices, -1, 0)
-    else:
-        print(f"⚠️ Unexpected vector field shape: {vector_slices.shape}")
-        sys.exit(1)
-
-    print("Ensuring Z-components are positive...")
-    neg_mask = vector_field[2] < 0
-    vector_field[:, neg_mask] *= -1
-
-    if MASK_PATH:
-        print("Applying mask from config...")
-        mask_reader = DataReader(MASK_PATH)
-
-        # Load the corresponding mask volume, resampled to match vector field shape
-        mask_volume = mask_reader.load_volume(
-            start_index=start_binned,
-            end_index=end_binned,
-            unbinned_shape=vec_reader.shape[1:],  # (Z, Y, X)
-        )
-
-        mask = (mask_volume > 0).astype(np.uint8)
-
-        vector_field[:, mask == 0] = np.nan
-
-    # Seed mask from FA
-    print("Generating seed mask using FA > 0.4...")
     FA_dir = OUTPUT_DIR / "FA"
     if bin_factor > 1:
         downsample_volume(
@@ -142,6 +112,61 @@ def script():
         fa_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "FA"
     else:
         fa_load_dir = FA_dir
+        
+    HA_dir = OUTPUT_DIR / "HA"
+    if bin_factor > 1:
+        downsample_volume(
+            input_path=HA_dir,
+            bin_factor=bin_factor,
+            output_dir=OUTPUT_DIR,
+            subfolder="HA",
+            out_ext="tif",
+            min_value=0,
+            max_value=255,
+        )
+        ha_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "HA"
+    else:
+        ha_load_dir = HA_dir
+        
+    #---------------------------------
+
+
+
+    print("Loading vector field...")
+    vec_reader = DataReader(vec_load_dir)
+    vector_field = vec_reader.load_volume(
+        start_index=start_binned, end_index=end_binned
+    )
+
+    if vector_field.ndim == 4 and vector_field.shape[0] == 3:
+        vector_field = vector_field
+    elif vector_field.ndim == 4 and vector_field.shape[-1] == 3:
+        vector_field = np.moveaxis(vector_field, -1, 0)
+    else:
+        print(f"⚠️ Unexpected vector field shape: {vector_field.shape}")
+        sys.exit(1)
+
+    print("Ensuring Z-components are positive...")
+    neg_mask = vector_field[2] < 0
+    vector_field[:, neg_mask] *= -1
+    del neg_mask
+
+    if MASK_PATH:
+        print("Applying mask from config...")
+        mask_reader = DataReader(MASK_PATH)
+
+        # Load the corresponding mask volume, resampled to match vector field shape
+        mask = mask_reader.load_volume(
+            start_index=start_binned,
+            end_index=end_binned,
+            unbinned_shape=vec_reader.shape[1:],  # (Z, Y, X)
+        )
+
+        mask = (mask > 0).astype(np.uint8)
+        vector_field[:, mask == 0] = np.nan
+
+    # Seed mask from FA
+    print("Generating seed mask using FA > 0.4...")
 
     if not fa_load_dir.exists():
         print(f"⚠️ No FA directory found at {fa_load_dir}")
@@ -149,8 +174,10 @@ def script():
 
     print("Loading FA volume...")
     fa_reader = DataReader(fa_load_dir)
-    fa_volume = fa_reader.load_volume(start_index=start_binned, end_index=end_binned)
-    seed_mask = (fa_volume > 0.4).astype(np.uint8)
+    # FA vlume is stored as 8 bits (0-255), so we need to scale it
+    fa_volume = fa_reader.load_volume(start_index=start_binned, end_index=end_binned)    
+    
+    seed_mask = (fa_volume > (0.25 * 255))
 
     print(f"Selecting {num_seeds} random seed points from mask...")
     valid_indices = np.argwhere(seed_mask > 0)
@@ -161,6 +188,7 @@ def script():
     chosen_indices = valid_indices[
         np.random.choice(valid_indices.shape[0], num_seeds, replace=False)
     ]
+    del valid_indices
 
     # Trace streamlines
     streamlines = generate_streamlines_from_vector_field(
@@ -175,24 +203,9 @@ def script():
     )
 
     # Load HA for sampling
-    HA_dir = OUTPUT_DIR / "HA"
     if not HA_dir.exists():
         print(f"⚠️ No HA directory found at {HA_dir}")
         sys.exit(1)
-
-    if bin_factor > 1:
-        downsample_volume(
-            input_path=HA_dir,
-            bin_factor=bin_factor,
-            output_dir=OUTPUT_DIR,
-            subfolder="HA",
-            out_ext="tif",
-            min_value=0,
-            max_value=255,
-        )
-        ha_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "HA"
-    else:
-        ha_load_dir = HA_dir
 
     ha_reader = DataReader(ha_load_dir)
     HA_volume = ha_reader.load_volume(start_index=start_binned, end_index=end_binned)

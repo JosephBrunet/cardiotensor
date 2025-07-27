@@ -40,7 +40,6 @@ def compute_orientation(
         conf_file_path (str): Path to the configuration file.
         start_index (int, optional): Start index for processing. Default is 0.
         end_index (int | None): End index for processing. Default is None.
-        use_gpu (bool, optional): Whether to use GPU for calculations. Default is False.
 
     Returns:
         None

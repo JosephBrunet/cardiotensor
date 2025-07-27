@@ -246,8 +246,6 @@ def process_image_block(
     downsampling in XY, converting to 8-bit, and writing to disk.
 
     Args:
-        z_start (int): Start index of the Z-block.
-        z_end (int): End index of the Z-block (exclusive).
         file_list (list): List of file paths (entire volume stack).
         bin_factor (int): Binning factor for XY downsampling.
         out_file (Path): Output file path for the downsampled image.
