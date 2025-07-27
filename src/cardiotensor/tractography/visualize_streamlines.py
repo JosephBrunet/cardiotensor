@@ -39,6 +39,7 @@ def show_streamlines(
     max_streamlines: int | None = None,
     filter_min_len: int | None = None,
     subsample_factor: int = 1,
+    crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]] | None = None,
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
     if filter_min_len:
@@ -49,6 +50,50 @@ def show_streamlines(
         print(f"Subsampling: keeping 1 in every {subsample_factor} streamlines")
     if max_streamlines:
         print(f"Limiting to max {max_streamlines} streamlines")
+
+
+
+
+
+
+    # Crop streamlines and color values (point-wise) if bounds are provided
+    print(f"Cropping streamlines within bounds: {crop_bounds}" if crop_bounds else "No cropping applied.")
+    if crop_bounds is not None:
+        z_min, z_max = crop_bounds[2]
+        y_min, y_max = crop_bounds[1]
+        x_min, x_max = crop_bounds[0]
+
+        new_streamlines = []
+        new_color_values = []
+        color_idx = 0
+
+        for sl in streamlines_xyz:
+            n_pts = len(sl)
+            cl = color_values[color_idx : color_idx + n_pts]
+
+            sl = np.asarray(sl)
+            cl = np.asarray(cl)
+
+            within = (
+                (sl[:, 0] >= x_min) & (sl[:, 0] <= x_max) &
+                (sl[:, 1] >= y_min) & (sl[:, 1] <= y_max) &
+                (sl[:, 2] >= z_min) & (sl[:, 2] <= z_max)
+            )
+
+            if np.any(within):  # Keep only remaining points
+                new_sl = sl[within]
+                new_cl = cl[within]
+                if len(new_sl) > 0:
+                    new_streamlines.append(new_sl)
+                    new_color_values.append(new_cl)
+
+            color_idx += n_pts
+
+        streamlines_xyz = new_streamlines
+        color_values = np.concatenate(new_color_values) if new_color_values else np.array([])
+    else:
+        print("No cropping applied.")
+
 
     # Downsample and filter
     downsampled_streamlines = []
@@ -88,6 +133,11 @@ def show_streamlines(
 
     print(f"Final number of streamlines to render: {len(streamlines_xyz)}")
 
+
+
+    if not color_values:
+        raise ValueError("❌ No streamlines left after filtering and cropping. Adjust parameters like --crop or --min-length.")
+    
     flat_colors = np.concatenate(color_values)
     print(f"Coloring mode: min={flat_colors.min():.2f}, max={flat_colors.max():.2f}")
     print(f"Rendering mode: {mode}")

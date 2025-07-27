@@ -34,6 +34,20 @@ from cardiotensor.tractography.visualize_streamlines import show_streamlines
 from cardiotensor.utils.utils import read_conf_file
 
 
+def compute_streamline_bounds(streamlines):
+    """
+    Compute min and max bounds in X, Y, Z for a list of 3D streamlines.
+
+    Returns:
+        ((x_min, x_max), (y_min, y_max), (z_min, z_max))
+    """
+    all_points = np.concatenate(streamlines, axis=0)
+    x_min, y_min, z_min = all_points.min(axis=0)
+    x_max, y_max, z_max = all_points.max(axis=0)
+    return (x_min, x_max), (y_min, y_max), (z_min, z_max)
+
+
+
 def script():
     parser = argparse.ArgumentParser(
         description="Visualize streamlines from .npz file."
@@ -90,6 +104,19 @@ def script():
         default=None,
         help="Maximum number of streamlines to render. If not set, no limit is applied.",
     )
+    
+    parser.add_argument(
+        "--crop-z", nargs=2, type=float, metavar=("ZMIN", "ZMAX"),
+        help="Crop streamlines to this Z range (after conversion to (x,y,z))."
+    )
+    parser.add_argument(
+        "--crop-y", nargs=2, type=float, metavar=("YMIN", "YMAX"),
+        help="Crop streamlines to this Y range."
+    )
+    parser.add_argument(
+        "--crop-x", nargs=2, type=float, metavar=("XMIN", "XMAX"),
+        help="Crop streamlines to this X range."
+    )
 
     parser.add_argument(
         "--no-interactive",
@@ -116,6 +143,7 @@ def script():
         default=800,
         help="Window or screenshot height in pixels. Default: 800.",
     )
+
 
     args = parser.parse_args()
     conf_path = Path(args.conf_file)
@@ -166,7 +194,23 @@ def script():
         # Convert from [0, 255] to [-90, 90]
         ha_values = ha_values.astype(np.float32)
         color_values = (ha_values / 255.0) * 180.0 - 90.0
+        
+    # Build crop bounds with open-ended defaults
+    crop_z = tuple(args.crop_z) if args.crop_z else (-float("inf"), float("inf"))
+    crop_y = tuple(args.crop_y) if args.crop_y else (-float("inf"), float("inf"))
+    crop_x = tuple(args.crop_x) if args.crop_x else (-float("inf"), float("inf"))
 
+    if any([args.crop_z, args.crop_y, args.crop_x]):
+        crop_bounds = (crop_x, crop_y, crop_z)
+    else:
+        crop_bounds = None
+
+    print(f"Original bounds for streamlines:")
+    x_bounds, y_bounds, z_bounds = compute_streamline_bounds(streamlines_xyz)
+    print(f"X bounds: {int(x_bounds[0])} - {int(x_bounds[1])}")
+    print(f"Y bounds: {int(y_bounds[0])} - {int(y_bounds[1])}")
+    print(f"Z bounds: {int(z_bounds[0])} - {int(z_bounds[1])}")
+        
     show_streamlines(
         streamlines_xyz=streamlines_xyz,
         color_values=color_values,
@@ -179,6 +223,7 @@ def script():
         max_streamlines=args.max_streamlines,
         filter_min_len=args.min_length,
         subsample_factor=args.subsample,
+        crop_bounds=crop_bounds,
     )
 
 
