@@ -6,13 +6,10 @@ This section provides a deeper understanding of how `cardiotensor` works, includ
 
 - [Conventions](./conventions.md)  
 
-- [Structure Tensor](./structure-tensor.md): Mathematical background on the structure tensor, eigen decomposition, and FA calculation.
+- [Structure Tensor](./structure-tensor.md): Mathematical background on the structure tensor and eigen decomposition
 
-- [Angle Definitions](./angles.md)  
-  Detailed explanation of helix and intrusion angles
+- [Angle Definitions](./angles.md): Detailed explanation of helix and intrusion angles
 
-- [Fractional Anisotropy](./fractional-anisotropy.md)  
-  How FA is computed and interpreted from the eigenvalues of the structure tensor.
+- [Fractional Anisotropy](./fractional_anisotropy.md)  
 
 - [Tractography](./tractography.md)  
-  Streamline generation from 3D eigenvector fields and parameters for controlling seeding, step size, and thresholds.
