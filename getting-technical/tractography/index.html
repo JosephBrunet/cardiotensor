@@ -650,28 +650,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#principle" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Principle
+      Overview
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#algorithm-overview" class="md-nav__link">
+  <a href="#algorithm" class="md-nav__link">
     <span class="md-ellipsis">
-      Algorithm Overview
+      Algorithm
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Algorithm Overview">
+    <nav class="md-nav" aria-label="Algorithm">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#seeding" class="md-nav__link">
     <span class="md-ellipsis">
-      Seeding:
+      Seeding
     </span>
   </a>
   
@@ -680,16 +680,16 @@
           <li class="md-nav__item">
   <a href="#integration" class="md-nav__link">
     <span class="md-ellipsis">
-      Integration:
+      Integration
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#termination" class="md-nav__link">
+  <a href="#termination-criteria" class="md-nav__link">
     <span class="md-ellipsis">
-      Termination:
+      Termination Criteria
     </span>
   </a>
   
@@ -698,7 +698,7 @@
           <li class="md-nav__item">
   <a href="#filtering" class="md-nav__link">
     <span class="md-ellipsis">
-      Filtering:
+      Filtering
     </span>
   </a>
   
@@ -706,15 +706,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Parameters
-    </span>
-  </a>
   
 </li>
       
@@ -728,9 +719,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#applications" class="md-nav__link">
+  <a href="#example-command" class="md-nav__link">
     <span class="md-ellipsis">
-      Applications
+      Example Command
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced
     </span>
   </a>
   
@@ -822,7 +831,7 @@
   
   
   <span class="md-ellipsis">
-    Commands
+    CLI Commands
     
   </span>
   
@@ -957,28 +966,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#principle" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Principle
+      Overview
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#algorithm-overview" class="md-nav__link">
+  <a href="#algorithm" class="md-nav__link">
     <span class="md-ellipsis">
-      Algorithm Overview
+      Algorithm
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Algorithm Overview">
+    <nav class="md-nav" aria-label="Algorithm">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#seeding" class="md-nav__link">
     <span class="md-ellipsis">
-      Seeding:
+      Seeding
     </span>
   </a>
   
@@ -987,16 +996,16 @@
           <li class="md-nav__item">
   <a href="#integration" class="md-nav__link">
     <span class="md-ellipsis">
-      Integration:
+      Integration
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#termination" class="md-nav__link">
+  <a href="#termination-criteria" class="md-nav__link">
     <span class="md-ellipsis">
-      Termination:
+      Termination Criteria
     </span>
   </a>
   
@@ -1005,7 +1014,7 @@
           <li class="md-nav__item">
   <a href="#filtering" class="md-nav__link">
     <span class="md-ellipsis">
-      Filtering:
+      Filtering
     </span>
   </a>
   
@@ -1013,15 +1022,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Parameters
-    </span>
-  </a>
   
 </li>
       
@@ -1035,9 +1035,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#applications" class="md-nav__link">
+  <a href="#example-command" class="md-nav__link">
     <span class="md-ellipsis">
-      Applications
+      Example Command
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced
     </span>
   </a>
   
@@ -1063,68 +1081,69 @@
 
 
 <h1 id="tractography"><a class="toclink" href="#tractography">Tractography</a><a class="headerlink" href="#tractography" title="Permanent link">&para;</a></h1>
-<p>Tractography in <code>cardiotensor</code> is the process of generating streamlines that follow local myocyte bundle orientation within a 3D vector field. It enables visual and quantitative analysis of cardiac fiber organization.</p>
+<p>This page describes the streamline tractography module in <code>cardiotensor</code>, used to trace paths through 3D vector fields of myocardial orientation.</p>
+<p>Streamlines represent the continuous direction of cardiomyocyte organization by following the principal eigenvector of the structure tensor field. This process is adapted from diffusion MRI tractography and tailored for cardiac microstructure.</p>
 <hr />
-<h2 id="principle"><a class="toclink" href="#principle">Principle</a><a class="headerlink" href="#principle" title="Permanent link">&para;</a></h2>
-<p>Streamlines are computed by tracing the path along the <strong>principal orientation vector</strong> (3rd eigenvector <span class="arithmatex">\(\vec{v}_1\)</span>) from the structure tensor. Integration follows the local direction of this vector across voxels.</p>
-<p>This method is analogous to diffusion MRI tractography, but uses structure tensor-based orientation fields derived from high-resolution imaging.</p>
+<h2 id="overview"><a class="toclink" href="#overview">Overview</a><a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The tractography module uses:</p>
+<ul>
+<li>FA thresholding to restrict tracing to well-aligned regions</li>
+<li>3D vector field integration to follow fiber orientation</li>
+<li>Curvature and boundary criteria to terminate streamlines</li>
+<li>Optional binning for speed and scalability</li>
+</ul>
+<p>Streamlines are computed using Runge-Kutta 4th order integration of the vector field.</p>
 <hr />
-<h2 id="algorithm-overview"><a class="toclink" href="#algorithm-overview">Algorithm Overview</a><a class="headerlink" href="#algorithm-overview" title="Permanent link">&para;</a></h2>
-<h3 id="seeding"><a class="toclink" href="#seeding"><strong>Seeding</strong>:</a><a class="headerlink" href="#seeding" title="Permanent link">&para;</a></h3>
+<h2 id="algorithm"><a class="toclink" href="#algorithm">Algorithm</a><a class="headerlink" href="#algorithm" title="Permanent link">&para;</a></h2>
+<h3 id="seeding"><a class="toclink" href="#seeding">Seeding</a><a class="headerlink" href="#seeding" title="Permanent link">&para;</a></h3>
+<p>Streamline seeds are placed randomly within a binary mask, typically derived from the FA map:</p>
 <ul>
-<li>Seed points are placed uniformly in a user-defined volume or mask.</li>
-<li>Seeding can be restricted based on FA or binary masks.</li>
+<li>Seed points are voxel coordinates where FA exceeds a threshold (e.g., 0.4).</li>
+<li>A fixed number of seeds (default: 20,000) are sampled randomly.</li>
+<li>The number and location of seeds can be configured using CLI.</li>
 </ul>
-<h3 id="integration"><a class="toclink" href="#integration"><strong>Integration</strong>:</a><a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
+<h3 id="integration"><a class="toclink" href="#integration">Integration</a><a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
+<p>Each streamline is computed using Runge-Kutta 4 (RK4) integration through the vector field.</p>
 <ul>
-<li>Streamlines are generated using numerical integration (e.g., Euler method).</li>
-<li>Step size and number of steps control streamline length and smoothness.</li>
+<li>Input vector field must be of shape <code>(3, Z, Y, X)</code>, where the first dimension is (x, y, z) components.</li>
+<li>Step size is defined in voxel units (default: 0.5).</li>
+<li>Streamlines are traced bidirectionally from the seed (forward and backward).</li>
 </ul>
-<h3 id="termination"><a class="toclink" href="#termination"><strong>Termination</strong>:</a><a class="headerlink" href="#termination" title="Permanent link">&para;</a></h3>
-<p>A streamline stops when:</p>
+<h3 id="termination-criteria"><a class="toclink" href="#termination-criteria">Termination Criteria</a><a class="headerlink" href="#termination-criteria" title="Permanent link">&para;</a></h3>
+<p>Tracing stops when:</p>
 <ul>
-<li>FA is below a threshold (default 0.1)</li>
-<li>Angle between successive steps exceeds a curvature threshold</li>
-<li>It leaves the image bounds</li>
+<li>FA falls below the user-defined threshold (default: 0.1)</li>
+<li>Turning angle between steps exceeds a threshold (default: 60°)</li>
+<li>The streamline exits image bounds</li>
 </ul>
-<h3 id="filtering"><a class="toclink" href="#filtering"><strong>Filtering</strong>:</a><a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Short or low-quality streamlines can be removed based on length or curvature.</li>
-</ul>
-<hr />
-<h2 id="parameters"><a class="toclink" href="#parameters">Parameters</a><a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>--seeds</code>: number of seed points</li>
-<li><code>--bin</code>: Bin the vector field and angle values</li>
-<li><code>--step</code>: integration step size (in voxel units)</li>
-<li><code>--min-fa</code>: minimum FA to start/continue</li>
-<li><code>--max-angle</code>: curvature constraint (in degrees)</li>
-<li><code>--mask</code>: optional binary mask to restrict seeding</li>
-</ul>
-<p>Example CLI usage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cardio-generate<span class="w"> </span>conf.toml<span class="w"> </span>--seeds<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--bin<span class="w"> </span><span class="m">2</span>
-</code></pre></div>
+<h3 id="filtering"><a class="toclink" href="#filtering">Filtering</a><a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h3>
+<p>Streamlines shorter than <code>min_length_pts</code> (default: 10 points) are discarded. You can also post-filter based on curvature or anatomical ROIs.</p>
 <hr />
 <h2 id="output"><a class="toclink" href="#output">Output</a><a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
-<p>Streamlines are saved in <code>.npz</code> format as:</p>
+<p>The streamline results are saved in <code>.npz</code> format as:</p>
 <ul>
-<li><code>streamlines</code>: list of 3D coordinate arrays</li>
-<li><code>HA</code>: helix angle per vertex (optional)</li>
+<li><code>streamlines</code>: a list of arrays, each of shape (N, 3), where N is the number of points in that streamline</li>
+<li><code>ha_values</code>: sampled HA (helix angle) values along each point</li>
 </ul>
-<p>They can be visualized using tools like:</p>
+<p>These can be loaded in Python or exported to <code>.vtk</code> for 3D visualization in ParaView.</p>
+<hr />
+<h2 id="example-command"><a class="toclink" href="#example-command">Example Command</a><a class="headerlink" href="#example-command" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cardio-generate<span class="w"> </span>config.conf<span class="w"> </span>--seeds<span class="w"> </span><span class="m">20000</span><span class="w"> </span>--bin<span class="w"> </span><span class="m">2</span><span class="w"> </span>--step<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--fa-threshold<span class="w"> </span><span class="m">0</span>.15<span class="w"> </span>--angle<span class="w"> </span><span class="m">60</span><span class="w"> </span>--min_len<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+<hr />
+<h2 id="notes"><a class="toclink" href="#notes">Notes</a><a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Fury</strong> (Python-based 3D visualization)</li>
-<li><strong>ParaView</strong> (via VTK export)</li>
+<li>Streamlines are computed from the 3rd eigenvector of the structure tensor, corresponding to the myocyte axis.</li>
+<li>FA is computed once from the structure tensor and optionally downsampled for speed.</li>
+<li>Helix angle (HA) is sampled at each point along the streamline and saved for further analysis.</li>
 </ul>
 <hr />
-<h2 id="applications"><a class="toclink" href="#applications">Applications</a><a class="headerlink" href="#applications" title="Permanent link">&para;</a></h2>
+<h2 id="advanced"><a class="toclink" href="#advanced">Advanced</a><a class="headerlink" href="#advanced" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Visualizing transmural fiber architecture</li>
-<li>Identifying laminar structures and myocardial disarray</li>
-<li>Comparing healthy vs pathological fiber orientation</li>
-<li>Enabling tract-based statistics or mapping</li>
+<li>Trilinear interpolation is used to ensure sub-voxel accuracy during integration.</li>
+<li>RK4 integration ensures smoother trajectories compared to simpler Euler methods.</li>
+<li>The code is optimized for parallel execution and can scale to large volumes (e.g., 8000³ voxels).</li>
 </ul>
-<hr />
 
 
 
@@ -1147,7 +1166,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 27, 2025 23:50:53 UTC"><span class="timeago" datetime="2025-07-27T23:50:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 27, 2025 23:50:53 UTC">2025-07-27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 28, 2025 11:50:44 UTC"><span class="timeago" datetime="2025-07-28T11:50:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 28, 2025 11:50:44 UTC">2025-07-28</span>
   </span>
 
     
