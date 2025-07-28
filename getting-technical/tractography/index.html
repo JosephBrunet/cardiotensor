@@ -1062,37 +1062,37 @@
   
 
 
-<h1 id="tractography"><a class="toclink" href="#tractography">Tractography</a></h1>
+<h1 id="tractography"><a class="toclink" href="#tractography">Tractography</a><a class="headerlink" href="#tractography" title="Permanent link">&para;</a></h1>
 <p>Tractography in <code>cardiotensor</code> is the process of generating streamlines that follow local myocyte bundle orientation within a 3D vector field. It enables visual and quantitative analysis of cardiac fiber organization.</p>
 <hr />
-<h2 id="principle"><a class="toclink" href="#principle">Principle</a></h2>
+<h2 id="principle"><a class="toclink" href="#principle">Principle</a><a class="headerlink" href="#principle" title="Permanent link">&para;</a></h2>
 <p>Streamlines are computed by tracing the path along the <strong>principal orientation vector</strong> (3rd eigenvector <span class="arithmatex">\(\vec{v}_1\)</span>) from the structure tensor. Integration follows the local direction of this vector across voxels.</p>
 <p>This method is analogous to diffusion MRI tractography, but uses structure tensor-based orientation fields derived from high-resolution imaging.</p>
 <hr />
-<h2 id="algorithm-overview"><a class="toclink" href="#algorithm-overview">Algorithm Overview</a></h2>
-<h3 id="seeding"><a class="toclink" href="#seeding"><strong>Seeding</strong>:</a></h3>
+<h2 id="algorithm-overview"><a class="toclink" href="#algorithm-overview">Algorithm Overview</a><a class="headerlink" href="#algorithm-overview" title="Permanent link">&para;</a></h2>
+<h3 id="seeding"><a class="toclink" href="#seeding"><strong>Seeding</strong>:</a><a class="headerlink" href="#seeding" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Seed points are placed uniformly in a user-defined volume or mask.</li>
 <li>Seeding can be restricted based on FA or binary masks.</li>
 </ul>
-<h3 id="integration"><a class="toclink" href="#integration"><strong>Integration</strong>:</a></h3>
+<h3 id="integration"><a class="toclink" href="#integration"><strong>Integration</strong>:</a><a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Streamlines are generated using numerical integration (e.g., Euler method).</li>
 <li>Step size and number of steps control streamline length and smoothness.</li>
 </ul>
-<h3 id="termination"><a class="toclink" href="#termination"><strong>Termination</strong>:</a></h3>
+<h3 id="termination"><a class="toclink" href="#termination"><strong>Termination</strong>:</a><a class="headerlink" href="#termination" title="Permanent link">&para;</a></h3>
 <p>A streamline stops when:</p>
 <ul>
 <li>FA is below a threshold (default 0.1)</li>
 <li>Angle between successive steps exceeds a curvature threshold</li>
 <li>It leaves the image bounds</li>
 </ul>
-<h3 id="filtering"><a class="toclink" href="#filtering"><strong>Filtering</strong>:</a></h3>
+<h3 id="filtering"><a class="toclink" href="#filtering"><strong>Filtering</strong>:</a><a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Short or low-quality streamlines can be removed based on length or curvature.</li>
 </ul>
 <hr />
-<h2 id="parameters"><a class="toclink" href="#parameters">Parameters</a></h2>
+<h2 id="parameters"><a class="toclink" href="#parameters">Parameters</a><a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>--seeds</code>: number of seed points</li>
 <li><code>--bin</code>: Bin the vector field and angle values</li>
@@ -1105,7 +1105,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cardio-generate<span class="w"> </span>conf.toml<span class="w"> </span>--seeds<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--bin<span class="w"> </span><span class="m">2</span>
 </code></pre></div>
 <hr />
-<h2 id="output"><a class="toclink" href="#output">Output</a></h2>
+<h2 id="output"><a class="toclink" href="#output">Output</a><a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
 <p>Streamlines are saved in <code>.npz</code> format as:</p>
 <ul>
 <li><code>streamlines</code>: list of 3D coordinate arrays</li>
@@ -1117,7 +1117,7 @@
 <li><strong>ParaView</strong> (via VTK export)</li>
 </ul>
 <hr />
-<h2 id="applications"><a class="toclink" href="#applications">Applications</a></h2>
+<h2 id="applications"><a class="toclink" href="#applications">Applications</a><a class="headerlink" href="#applications" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Visualizing transmural fiber architecture</li>
 <li>Identifying laminar structures and myocardial disarray</li>

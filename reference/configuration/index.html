@@ -1026,10 +1026,10 @@
   
 
 
-<h1 id="configuration-file"><a class="toclink" href="#configuration-file">Configuration File</a></h1>
+<h1 id="configuration-file"><a class="toclink" href="#configuration-file">Configuration File</a><a class="headerlink" href="#configuration-file" title="Permanent link">&para;</a></h1>
 <p>The configuration file in <strong>cardiotensor</strong> allows you to specify the parameters required for processing input datasets, calculating orientation tensors, computing angles, and saving results. Below is a detailed explanation of each section and parameter in the configuration file.</p>
 <hr />
-<h2 id="example-configuration-file"><a class="toclink" href="#example-configuration-file">Example Configuration File</a></h2>
+<h2 id="example-configuration-file"><a class="toclink" href="#example-configuration-file">Example Configuration File</a><a class="headerlink" href="#example-configuration-file" title="Permanent link">&para;</a></h2>
 <p>This is an example of a configuration file as found in the <code>examples/</code> directory.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[DATASET]</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Path to the folder containing the input images (accepted formats: .tif, .jp2, .mhd)</span>
@@ -1116,8 +1116,8 @@
 <p>Modify the configuration file as needed to fit your dataset.</p>
 </div>
 <hr />
-<h2 id="explanation-of-parameters"><a class="toclink" href="#explanation-of-parameters">Explanation of Parameters</a></h2>
-<h3 id="dataset"><a class="toclink" href="#dataset"><code>[DATASET]</code></a></h3>
+<h2 id="explanation-of-parameters"><a class="toclink" href="#explanation-of-parameters">Explanation of Parameters</a><a class="headerlink" href="#explanation-of-parameters" title="Permanent link">&para;</a></h2>
+<h3 id="dataset"><a class="toclink" href="#dataset"><code>[DATASET]</code></a><a class="headerlink" href="#dataset" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>IMAGES_PATH</code></strong>: Path to the input dataset containing 3D images.</li>
 <li><strong><code>VOXEL_SIZE</code></strong>: Voxel size of the dataset in micrometers.</li>
@@ -1128,7 +1128,7 @@
 <p>The mask volume can be downscaled compared to the heart volume. The binning factor will be estimated automatically and the mask will be upscaled accordingly.</p>
 </div>
 <hr />
-<h3 id="structure-tensor-calculation"><a class="toclink" href="#structure-tensor-calculation"><code>[STRUCTURE TENSOR CALCULATION]</code></a></h3>
+<h3 id="structure-tensor-calculation"><a class="toclink" href="#structure-tensor-calculation"><code>[STRUCTURE TENSOR CALCULATION]</code></a><a class="headerlink" href="#structure-tensor-calculation" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>SIGMA</code></strong>: Noise scale before gradient computation. Helps reduce noise while preserving structures.</li>
 <li><strong><code>RHO</code></strong>: Integration scale for smoothing tensor components. Larger values yield smoother orientation fields.</li>
@@ -1150,13 +1150,13 @@
 <p>The structure tensor calculation is performed using the <a href="https://github.com/Skielex/structure-tensor"><code>structure-tensor</code></a> Python package with optional CUDA support.</p>
 </div>
 <hr />
-<h3 id="angle-calculation"><a class="toclink" href="#angle-calculation"><code>[ANGLE CALCULATION]</code></a></h3>
+<h3 id="angle-calculation"><a class="toclink" href="#angle-calculation"><code>[ANGLE CALCULATION]</code></a><a class="headerlink" href="#angle-calculation" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>WRITE_ANGLES</code></strong>: Save helix and intrusion angles and fractional anisotropy values.</li>
 <li><strong><code>AXIS_POINTS</code></strong>: List of 3D points <code>[X, Y, Z]</code> along the ventricle axis. Typically, the first and last points correspond to the mitral valve and apex. Intermediate points help create a curved axis via interpolation.</li>
 </ul>
 <hr />
-<h3 id="test"><a class="toclink" href="#test"><code>[TEST]</code></a></h3>
+<h3 id="test"><a class="toclink" href="#test"><code>[TEST]</code></a><a class="headerlink" href="#test" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>TEST</code></strong>: Enable test mode to process a single slice.</li>
 <li><strong><code>N_SLICE_TEST</code></strong>: Index of the slice to test.</li>
@@ -1166,7 +1166,7 @@
 <p>Use test mode to verify processing on a small subset before running on the full volume.</p>
 </div>
 <hr />
-<h3 id="output"><a class="toclink" href="#output"><code>[OUTPUT]</code></a></h3>
+<h3 id="output"><a class="toclink" href="#output"><code>[OUTPUT]</code></a><a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>OUTPUT_PATH</code></strong>: Directory where results are saved.</li>
 <li><strong><code>OUTPUT_FORMAT</code></strong>: Output format (<code>jp2</code> or <code>tif</code>).</li>

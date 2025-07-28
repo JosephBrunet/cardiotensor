@@ -960,10 +960,10 @@
   
 
 
-<h1 id="fractional-anisotropy-fa"><a class="toclink" href="#fractional-anisotropy-fa">Fractional Anisotropy (FA)</a></h1>
+<h1 id="fractional-anisotropy-fa"><a class="toclink" href="#fractional-anisotropy-fa">Fractional Anisotropy (FA)</a><a class="headerlink" href="#fractional-anisotropy-fa" title="Permanent link">&para;</a></h1>
 <p>Fractional Anisotropy (FA) is a scalar value that quantifies the degree of anisotropy (directional dependence) in a tensor field. In <code>cardiotensor</code>, FA is derived from the structure tensor eigenvalues and helps identify regions with organized myocardial fiber orientation.</p>
 <hr />
-<h2 id="definition"><a class="toclink" href="#definition">Definition</a></h2>
+<h2 id="definition"><a class="toclink" href="#definition">Definition</a><a class="headerlink" href="#definition" title="Permanent link">&para;</a></h2>
 <p>Given the ordered eigenvalues of the structure tensor <span class="arithmatex">\(\lambda_1 \leq \lambda_2 \leq \lambda_3\)</span>, the FA is computed as:</p>
 <div class="arithmatex">\[
 FA = \sqrt{\frac{3}{2}} \cdot \frac{\sqrt{(\lambda_1 - \bar{\lambda})^2 + (\lambda_2 - \bar{\lambda})^2 + (\lambda_3 - \bar{\lambda})^2}}{\sqrt{\lambda_1^2 + \lambda_2^2 + \lambda_3^2}}
@@ -973,7 +973,7 @@ FA = \sqrt{\frac{3}{2}} \cdot \frac{\sqrt{(\lambda_1 - \bar{\lambda})^2 + (\lamb
 <li><span class="arithmatex">\(\bar{\lambda} = (\lambda_1 + \lambda_2 + \lambda_3) / 3\)</span>: mean of the eigenvalues</li>
 </ul>
 <hr />
-<h2 id="interpretation"><a class="toclink" href="#interpretation">Interpretation</a></h2>
+<h2 id="interpretation"><a class="toclink" href="#interpretation">Interpretation</a><a class="headerlink" href="#interpretation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>FA = 0</strong>: Isotropic region, where diffusion or structural orientation is equal in all directions (e.g. cavity or noise).</li>
 <li><strong>FA = 1</strong>: Perfectly anisotropic region, structure is highly aligned in one direction (e.g. dense aligned fibers).</li>
@@ -986,13 +986,13 @@ FA = \sqrt{\frac{3}{2}} \cdot \frac{\sqrt{(\lambda_1 - \bar{\lambda})^2 + (\lamb
 <li>Visualize structural organization within the myocardium</li>
 </ul>
 <hr />
-<h2 id="output"><a class="toclink" href="#output">Output</a></h2>
+<h2 id="output"><a class="toclink" href="#output">Output</a><a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
 <p>The FA volume is saved as a single 3D scalar field with the same shape as the input image:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">fa</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
 </code></pre></div>
 <p>It can be saved as TIFF or JP2 and visualized with standard volume rendering tools.</p>
 <hr />
-<h2 id="thresholding-in-tractography"><a class="toclink" href="#thresholding-in-tractography">Thresholding in Tractography</a></h2>
+<h2 id="thresholding-in-tractography"><a class="toclink" href="#thresholding-in-tractography">Thresholding in Tractography</a><a class="headerlink" href="#thresholding-in-tractography" title="Permanent link">&para;</a></h2>
 <p>FA values can be used to restrict streamline propagation:</p>
 <ul>
 <li><strong>Minimum FA threshold</strong>: ensures streamlines are seeded and propagated only in structured regions</li>

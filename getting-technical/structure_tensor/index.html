@@ -996,10 +996,10 @@
   
 
 
-<h1 id="structure-tensor-computation"><a class="toclink" href="#structure-tensor-computation">Structure Tensor Computation</a></h1>
+<h1 id="structure-tensor-computation"><a class="toclink" href="#structure-tensor-computation">Structure Tensor Computation</a><a class="headerlink" href="#structure-tensor-computation" title="Permanent link">&para;</a></h1>
 <p>The structure tensor is a fundamental tool in 3D image analysis used to estimate local orientation and anisotropy. In <code>cardiotensor</code>, it is computed per voxel to quantify the principal direction of cardiomyocyte aggregates.</p>
 <hr />
-<h2 id="what-is-a-structure-tensor"><a class="toclink" href="#what-is-a-structure-tensor">What is a Structure Tensor?</a></h2>
+<h2 id="what-is-a-structure-tensor"><a class="toclink" href="#what-is-a-structure-tensor">What is a Structure Tensor?</a><a class="headerlink" href="#what-is-a-structure-tensor" title="Permanent link">&para;</a></h2>
 <p>The structure tensor <span class="arithmatex">\(S\)</span> is a 3-by-3 symmetric matrix that summarizes how intensity varies in a local neighborhood of a 3D image. It is defined as:</p>
 <div class="arithmatex">\[
 S = K_\rho * (\nabla V_\sigma \cdot \nabla V_\sigma^T)
@@ -1013,7 +1013,7 @@ S = K_\rho * (\nabla V_\sigma \cdot \nabla V_\sigma^T)
 </ul>
 <p>This matrix encodes orientation and intensity variation.</p>
 <hr />
-<h2 id="implementation"><a class="toclink" href="#implementation">Implementation</a></h2>
+<h2 id="implementation"><a class="toclink" href="#implementation">Implementation</a><a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
 <p>Cardiotensor computes the structure tensor using the <a href="https://github.com/Skielex/structure-tensor">structure-tensor</a> Python library.</p>
 <ul>
 <li>It supports <strong>parallel computation</strong> and automatically uses the <strong>GPU</strong> (via CuPy) if available.</li>
@@ -1021,7 +1021,7 @@ S = K_\rho * (\nabla V_\sigma \cdot \nabla V_\sigma^T)
 <li>This makes orientation estimation fast and scalable on large datasets.</li>
 </ul>
 <hr />
-<h2 id="step-by-step-computation"><a class="toclink" href="#step-by-step-computation">Step-by-Step Computation</a></h2>
+<h2 id="step-by-step-computation"><a class="toclink" href="#step-by-step-computation">Step-by-Step Computation</a><a class="headerlink" href="#step-by-step-computation" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
 <p><strong>Noise Filtering</strong></p>
@@ -1053,21 +1053,21 @@ S = \begin{bmatrix}
 \end{bmatrix}
 \]</div>
 <hr />
-<h2 id="eigen-decomposition"><a class="toclink" href="#eigen-decomposition">Eigen Decomposition</a></h2>
+<h2 id="eigen-decomposition"><a class="toclink" href="#eigen-decomposition">Eigen Decomposition</a><a class="headerlink" href="#eigen-decomposition" title="Permanent link">&para;</a></h2>
 <p>Each structure tensor <span class="arithmatex">\(S\)</span> is decomposed into eigenvalues <span class="arithmatex">\(\lambda_1 \leq \lambda_2 \leq \lambda_3\)</span> and corresponding eigenvectors <span class="arithmatex">\(\vec{v}_1, \vec{v}_2, \vec{v}_3\)</span>.</p>
 <ul>
 <li><span class="arithmatex">\(\vec{v}_1\)</span>: direction with least intensity change (principal fiber direction)</li>
 <li><span class="arithmatex">\(\vec{v}_3\)</span>: direction of greatest intensity change</li>
 </ul>
 <hr />
-<h2 id="output-and-interpretation"><a class="toclink" href="#output-and-interpretation">Output and Interpretation</a></h2>
+<h2 id="output-and-interpretation"><a class="toclink" href="#output-and-interpretation">Output and Interpretation</a><a class="headerlink" href="#output-and-interpretation" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The third eigenvector <span class="arithmatex">\(\vec{v}_1\)</span> is stored as the local myocyte orientation.</li>
 <li>Helix and intrusion angles are computed from <span class="arithmatex">\(\vec{v}_1\)</span> after transforming it into cylindrical coordinates.</li>
 <li>Fractional Anisotropy (FA) is computed using the three eigenvalues (see <a href="./fractional-anisotropy.md">FA section</a>).</li>
 </ul>
 <hr />
-<h2 id="parameters"><a class="toclink" href="#parameters">Parameters</a></h2>
+<h2 id="parameters"><a class="toclink" href="#parameters">Parameters</a><a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><span class="arithmatex">\(\sigma\)</span></strong> <em>(noise scale)</em>: Controls how much local variation is smoothed in gradient calculation.</li>
 <li><strong><span class="arithmatex">\(\rho\)</span></strong> <em>(integration scale)</em>: Defines the neighborhood size for averaging the tensor field.</li>
