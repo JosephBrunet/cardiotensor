@@ -1,79 +1,85 @@
 # Tractography
 
-Tractography in `cardiotensor` is the process of generating streamlines that follow local myocyte bundle orientation within a 3D vector field. It enables visual and quantitative analysis of cardiac fiber organization.
+This page describes the streamline tractography module in `cardiotensor`, used to trace paths through 3D vector fields of myocardial orientation.
+
+Streamlines represent the continuous direction of cardiomyocyte organization by following the principal eigenvector of the structure tensor field. This process is adapted from diffusion MRI tractography and tailored for cardiac microstructure.
 
 ---
 
-## Principle
+## Overview
 
-Streamlines are computed by tracing the path along the **principal orientation vector** (3rd eigenvector $\vec{v}_1$) from the structure tensor. Integration follows the local direction of this vector across voxels.
+The tractography module uses:
 
-This method is analogous to diffusion MRI tractography, but uses structure tensor-based orientation fields derived from high-resolution imaging.
+* FA thresholding to restrict tracing to well-aligned regions
+* 3D vector field integration to follow fiber orientation
+* Curvature and boundary criteria to terminate streamlines
+* Optional binning for speed and scalability
 
----
-
-## Algorithm Overview
-
-### **Seeding**:
-
-   * Seed points are placed uniformly in a user-defined volume or mask.
-   * Seeding can be restricted based on FA or binary masks.
-
-### **Integration**:
-
-   * Streamlines are generated using numerical integration (e.g., Euler method).
-   * Step size and number of steps control streamline length and smoothness.
-
-### **Termination**:
-
-A streamline stops when:
-
-   * FA is below a threshold (default 0.1)
-   * Angle between successive steps exceeds a curvature threshold
-   * It leaves the image bounds
-
-### **Filtering**:
-
-   * Short or low-quality streamlines can be removed based on length or curvature.
+Streamlines are computed using Runge-Kutta 4th order integration of the vector field.
 
 ---
 
-## Parameters
+## Algorithm
 
-* `--seeds`: number of seed points
-* `--bin`: Bin the vector field and angle values
-* `--step`: integration step size (in voxel units)
-* `--min-fa`: minimum FA to start/continue
-* `--max-angle`: curvature constraint (in degrees)
-* `--mask`: optional binary mask to restrict seeding
+### Seeding
 
-Example CLI usage:
+Streamline seeds are placed randomly within a binary mask, typically derived from the FA map:
 
-```bash
-cardio-generate conf.toml --seeds 10000 --bin 2
-```
+* Seed points are voxel coordinates where FA exceeds a threshold (e.g., 0.4).
+* A fixed number of seeds (default: 20,000) are sampled randomly.
+* The number and location of seeds can be configured using CLI.
+
+### Integration
+
+Each streamline is computed using Runge-Kutta 4 (RK4) integration through the vector field.
+
+* Input vector field must be of shape `(3, Z, Y, X)`, where the first dimension is (x, y, z) components.
+* Step size is defined in voxel units (default: 0.5).
+* Streamlines are traced bidirectionally from the seed (forward and backward).
+
+### Termination Criteria
+
+Tracing stops when:
+
+* FA falls below the user-defined threshold (default: 0.1)
+* Turning angle between steps exceeds a threshold (default: 60°)
+* The streamline exits image bounds
+
+### Filtering
+
+Streamlines shorter than `min_length_pts` (default: 10 points) are discarded. You can also post-filter based on curvature or anatomical ROIs.
 
 ---
 
 ## Output
 
-Streamlines are saved in `.npz` format as:
+The streamline results are saved in `.npz` format as:
 
-* `streamlines`: list of 3D coordinate arrays
-* `HA`: helix angle per vertex (optional)
+* `streamlines`: a list of arrays, each of shape (N, 3), where N is the number of points in that streamline
+* `ha_values`: sampled HA (helix angle) values along each point
 
-They can be visualized using tools like:
-
-* **Fury** (Python-based 3D visualization)
-* **ParaView** (via VTK export)
+These can be loaded in Python or exported to `.vtk` for 3D visualization in ParaView.
 
 ---
 
-## Applications
+## Example Command
 
-* Visualizing transmural fiber architecture
-* Identifying laminar structures and myocardial disarray
-* Comparing healthy vs pathological fiber orientation
-* Enabling tract-based statistics or mapping
+```bash
+cardio-generate config.conf --seeds 20000 --bin 2 --step 0.5 --fa-threshold 0.15 --angle 60 --min_len 10
+```
 
 ---
+
+## Notes
+
+* Streamlines are computed from the 3rd eigenvector of the structure tensor, corresponding to the myocyte axis.
+* FA is computed once from the structure tensor and optionally downsampled for speed.
+* Helix angle (HA) is sampled at each point along the streamline and saved for further analysis.
+
+---
+
+## Advanced
+
+* Trilinear interpolation is used to ensure sub-voxel accuracy during integration.
+* RK4 integration ensures smoother trajectories compared to simpler Euler methods.
+* The code is optimized for parallel execution and can scale to large volumes (e.g., 8000³ voxels).
