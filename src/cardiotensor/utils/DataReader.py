@@ -10,7 +10,6 @@ import SimpleITK as sitk
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
 
-
 class DataReader:
     def __init__(self, path: str | Path):
         """
@@ -109,80 +108,64 @@ class DataReader:
         unbinned_shape: tuple[int, int, int] | None = None,
     ) -> np.ndarray:
         """
-        Loads the volume data based on the detected volume type.
+        Loads the volume and resizes it to unbinned_shape if provided, using fast scipy.ndimage.zoom.
 
         Args:
             start_index (int): Start index for slicing (for stacks).
             end_index (int): End index for slicing (for stacks). If None, loads the entire stack.
-            unbinned_shape (tuple): Shape of the volume without downsampling. Default is None (no binning).
+            unbinned_shape (tuple): Desired shape (Z, Y, X). If None, no resizing is done.
 
         Returns:
-            np.ndarray: Loaded (and possibly resized) volume data.
+            np.ndarray: Loaded volume.
         """
-
         if end_index is None:
             end_index = self.shape[0]
 
-        # compute how much we’ll need to zoom later
-        binning_factor = 1.0
-        if unbinned_shape is not None:
-            binning_factor = unbinned_shape[0] / self.shape[0]
-            print(f"Mask bining factor: {binning_factor}")
+        # Decide if resize is needed
+        need_resize = False
+        if unbinned_shape is not None and self.shape != unbinned_shape:
+            need_resize = True
+            zoom_factors = tuple(u / s for u, s in zip(unbinned_shape, self.shape))
+            print(f"Zoom factors: {zoom_factors}")
+        else:
+            zoom_factors = (1.0, 1.0, 1.0)
 
-        # if we’re going to zoom, adjust the requested slice range to include padding
-        if binning_factor != 1.0:
+        # Optional padding if resizing
+        if need_resize:
             start_index_ini, end_index_ini = start_index, end_index
-            start_index = int(start_index_ini / binning_factor) - 1
+            start_index = int(start_index_ini / zoom_factors[0]) - 1
             start_index = max(start_index, 0)
-            end_index = int(end_index_ini / binning_factor) + 1
+            end_index = int(end_index_ini / zoom_factors[0]) + 1
             end_index = min(end_index, self.shape[0])
-            print(
-                f"Mask start index padded: {start_index} - Mask end index padded: {end_index}"
-            )
+            print(f"Volume start index padded: {start_index} - end: {end_index}")
 
-        # load the raw volume
+        # Load volume from stack or mhd
         if not self.volume_info["stack"]:
-            # single-file (e.g. .mhd)
             if self.volume_info["type"] == "mhd":
                 volume, _ = _load_raw_data_with_mhd(self.path)
                 volume = volume[start_index:end_index, :, :]
         else:
-            # image stack
             volume = self._load_image_stack(
                 self.volume_info["file_list"], start_index, end_index
             )
 
-        # if we need to upsample + crop + resize each slice back to unbinned_shape:
-        if binning_factor != 1.0 and unbinned_shape is not None:
-            print("Resizing mask")
-            # 1) zoom the 3D block
-            volume = zoom(volume, zoom=binning_factor, order=0)
+        if need_resize:
+            print("Resizing with scipy.ndimage.zoom...")
 
-            # 2) figure out where our original slice window ended up
-            start_up = int(abs(start_index * binning_factor - start_index_ini))
-            end_up = start_up + (end_index_ini - start_index_ini)
-            start_up = max(start_up, 0)
-            end_up = min(end_up, volume.shape[0])
+            # Ensure float32 for better memory and speed
+            volume = volume.astype(np.float32)
+            volume = zoom(volume, zoom=zoom_factors, order=0)  # Nearest-neighbor for mask
 
-            # 3) crop to just those slices
-            volume = volume[start_up:end_up, :, :]
-
-            # 4) allocate exactly the target (unbinned) shape and resize each slice
-            volume_resized = np.empty(
-                (volume.shape[0], unbinned_shape[1], unbinned_shape[2]),
-                dtype=volume.dtype,
-            )
-            for i in range(volume.shape[0]):
-                volume_resized[i] = cv2.resize(
-                    volume[i],
-                    (unbinned_shape[2], unbinned_shape[1]),
-                    interpolation=cv2.INTER_LINEAR,
-                )
-
-            # 5) replace volume with the resized version
-            volume = volume_resized
-
+            # Final crop to original range
+            crop_start = int(abs(start_index * zoom_factors[0] - start_index_ini))
+            crop_end = crop_start + (end_index_ini - start_index_ini)
+            crop_start = max(crop_start, 0)
+            crop_end = min(crop_end, volume.shape[0])
+            
+            volume = volume[crop_start:crop_end, :, :]
+            
         return volume
+
 
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
@@ -380,3 +363,4 @@ def _load_raw_data_with_mhd(
     # End 3D fix
 
     return (data, meta_dict)
+

@@ -100,20 +100,20 @@ def trace_streamline(
     max_steps: int | None = 1000,
     angle_threshold: float = 60.0,
     eps: float = 1e-10,
+    direction: int = 1,
 ) -> list[tuple[float, float, float]]:
     """
     Trace one streamline from `start_pt` (z,y,x) in the continuous vector_field.
     - Interpolate & normalize each sub‐step
-    - Move forward by `step_length` voxels each step (Euler or RK4)
-    - Stop if turning angle > angle_threshold or out of bounds or `vec` too small.
-    - If max_steps is None, trace until a stopping condition is hit (no hard limit).
+    - Move forward by `step_length` voxels each step using RK4
+    - `direction` = +1 (default) or -1 to reverse integration direction
     """
     Z, Y, X = vector_field.shape[1:]
     coords: list[tuple[float, float, float]] = [
         (float(start_pt[0]), float(start_pt[1]), float(start_pt[2]))
     ]
     current_pt = np.array(start_pt, dtype=np.float64)
-    prev_dir: np.ndarray | None = None  # previous “unit vector”
+    prev_dir: np.ndarray | None = None  # previous unit vector
 
     def interp_unit(pt: np.ndarray) -> np.ndarray | None:
         """Return a normalized direction vector at fractional pt, or None if invalid."""
@@ -123,7 +123,7 @@ def trace_streamline(
         norm = np.linalg.norm(vec)
         if norm < eps:
             return None
-        return np.array([vec[2], vec[1], vec[0]]) / norm  # flip to (z,y,x) order
+        return np.array([vec[2], vec[1], vec[0]]) / norm * direction  # flip to (z,y,x)
 
     step_count = 0
     while max_steps is None or step_count < max_steps:
@@ -133,9 +133,6 @@ def trace_streamline(
             fa_value = trilinear_interpolate_scalar(fa_volume, tuple(current_pt))
             if fa_value < fa_threshold:
                 break
-
-        # ------
-        # Runge-Kutta 4th order integration
 
         k1 = interp_unit(current_pt)
         if k1 is None:
@@ -168,8 +165,6 @@ def trace_streamline(
         next_pt = current_pt + increment
         next_dir = k1
 
-        # ------
-
         zn, yn, xn = next_pt
         if not (0 <= zn < Z and 0 <= yn < Y and 0 <= xn < X):
             break
@@ -179,6 +174,7 @@ def trace_streamline(
         prev_dir = next_dir
 
     return coords
+
 
 
 def generate_streamlines_from_vector_field(
@@ -214,18 +210,20 @@ def generate_streamlines_from_vector_field(
                 step_length=step_length,
                 max_steps=max_steps,
                 angle_threshold=angle_threshold,
+                direction=1,
             )
 
             # Backward tracing if enabled
             if bidirectional:
                 backward_pts = trace_streamline(
                     start_pt=start,
-                    vector_field=-vector_field,
+                    vector_field=vector_field,
                     fa_volume=fa_volume,
                     fa_threshold=fa_threshold,
                     step_length=step_length,
                     max_steps=max_steps,
                     angle_threshold=angle_threshold,
+                    direction=-1,
                 )
                 # Remove duplicate seed point and reverse
                 backward_pts = backward_pts[::-1][:-1] if len(backward_pts) > 1 else []

@@ -192,7 +192,7 @@ Parameters:
 
         mask = mask_reader.load_volume(
             start_index_padded, end_index_padded, unbinned_shape=data_reader.shape
-        ).astype("float32")
+        )
 
         assert mask.shape == volume.shape, (
             f"Mask shape {mask.shape} does not match volume shape {volume.shape}"

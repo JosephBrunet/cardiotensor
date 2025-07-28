@@ -11,6 +11,7 @@ from cardiotensor.utils.plot_vector_field import plot_vector_field_with_fury
 from cardiotensor.utils.utils import read_conf_file
 
 
+
 def script():
     parser = argparse.ArgumentParser(
         description="Plot 3D vector field using FURY from configuration file."
@@ -85,17 +86,20 @@ def script():
 
     print("Loading vector field...")
     vec_reader = DataReader(vec_load_dir)
-    vector_slices = vec_reader.load_volume(
+    vector_field = vec_reader.load_volume(
         start_index=start_binned, end_index=end_binned
     )
+        
+    print("Ensuring Z-components are positive...")
+    neg_mask = vector_field[0] > 0  # Identify where Z component is negative
+    vector_field[:, neg_mask] *= -1  # Flip the entire vector at that location
+    del neg_mask
+    
+    
 
     # If your vector_field is in shape (3, Z, Y, X), convert it:
-    if vector_slices.shape[0] == 3:
-        vector_field = np.moveaxis(vector_slices, 0, -1)
-
-    print("Ensuring Z-components are positive...")
-    neg_mask = vector_field[2] < 0
-    vector_field[:, neg_mask] *= -1
+    if vector_field.shape[0] == 3:
+        vector_field = np.moveaxis(vector_field, 0, -1)
 
     if MASK_PATH:
         print("Applying mask from config...")
