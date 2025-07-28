@@ -6,7 +6,7 @@ This section provides a deeper understanding of how `cardiotensor` works, includ
 
 - [Conventions](./conventions.md)  
 
-- [Structure Tensor](./structure-tensor.md): Mathematical background on the structure tensor and eigen decomposition
+- [Structure Tensor](./structure_tensor.md): Mathematical background on the structure tensor and eigen decomposition
 
 - [Angle Definitions](./angles.md): Detailed explanation of helix and intrusion angles
 
