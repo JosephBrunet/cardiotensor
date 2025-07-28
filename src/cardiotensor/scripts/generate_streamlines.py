@@ -22,7 +22,9 @@ from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.utils import read_conf_file
 
+from memory_profiler import profile
 
+@profile
 def script():
     parser = argparse.ArgumentParser(
         description="Trace streamlines from a 3D vector field and save to .npz"

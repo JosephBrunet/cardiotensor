@@ -190,12 +190,13 @@ def generate_streamlines_from_vector_field(
     max_steps: int | None = None,
     angle_threshold: float = 60.0,
     min_length_pts: int = 10,
+    bidirectional: bool = True,
 ) -> list[list[tuple[float, float, float]]]:
     """
     Given a 3D vector_field (shape = (3, Z, Y, X)) and a set of integer‐seed voxels,
     returns a list of streamlines (each streamline = a list of float (z,y,x) points),
     filtered so that only those longer than `min_length_pts` are kept.
-    Displays a progress bar during processing.
+    Optionally trace in both directions from each seed point.
     """
     all_streamlines: list[list[tuple[float, float, float]]] = []
     total_seeds = len(seed_points)
@@ -203,7 +204,9 @@ def generate_streamlines_from_vector_field(
     with alive_bar(total_seeds, title="Tracing Streamlines") as bar:
         for zi, yi, xi in seed_points:
             start = (float(zi), float(yi), float(xi))
-            pts = trace_streamline(
+
+            # Forward tracing
+            forward_pts = trace_streamline(
                 start_pt=start,
                 vector_field=vector_field,
                 fa_volume=fa_volume,
@@ -212,8 +215,27 @@ def generate_streamlines_from_vector_field(
                 max_steps=max_steps,
                 angle_threshold=angle_threshold,
             )
-            if len(pts) >= min_length_pts:
-                all_streamlines.append(pts)
+
+            # Backward tracing if enabled
+            if bidirectional:
+                backward_pts = trace_streamline(
+                    start_pt=start,
+                    vector_field=-vector_field,
+                    fa_volume=fa_volume,
+                    fa_threshold=fa_threshold,
+                    step_length=step_length,
+                    max_steps=max_steps,
+                    angle_threshold=angle_threshold,
+                )
+                # Remove duplicate seed point and reverse
+                backward_pts = backward_pts[::-1][:-1] if len(backward_pts) > 1 else []
+                full_streamline = backward_pts + forward_pts
+            else:
+                full_streamline = forward_pts
+
+            if len(full_streamline) >= min_length_pts:
+                all_streamlines.append(full_streamline)
+
             bar()
 
     return all_streamlines
