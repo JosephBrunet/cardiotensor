@@ -22,9 +22,7 @@ from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.utils import read_conf_file
 
-from memory_profiler import profile
 
-@profile
 def script():
     parser = argparse.ArgumentParser(
         description="Trace streamlines from a 3D vector field and save to .npz"
@@ -149,12 +147,15 @@ def script():
         sys.exit(1)
 
     print("Ensuring Z-components are positive...")
-    neg_mask = vector_field[2] < 0
+    neg_mask = vector_field[0] < 0
     vector_field[:, neg_mask] *= -1
     del neg_mask
 
     if MASK_PATH:
         print("Applying mask from config...")
+        
+        print(f"MASK_PATH: {MASK_PATH}\nstart_binned: {start_binned}, end_binned: {end_binned}", vec_reader.shape[1:])
+        
         mask_reader = DataReader(MASK_PATH)
 
         # Load the corresponding mask volume, resampled to match vector field shape

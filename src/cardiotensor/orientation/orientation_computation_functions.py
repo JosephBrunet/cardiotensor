@@ -355,8 +355,6 @@ def rotate_vectors_to_new_axis(
     # Reshape back to the original shape
     rotated_vecs = rotated_vecs.reshape(vector_field_slice.shape)
 
-    # print(f"Rotation matrix:\n{rotation_matrix}")
-
     return rotated_vecs
 
 
@@ -454,15 +452,16 @@ def plot_images(
     ax[0, 0].legend(loc="upper right")
 
     # Helix Image
-    tmp = ax[0, 1].imshow(img_helix, cmap=orig_map)
+    tmp = ax[0, 1].imshow(img_helix, cmap=orig_map, vmin=-90, vmax=90)
     ax[0, 1].set_title("Helix Angle")
 
     # Intrusion Image
-    ax[1, 0].imshow(img_intrusion, cmap=orig_map)
+    ax[1, 0].imshow(img_intrusion, cmap=orig_map, vmin=-90, vmax=90)
     ax[1, 0].set_title("Intrusion Angle")
 
     # FA Image
-    fa_plot = ax[1, 1].imshow(img_FA, cmap="inferno")
+    fa_plot = ax[1, 1].imshow(img_FA, cmap="inferno", vmin=0, vmax=1)
+
     ax[1, 1].set_title("Fractional Anisotropy")
 
     # Add colorbars for relevant subplots
@@ -598,6 +597,7 @@ def write_images(
 
             print(f"Writing image to {output_path}")
             if OUTPUT_FORMAT == "jp2":
+                ratio_compression = 10
                 glymur.Jp2k(
                     output_path,
                     data=img,
