@@ -53,7 +53,6 @@ Cardiotensor is an open-source Python package designed to quantify 3D cardiomyoc
 By enabling scalable and reproducible analysis of cardiac microstructure, cardiotensor helps researchers study heart development, disease, and anatomy in 3D.
 
 
-
 # Statement of Need
 
 Despite major advances in high-resolution 3D imaging, there is a lack of scalable, open-source tools to analyze cardiomyocyte orientation in large volumetric datasets. Most established frameworks were developed for diffusion tensor MRI (DT-MRI), where orientation is inferred from water diffusion. Examples include MRtrix3 [@tournier_mrtrix3_2019], DIPY [@garyfallidis_dipy_2014], and DSI Studio [@yeh_dsi_2010]. While powerful for diffusion-based neuroimaging and cardiac applications [@mekkaoui_diffusion_2017], these packages are not designed to handle direct image-gradient–based orientation estimation or the teravoxel-scale datasets produced by synchrotron tomography, micro-CT, or optical imaging.
@@ -68,7 +67,7 @@ The package supports full pipelines from raw image stacks to fiber orientation m
 
 `cardiotensor` has already been successfully applied in published work to characterize 3D cardiomyocyte architecture in healthy and diseased human hearts using synchrotron tomography [@brunet_multidimensional_2024] to datasets over a terabyte in size, demonstrating its robustness and scalability.
 
- <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/paper/figs/pipeline.jpg" alt="Helix angle map computed from a human heart dataset using `cardiotensor`." style="max-width: 80%">
+ <img src="https://raw.githubusercontent.com/JosephBrunet/cardiotensor/main/paper/figs/pipeline.jpg" alt="Helix angle map computed from a human heart dataset using `cardiotensor`." style="max-width: 80%">
 
 **Figure 1**: Helix angle map computed from a human heart dataset using `cardiotensor`.
 
