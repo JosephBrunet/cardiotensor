@@ -32,7 +32,7 @@ nav:
     - Tractography: getting-technical/tractography.md
   - Reference:
     - reference/index.md
-    - Commands: reference/cli.md
+    - CLI Commands: reference/cli.md
     - Configuration file: reference/configuration.md
     - API: reference/api.md
   - Contributing: contributing.md

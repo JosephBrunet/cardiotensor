@@ -1,4 +1,4 @@
-# Commands
+# CLI Commands
 
 Cardiotensor provides powerful features for analyzing 3D cardiac imaging data, from processing imaging volumes and calculating orientation to managing large-scale projects with support for multiple configurations and platforms.
 
@@ -27,6 +27,12 @@ See the [example](../getting-started/examples.md#visualizing-transmural-profiles
 ## 3D Visualization
 
 Visualize results in 3D using vector fields and streamlines.
+
+!!! note
+
+    To use these modules, you must first compute and save the eigenvector field by setting `WRITE_VECTORS=True` in the configuration file **before running the structure tensor calculation**.
+
+
 
 - `cardio-visualize-vector`
   Render vector fields using Fury. Optionally export to ParaView (VTK format).

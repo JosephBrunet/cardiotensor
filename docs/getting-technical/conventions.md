@@ -25,7 +25,7 @@ These vector fields are used for computing helix/intrusion angles, streamlines, 
 
 ## Image format
 
-All image volumes and masks must be provided as image stack files in formats such as TIFF JP2, PNG, or as single RAW file (MHD).
+All image volumes and masks must be provided as image stack files in formats such as `TIFF`, `JP2`, `PNG`, or as single RAW file (`MHD`).
 
 Internally, images are processed as NumPy arrays:
 ```python

@@ -72,7 +72,7 @@ Each structure tensor $S$ is decomposed into eigenvalues $\lambda_1 \leq \lambda
 
 * The third eigenvector $\vec{v}_1$ is stored as the local myocyte orientation.
 * Helix and intrusion angles are computed from $\vec{v}_1$ after transforming it into cylindrical coordinates.
-* Fractional Anisotropy (FA) is computed using the three eigenvalues (see [FA section](./fractional-anisotropy.md)).
+* Fractional Anisotropy (FA) is computed using the three eigenvalues (see [FA section](./fractional_anisotropy.md)).
 
 ---
 
