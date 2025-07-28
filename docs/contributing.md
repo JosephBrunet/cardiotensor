@@ -75,7 +75,7 @@ If you encounter a bug or have a suggestion, please [open an issue](https://gith
 
 ## Contact
 
-For questions or further assistance, feel free to reach out to the project maintainers via the repository's [Discussions](https://github.com/JosephBrunet/cardiotensor/discussions) or email listed in the repository.
+For questions or further assistance, feel free to reach out to the project maintainers via the email listed in the repository.
 
 We appreciate your contributions and support in making cardiotensor better!
 
