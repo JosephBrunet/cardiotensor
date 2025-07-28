@@ -4,11 +4,14 @@ This page explains how helix and intrusion angles are calculated from the 3D eig
 
 ## Coordinate System
 
-A transformation to cylindrical coordinate system is defined for each voxel based on an approximation of the left ventricle (LV) centerline.
+A transformation to a cylindrical coordinate system is defined for each voxel based on an approximation of the left ventricle (LV) centerline.
 
-- **Radial (r)**: outward from the LV center
-- **Circumferential (θ)**: tangential around the ventricle
-- **Longitudinal (z)**: base to apex direction
+- **Radial (r)**: outward from the LV center  
+- **Circumferential (θ)**: tangential around the ventricle  
+- **Longitudinal (z)**: base to apex direction 
+
+To compute local fiber angles consistently, all eigenvectors are first rotated into this cylindrical coordinate frame. This alignment is performed using Rodrigues' rotation formula, which computes the minimal-angle rotation that maps the global reference axis (here the z-axis) onto the local longitudinal axis at each point. This allows a robust comparison of orientations across the myocardium.
+
 
 ## Helix Angle (HA)
 
