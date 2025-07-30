@@ -23,13 +23,18 @@ from cardiotensor.utils.downsampling import downsample_vector_volume, downsample
 from cardiotensor.utils.utils import read_conf_file
 
 
+
 def script():
     parser = argparse.ArgumentParser(
         description="Trace streamlines from a 3D vector field and save to .npz"
     )
     parser.add_argument("conf_file", type=str, help="Path to .conf config file.")
-    parser.add_argument("--start", type=int, default=None, help="Start slice index.")
-    parser.add_argument("--end", type=int, default=None, help="End slice index.")
+    parser.add_argument("--start-z", type=int, default=0, help="Start index in Z.")
+    parser.add_argument("--end-z", type=int, default=None, help="End index in Z.")
+    parser.add_argument("--start-y", type=int, default=0, help="Start index in Y.")
+    parser.add_argument("--end-y", type=int, default=None, help="End index in Y.")
+    parser.add_argument("--start-x", type=int, default=0, help="Start index in X.")
+    parser.add_argument("--end-x", type=int, default=None, help="End index in X.")
     parser.add_argument("--bin", type=int, default=1, help="Downsampling factor.")
     parser.add_argument("--seeds", type=int, default=20000, help="Number of seeds.")
     parser.add_argument(
@@ -50,6 +55,9 @@ def script():
 
     args = parser.parse_args()
 
+    bin_factor = args.bin
+    num_seeds = args.seeds
+
     # Load configuration
     conf_path = Path(args.conf_file)
     try:
@@ -60,22 +68,25 @@ def script():
 
     VOLUME_PATH = params.get("IMAGES_PATH", "")
     OUTPUT_DIR = Path(params.get("OUTPUT_PATH", "./output"))
-    # VOXEL_SIZE = params.get("VOXEL_SIZE", 1)
     MASK_PATH = params.get("MASK_PATH", "")
-
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Slice range
-    start_idx = args.start if args.start is not None else 0
-    end_idx = args.end
-    bin_factor = args.bin
-    num_seeds = args.seeds
+    # Load input volume info
+    vec_reader = DataReader(OUTPUT_DIR / "eigen_vec")
+    full_shape = vec_reader.shape  # (3, Z, Y, X)
+
+    start_z = args.start_z
+    end_z = args.end_z or full_shape[1]
+    start_y = args.start_y
+    end_y = args.end_y or full_shape[2]
+    start_x = args.start_x
+    end_x = args.end_x or full_shape[3]
 
     # Load input volume just for shape
     data_reader_vol = DataReader(VOLUME_PATH)
     Z_full, Y_full, X_full = data_reader_vol.shape
-    if end_idx is None:
-        end_idx = Z_full
+    if end_z is None:
+        end_z = Z_full
 
     # Setup eigenvector volume
     eigen_dir = OUTPUT_DIR / "eigen_vec"
@@ -86,17 +97,29 @@ def script():
 
     #---------------------------------
     # BINNING
-
-
+    
+    # Manage indexes if bin_factor > 1
     if bin_factor > 1:
         downsample_vector_volume(eigen_dir, bin_factor, OUTPUT_DIR)
         vec_load_dir = OUTPUT_DIR / f"bin{bin_factor}" / "eigen_vec"
-        start_binned = start_idx // bin_factor
-        end_binned = math.ceil(end_idx / bin_factor)
+        start_z_binned = start_z // bin_factor
+        end_z_binned = math.ceil(end_z / bin_factor)
+        
+        start_y_binned = start_y // bin_factor
+        end_y_binned = math.ceil(end_y / bin_factor)
+
+        start_x_binned = start_x // bin_factor
+        end_x_binned = math.ceil(end_x / bin_factor)
+
     else:
         vec_load_dir = eigen_dir
-        start_binned = start_idx
-        end_binned = end_idx
+        start_z_binned = start_z
+        end_z_binned = end_z
+        start_y_binned = start_y
+        end_y_binned = end_y
+        start_x_binned = start_x
+        end_x_binned = end_x
+        
 
     FA_dir = OUTPUT_DIR / "FA"
     if bin_factor > 1:
@@ -131,16 +154,17 @@ def script():
     #---------------------------------
 
 
-
     print("Loading vector field...")
     vec_reader = DataReader(vec_load_dir)
+        
     vector_field = vec_reader.load_volume(
-        start_index=start_binned, end_index=end_binned
-    )
+        start_index=start_z_binned, end_index=end_z_binned
+    )[:, :, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
 
     if vector_field.ndim == 4 and vector_field.shape[0] == 3:
         vector_field = vector_field
     elif vector_field.ndim == 4 and vector_field.shape[-1] == 3:
+        print("⚠️ Vector field is in (Z, Y, X, 3) format, moving channels to first dimension...")
         vector_field = np.moveaxis(vector_field, -1, 0)
     else:
         print(f"⚠️ Unexpected vector field shape: {vector_field.shape}")
@@ -154,16 +178,17 @@ def script():
     if MASK_PATH:
         print("Applying mask from config...")
         
-        print(f"MASK_PATH: {MASK_PATH}\nstart_binned: {start_binned}, end_binned: {end_binned}", vec_reader.shape[1:])
+        print(f"MASK_PATH: {MASK_PATH}\nstart_binned: {start_z_binned}, end_binned: {end_z_binned}", vec_reader.shape[1:])
         
         mask_reader = DataReader(MASK_PATH)
 
         # Load the corresponding mask volume, resampled to match vector field shape
         mask = mask_reader.load_volume(
-            start_index=start_binned,
-            end_index=end_binned,
+            start_index=start_z_binned,
+            end_index=end_z_binned,
             unbinned_shape=vec_reader.shape[1:],  # (Z, Y, X)
         )
+        mask = mask[:, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
 
         mask = (mask > 0).astype(np.uint8)
         vector_field[:, mask == 0] = np.nan
@@ -178,8 +203,10 @@ def script():
     print("Loading FA volume...")
     fa_reader = DataReader(fa_load_dir)
     # FA vlume is stored as 8 bits (0-255), so we need to scale it
-    fa_volume = fa_reader.load_volume(start_index=start_binned, end_index=end_binned)    
-    
+    fa_volume = fa_reader.load_volume(start_index=start_z_binned, end_index=end_z_binned)    
+    fa_volume = fa_volume[:, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
+
+
     seed_mask = (fa_volume > (0.25 * 255))
 
     print(f"Selecting {num_seeds} random seed points from mask...")
@@ -211,7 +238,8 @@ def script():
         sys.exit(1)
 
     ha_reader = DataReader(ha_load_dir)
-    HA_volume = ha_reader.load_volume(start_index=start_binned, end_index=end_binned)
+    HA_volume = ha_reader.load_volume(start_index=start_z_binned, end_index=end_z_binned)
+    HA_volume = HA_volume[:, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
 
     def sample_ha_along(pts_list):
         ha_vals = []
