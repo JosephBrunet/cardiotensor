@@ -24,9 +24,6 @@ from cardiotensor.orientation.orientation_computation_functions import (
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import read_conf_file, remove_corrupted_files
 
-MULTIPROCESS = True
-
-
 # @profile
 def compute_orientation(
     conf_file_path: str,
@@ -245,7 +242,7 @@ Parameters:
     print("ANGLE & ANISOTROPY CALCULATION")
     print("-" * 40 + "\n")
 
-    if MULTIPROCESS and not IS_TEST:
+    if not IS_TEST:
         num_slices = vec.shape[1]
         print(f"Using {mp.cpu_count()} CPU cores")
 
@@ -288,33 +285,9 @@ Parameters:
 
                 for result in results:
                     result.wait()  # Ensure all tasks are completed before exiting
-    else:
-        # Add a progress bar for single-threaded processing
-        with alive_bar(
-            vec.shape[1], title="Processing slices (Single-thread)", bar="smooth"
-        ) as bar:
-            for z in range(vec.shape[1]):
-                # Call the function directly
-                compute_slice_angles_and_anisotropy(
-                    z,
-                    vec[:, z, :, :],
-                    volume[z, :, :],
-                    np.around(center_line[z]),
-                    val[:, z, :, :],
-                    center_line,
-                    OUTPUT_DIR,
-                    OUTPUT_FORMAT,
-                    OUTPUT_TYPE,
-                    start_index,
-                    WRITE_VECTORS,
-                    WRITE_ANGLES,
-                    IS_TEST,
-                )
-                bar()  # Update the progress bar for each slice
 
     print(f"\n🤖 - Finished processing slices {start_index} - {end_index}")
     print("---------------------------------\n\n")
-
     return
 
 
