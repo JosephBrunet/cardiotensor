@@ -1,0 +1,37 @@
+name: Draft PDF
+
+on:
+  push:
+    paths:
+      - paper/**
+      - .github/workflows/draft-pdf.yml
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    name: Paper Draft
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Step 2: Build draft PDF using Open Journals action
+      - name: Build draft PDF
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss          # or "jose" for JOSE submissions
+          paper-path: paper.md   # Path to your paper markdown file
+
+      # Step 3: Upload artifact for download
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper
+          path: paper.pdf        # Output PDF path
+
+      # Step 4 (Optional): Commit the generated PDF back to the repo
+      - name: Commit PDF to repository
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: '(auto) Paper PDF Draft'
+          add: 'paper.pdf'       # or 'paper/*.pdf' for multiple PDFs
