@@ -20,7 +20,7 @@ jobs:
         uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss          # or "jose" for JOSE submissions
-          paper-path: paper.md   # Path to your paper markdown file
+          paper-path: paper/paper.md   # Path to your paper markdown file
 
       # Step 3: Upload artifact for download
       - name: Upload
