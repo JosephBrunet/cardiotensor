@@ -49,27 +49,17 @@ bibliography: paper.bib
 
 # Summary
 
-Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major bottleneck.
-
-Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, supporting detailed assessments of anatomical continuity and regional organization.
-
-By enabling scalable and reproducible analysis of cardiac microstructure, cardiotensor helps researchers study heart development, disease, and anatomy in 3D.
-
+Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major challenge. Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, allowing detailed assessments of anatomical continuity and regional organization.
 
 # Statement of Need
 
-Despite major advances in high-resolution 3D imaging, there is a lack of scalable, open-source tools to analyze cardiomyocyte orientation in large volumetric datasets. Most established frameworks were developed for diffusion tensor MRI (DT-MRI), where orientation is inferred from water diffusion. Examples include MRtrix3 [@tournier_mrtrix3_2019], DIPY [@garyfallidis_dipy_2014], and DSI Studio [@yeh_dsi_2010]. While powerful for diffusion-based neuroimaging and cardiac applications [@mekkaoui_diffusion_2017], these packages are not designed to handle direct image-gradient–based orientation estimation or the teravoxel-scale datasets produced by synchrotron tomography, micro-CT, or optical imaging.
+Despite major advances in high-resolution 3D imaging, there is a lack of open-source tools to analyze cardiomyocyte orientation in large volumetric datasets. Most established frameworks were developed for diffusion tensor MRI (DT-MRI), where orientation is inferred from water diffusion. Examples include MRtrix3 [@tournier_mrtrix3_2019], DIPY [@garyfallidis_dipy_2014], and DSI Studio [@yeh_dsi_2010]. While powerful for diffusion-based neuroimaging and cardiac applications [@mekkaoui_diffusion_2017], these packages are not designed to handle direct image-gradient–based orientation estimation or the teravoxel-scale datasets produced by synchrotron tomography, micro-CT, or optical imaging.
 
-For non-diffusion imaging modalities, researchers have historically relied on custom structure tensor implementations to estimate fiber orientation directly from image intensity gradients. However, most of these are in-house codes, often unpublished or not generalizable. For example, structure tensor analysis has been applied in the heart using micro-CT [@], microscopy [@dileep2023; @garcia-canadilla_detailed_2022], and synchrotron tomography [@dejea_comprehensive_2019], but these methods were tailored to specific datasets and lacked scalability or public availability.
+For non-diffusion imaging modalities, researchers have historically relied on custom structure tensor implementations to estimate fiber orientation directly from image intensity gradients. However, most of these are in-house codes, often unpublished or not generalizable. For example, structure tensor analysis has been applied in the heart using micro-CT [@reichardt_fiber_2020], microscopy [@dileep_cardiomyocyte_2023; @garcia-canadilla_detailed_2022], and synchrotron tomography [@dejea_comprehensive_2019], but these methods were tailored to specific datasets and lacked scalability or public availability.
 
-These datasets present unique computational and analytical challenges, including memory constraints, limited processing throughput, and the need for spatially coherent orientation quantification across large fields of view. Moreover, the diversity of contrast mechanisms in non-diffusion imaging modalities requires algorithms that do not rely on water diffusion but instead exploit local image gradient patterns.
+Cardiotensor addresses this gap by providing an open-source Python package specifically tailored to structure tensor analysis of large cardiac volumes. Rather than relying on diffusion modeling, cardiotensor infers tissue orientation directly from image intensity gradients, making it applicable across a wide range of modalities. Previous studies have demonstrated strong agreement between structure tensor–based orientation and DT-MRI–derived metrics when applied to the same human hearts [@teh_validation_2016]. The package supports full pipelines from raw image stacks to fiber orientation maps and tractography. Its architecture is optimized for large datasets, using chunked and parallel processing suitable for high-performance computing environments.
 
-Cardiotensor addresses this methodological gap by offering an open-source Python package specifically tailored to structure tensor analysis of high-resolution cardiac volumes. Rather than relying on diffusion modeling, cardiotensor infers tissue orientation directly from image intensity gradients, making it applicable across a wide range of modalities. Previous studies have demonstrated strong agreement between structure tensor–based orientation and DT-MRI–derived metrics when applied to the same human hearts [@teh_validation_2016].
-
-The package supports full pipelines from raw image stacks to fiber orientation maps, HA and TA computation, FA, and tractography. Its architecture is optimized for large datasets, using chunked and parallel processing suitable for high-performance computing environments.
-
-Cardiotensor has already been successfully applied in published work to characterize 3D cardiomyocyte architecture in healthy and diseased human hearts using synchrotron tomography [@brunet_multidimensional_2024] to datasets over a terabyte in size, demonstrating its robustness and scalability. While cardiotensor was conceived for cardiac imaging, the package is modality‑ and tissue‑agnostic. Any volumetric dataset exhibiting coherent fibrous or laminar microstructure can be analyzed, 
-including brain white matter, skeletal muscle, and tendon. This generality makes the library useful for both cardiovascular and broader anatomical or histological studies.
+Cardiotensor has already been successfully applied in published work to characterize 3D cardiomyocyte architecture in healthy and diseased human hearts using synchrotron tomography [@brunet_multidimensional_2024] to datasets over a terabyte in size. While cardiotensor was conceived for cardiac imaging, the package is modality‑ and tissue‑agnostic. Any volumetric dataset exhibiting coherent fibrous or laminar microstructure can be analyzed, including brain white matter, skeletal muscle, and tendon. This generality makes the library useful for both cardiovascular and broader anatomical or histological studies.
 
 ![Helix angle map computed from a human heart dataset using `cardiotensor`.](figs/pipeline.png)
 
@@ -85,7 +75,7 @@ Cardiotensor is implemented in pure Python and designed to efficiently process v
 
 The package supports multiple use cases:
 
-- Standalone command‑line workflows, which automate batch processing of terabyte‑scale heart volumes and produce results as live plots or files saved to disk.
+- Command‑line workflows, which automate batch processing of terabyte‑scale heart volumes and produce results as live plots or files saved to disk.
 
 - Embedded use in larger Python pipelines for specific cardiac imaging analysis.
 
@@ -96,13 +86,13 @@ Efficient computation is achieved through a chunk‑based processing strategy wi
 
 The core functionality of cardiotensor is organized into four main modules:
 
-- **`orientation:`**: Implements the chunked-based structure tensor framework for estimating local cardiomyocyte orientation. This includes structure-tensor computation, eigenvalue decomposition, rotation to cylindrical coordinate system, and quantification of helix and transverse angles, as well as fractional anisotropy (FA).
+- **`orientation`**: Implements the chunked-based structure tensor framework for estimating local cardiomyocyte orientation. This includes structure-tensor computation, eigenvalue decomposition, rotation to cylindrical coordinate system, and quantification of helix and transverse angles, as well as fractional anisotropy (FA).
 
-- **`tractography:`**: Provides tools for generating and filtering streamlines that trace cardiomyocyte trajectories based on the orientation field. This module enables fiber-level reconstruction and visualization.
+- **`tractography`**: Provides tools for generating and filtering streamlines that trace cardiomyocyte trajectories based on the orientation field. This module enables fiber-level reconstruction and visualization.
 
-- **`analysis:`**: Contains higher-level methods that integrate orientation and tractography data for regional or statistical analysis. It also supports interpolation, centerline alignment, and cardiac anatomical mapping.
+- **`analysis`**: Contains higher-level methods that integrate orientation and tractography data for regional or statistical analysis. It also supports interpolation, centerline alignment, and cardiac anatomical mapping.
 
-- **`utils:`**: Includes general-purpose utilities such as I/O functions, image preprocessing, vector math, and configuration parsing. These functions support the broader package infrastructure. A general high-level volume reader is implemented using Dask for parallelisation.
+- **`utils`**: Includes general-purpose utilities such as I/O functions, image preprocessing, vector math, and configuration parsing. These functions support the broader package infrastructure. A general high-level volume reader is implemented using Dask for parallelisation.
 
 This modular structure promotes clarity, reproducibility, and ease of extension for cardiac imaging researchers working with large 3D datasets.
 
