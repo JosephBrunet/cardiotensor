@@ -30,7 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
-from cardiotensor.tractography.visualize_streamlines import show_streamlines
+from src.visualization.visualize_streamlines import show_streamlines
 from cardiotensor.utils.utils import read_conf_file
 
 
@@ -179,7 +179,7 @@ def script():
     ]
 
     if args.color_by == "elevation":
-        from cardiotensor.tractography.visualize_streamlines import (
+        from src.visualization.visualize_streamlines import (
             compute_elevation_angles,
         )
 

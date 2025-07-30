@@ -72,7 +72,6 @@ def script() -> None:
         end_index = args.end_index  # Optional[int]
         reverse = args.reverse
 
-    # Exception variable 'e' must NOT be reused outside except
     try:
         params = read_conf_file(conf_file_path)
     except Exception as err:
