@@ -27,11 +27,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paper
-          path: paper.pdf        # Output PDF path
+          path: paper/paper.pdf        # Output PDF path
 
       # Step 4 (Optional): Commit the generated PDF back to the repo
       - name: Commit PDF to repository
         uses: EndBug/add-and-commit@v9
         with:
           message: '(auto) Paper PDF Draft'
-          add: 'paper.pdf'       # or 'paper/*.pdf' for multiple PDFs
+          add: 'paper/*.pdf'       # or 'paper/*.pdf' for multiple PDFs
