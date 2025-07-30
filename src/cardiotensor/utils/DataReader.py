@@ -9,6 +9,8 @@ import numpy as np
 import SimpleITK as sitk
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
+import psutil
+
 
 class DataReader:
     def __init__(self, path: str | Path):
@@ -21,24 +23,45 @@ class DataReader:
         self.path = Path(path)
         self.supported_extensions = ["tif", "tiff", "jp2", "png", "npy"]
         self.volume_info = self._get_volume_info()
-        self.shape = self._get_volume_shape()
+
+
+    # ---------------------------
+    # Properties
+    # ---------------------------
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Returns the shape of the volume as (Z, Y, X) or (Z, Y, X, C)."""
+        return self.volume_info["shape"]
+
+    @property
+    def dtype(self) -> np.dtype:
+        """Returns the data type of the volume."""
+        return self.volume_info["dtype"]
+
+    @property
+    def volume_size_gb(self) -> float:
+        """Returns the total size of the volume in GB."""
+        n_bytes = np.prod(self.shape) * np.dtype(self.dtype).itemsize
+        return n_bytes / (1024**3)
+
 
     def _get_volume_info(self) -> dict:
         """
-        Detects the type of volume based on the path and retrieves relevant information.
-
-        Returns:
-            dict: Volume information containing type, stack status, and file list (if applicable).
+        Detects volume type, shape, and dtype.
+        Returns a dict with keys: type, stack, file_list, shape, dtype
         """
-        volume_info: dict[str, str | bool | list[Path]] = {
+        volume_info = {
             "type": "",
             "stack": False,
             "file_list": [],
+            "shape": None,
+            "dtype": None,
         }
 
         if not self.path.exists():
             raise ValueError(f"The path does not exist: {self.path}")
 
+        # Case 1: Directory of images
         if self.path.is_dir():
             volume_info["stack"] = True
             image_files = {
@@ -48,58 +71,49 @@ class DataReader:
             volume_info["type"], volume_info["file_list"] = max(
                 image_files.items(), key=lambda item: len(item[1])
             )
-
-            assert isinstance(
-                volume_info["file_list"], list
-            )  # Runtime check for type safety
-
             if not volume_info["file_list"]:
-                raise ValueError(
-                    "No supported image files found in the specified directory."
-                )
-            volume_info["file_list"] = sorted(volume_info["file_list"])
+                raise ValueError("No supported image files found in the specified directory.")
 
+            # Inspect first file
+            first_image = self._custom_image_reader(volume_info["file_list"][0])
+            volume_info["dtype"] = first_image.dtype
+
+            # Shape: handle scalar vs vector
+            if volume_info["type"] == "npy" and first_image.ndim == 3 and first_image.shape[0] == 3:
+                # Vector field stored as (3, Y, X)
+                volume_info["shape"] = (
+                    3,
+                    len(volume_info["file_list"]),
+                    first_image.shape[1],
+                    first_image.shape[2],
+                )
+            elif first_image.ndim == 3:
+                # 4D scalar stack (Z from files)
+                volume_info["shape"] = (
+                    len(volume_info["file_list"]),
+                    *first_image.shape
+                )
+            else:
+                # Standard 3D stack
+                volume_info["shape"] = (
+                    len(volume_info["file_list"]),
+                    first_image.shape[0],
+                    first_image.shape[1],
+                )
+
+        # Case 2: Single MHD file
         elif self.path.is_file() and self.path.suffix == ".mhd":
             volume_info["type"] = "mhd"
+            img = sitk.ReadImage(str(self.path))
+            arr = sitk.GetArrayFromImage(img)  # Z, Y, X
+            volume_info["shape"] = arr.shape
+            volume_info["dtype"] = arr.dtype
 
-        if volume_info["type"] == "":
+        else:
             raise ValueError(f"Unsupported volume type for path: {self.path}")
 
         return volume_info
 
-    def _get_volume_shape(self) -> tuple[int, int, int]:
-        """
-        Retrieves the size (dimensions) of the volume.
-
-        Returns:
-            Tuple[int, int, int]: Dimensions of the volume (z, y, x) for scalar data,
-                                or (z, y, x, 3) for vector field.
-        """
-
-        if not self.volume_info["stack"]:  # Single file (e.g., .mhd)
-            if self.volume_info["type"] == "mhd":
-                image = sitk.ReadImage(str(self.path))
-                return tuple(image.GetSize())  # Return (z, y, x)
-
-        elif self.volume_info["stack"]:  # Stack of images
-            first_image = self._custom_image_reader(self.volume_info["file_list"][0])
-            shape = first_image.shape
-
-            if self.volume_info["type"] == "npy" and shape[0] == 3 and len(shape) == 3:
-                return (
-                    3,
-                    len(self.volume_info["file_list"]),
-                    shape[1],
-                    shape[2],
-                )  # Spatial dims + vector components
-
-            return (
-                len(self.volume_info["file_list"]),
-                shape[0],
-                shape[1],
-            )
-
-        raise ValueError("Unable to determine volume dimensions.")
 
     def load_volume(
         self,
@@ -120,6 +134,8 @@ class DataReader:
         """
         if end_index is None:
             end_index = self.shape[0]
+
+        self.check_memory_requirement(self.shape, self.dtype)
 
         # Decide if resize is needed
         need_resize = False
@@ -200,6 +216,11 @@ class DataReader:
 
         total_files = end_index - start_index
         print(f"Loading {total_files} files...")
+        
+        if start_index < 0 or end_index > len(file_list):
+            raise ValueError(
+                f"Invalid indices: start_index={start_index}, end_index={end_index}, total_files={len(file_list)}"
+            )
 
         with alive_bar(total_files, title="Loading Volume", length=40) as bar:
 
@@ -224,12 +245,40 @@ class DataReader:
                     )
 
         # Combine into a NumPy array
+        print("Stacking images into a 3D volume...")
         if self.volume_info["type"] == "npy":
             volume = np.stack(computed_data, axis=1)
         else:
             volume = np.stack(computed_data, axis=0)
 
         return volume
+
+
+
+    def check_memory_requirement(self, shape, dtype, safety_factor=0.8):
+        """
+        Check if the dataset can fit in available memory.
+
+        Args:
+            shape (tuple[int]): Shape of the array.
+            dtype (np.dtype): NumPy dtype of the array.
+            safety_factor (float): Fraction of available memory allowed to be used.
+        """
+        # Compute dataset size in bytes
+        n_bytes = np.prod(shape) * np.dtype(dtype).itemsize
+        size_gb = n_bytes / (1024 ** 3)
+
+        # Check available memory
+        available_gb = psutil.virtual_memory().available / (1024 ** 3)
+        
+        print(f"Dataset size: {size_gb:.2f} GB | Available memory: {available_gb:.2f} GB")
+
+        if size_gb > available_gb * safety_factor:
+            print("❌ Dataset is too large to safely load into memory.")
+            sys.exit(1)
+
+
+
 
 
 def _read_mhd(filename: PathLike[str]) -> dict[str, Any]:
