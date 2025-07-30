@@ -1,5 +1,4 @@
 import random
-
 import fury
 import numpy as np
 
@@ -181,6 +180,40 @@ def show_streamlines(
     scene.add(actor)
     scene.add(fury.actor.scalar_bar(lut))
     scene.reset_camera()
+
+
+
+    radii = 7
+    # Example coordinates of the point (x, y, z)
+    highlight_point = np.array([[6548-6000,8001-7500,17296-17041]])/2  # 3D coords in same space as streamlines
+    # Create a sphere actor for the point
+    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
+    # Add the point to the scene
+    scene.add(sphere_actor)
+
+    # Example coordinates of the point (x, y, z)
+    highlight_point = np.array([[0,0,0]])  # 3D coords in same space as streamlines
+    # Create a sphere actor for the point
+    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
+    # Add the point to the scene
+    scene.add(sphere_actor)
+
+
+    # Example coordinates of the point (x, y, z)
+    highlight_point = np.array([[6570-6000,7970-7500,17142-17041]])/2  # 3D coords in same space as streamlines
+    # Create a sphere actor for the point
+    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
+    # Add the point to the scene
+    scene.add(sphere_actor)
+    
+    
+    # Example coordinates of the point (x, y, z)
+    highlight_point = np.array([[6548-6000,7997-7500,17394-17041]])/2  # 3D coords in same space as streamlines
+    # Create a sphere actor for the point
+    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
+    # Add the point to the scene
+    scene.add(sphere_actor)
+
 
     if interactive:
         print("🕹️ Opening interactive window...")
