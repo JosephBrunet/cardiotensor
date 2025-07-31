@@ -1,6 +1,6 @@
 import argparse
 
-from cardiotensor.export.export_to_amira import amira_writer
+from src.cardiotensor.tractography.export_to_amira import amira_writer
 
 
 def script() -> None:

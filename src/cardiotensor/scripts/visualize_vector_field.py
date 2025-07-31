@@ -50,12 +50,15 @@ def script():
     params = read_conf_file(args.conf_file)
     output_dir = Path(params.get("OUTPUT_PATH", "./output"))
     voxel_size = params.get("VOXEL_SIZE", 1)
+    mask_path = params.get("MASK_PATH", None)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Call visualization function (handles both plotting and VTK export)
     visualize_vector_field(
         vector_field_path=output_dir / "eigen_vec",
+        color_volume_path=output_dir / "HA",
+        mask_path=mask_path,
         stride=args.stride,
         bin_factor=args.bin,
         size_arrow=args.size_arrow,
@@ -68,4 +71,4 @@ def script():
 
 
 if __name__ == "__main__":
-    main()
+    script()
