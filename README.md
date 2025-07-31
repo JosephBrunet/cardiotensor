@@ -47,7 +47,7 @@ cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](htt
 Have a look at our [simple example](https://www.josephbrunet.fr/cardiotensor/getting-started/examples/) that runs you through all the commands of the package
 
 <p align="center">
-    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/result_HA_slice.jpeg" alt="Example Slice" style="max-width: 70%">
+    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/pipeline.png" alt="Example Slice" style="max-width: 70%">
     <br>
     <em>Helical angle map of a heart scanned using synchrtron X-ray imaging.</em>
 </p>
