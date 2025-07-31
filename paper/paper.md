@@ -75,7 +75,7 @@ Cardiotensor is implemented in pure Python and designed to efficiently process v
 
 The package supports multiple use cases:
 
-- Command‑line workflows, which automate batch processing of terabyte‑scale heart volumes and produce results as live plots or files saved to disk.
+- Command‑line workflows, which automate batch processing from a configuration file of terabyte‑scale heart volumes and produce results as live plots or files saved to disk.
 
 - Embedded use in larger Python pipelines for specific cardiac imaging analysis.
 
