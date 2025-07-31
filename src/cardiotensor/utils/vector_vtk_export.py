@@ -5,7 +5,7 @@ import numpy as np
 
 def export_vector_field_to_vtk(
     vector_field: np.ndarray,
-    HA_volume: np.ndarray,
+    color_volume: np.ndarray,
     voxel_size: float,
     stride: int = 32,
     save_path: Path = None,
@@ -20,13 +20,13 @@ def export_vector_field_to_vtk(
 
     # Remove NaNs
     vector_field[~np.isfinite(vector_field)] = 0
-    HA_volume[~np.isfinite(HA_volume)] = 0
+    color_volume[~np.isfinite(color_volume)] = 0
 
     # Apply stride-based downsampling
     print(f"Downsampling vector field with stride={stride}...")
 
     vector_field = vector_field[::stride, ::stride, ::stride, :]
-    HA_volume = HA_volume[::stride, ::stride, ::stride]
+    color_volume = color_volume[::stride, ::stride, ::stride]
 
     # Create mask
     mask_volume = (np.linalg.norm(vector_field, axis=-1) > 0).astype(np.uint8)
@@ -34,7 +34,7 @@ def export_vector_field_to_vtk(
     # Prepare output
     cellData = {
         "eigenVectors": vector_field,
-        "HA_angles": HA_volume,
+        "color_angles": color_volume,
         "mask": mask_volume,
     }
 

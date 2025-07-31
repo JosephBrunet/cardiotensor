@@ -47,9 +47,7 @@ from cardiotensor.analysis.analysis_functions import (
     save_intensity,
 )
 from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import (
-    read_conf_file,
-)
+
 
 
 def np2pixmap(np_img: np.ndarray) -> QPixmap:
@@ -62,7 +60,8 @@ def np2pixmap(np_img: np.ndarray) -> QPixmap:
 class Window(QWidget):
     def __init__(
         self,
-        conf_file_path: str,
+        output_dir: str,
+        mask_path: str | None = "",
         N_slice: int | None = None,
         N_line: int = 5,
         angle_range: float = 20,
@@ -94,24 +93,12 @@ class Window(QWidget):
         self.view = QGraphicsView()
         self.view.setRenderHint(QPainter.Antialiasing)
 
-        try:
-            params = read_conf_file(conf_file_path)
-        except Exception as e:
-            print(f"⚠️  Error reading parameter file '{conf_file_path}': {e}")
-            sys.exit(1)
+        self.mask_path = mask_path
+        self.output_path = output_dir
 
-        # Extracting parameters safely using .get() with defaults where necessary
-        MASK_PATH = params.get("MASK_PATH", "")
-        OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-        if self.N_slice is None:
-            self.N_slice = params.get("N_SLICE_TEST", 0)
-
-        self.MASK_PATH = MASK_PATH
-        self.OUTPUT_DIR = OUTPUT_DIR
-
-        HA_path = Path(self.OUTPUT_DIR) / "HA"
-        IA_path = Path(self.OUTPUT_DIR) / "IA"
-        FA_path = Path(self.OUTPUT_DIR) / "FA"
+        HA_path = Path(self.output_path) / "HA"
+        IA_path = Path(self.output_path) / "IA"
+        FA_path = Path(self.output_path) / "FA"
 
         if not HA_path.exists():
             sys.exit(f"No HA folder ({HA_path})")
@@ -367,10 +354,10 @@ class Window(QWidget):
 
         img64 = img.astype(float)
 
-        if self.MASK_PATH != "":
+        if self.mask_path != "":
             print("\n---------------------------------")
-            print(f"READING MASK INFORMATION FROM {self.MASK_PATH}...\n")
-            data_reader_mask = DataReader(self.MASK_PATH)
+            print(f"READING MASK INFORMATION FROM {self.mask_path}...\n")
+            data_reader_mask = DataReader(self.mask_path)
             mask_bin_factor = self.data_reader.shape[0] / data_reader_mask.shape[0]
             print(f"Mask bining factor: {mask_bin_factor}\n")
 
@@ -678,11 +665,11 @@ class Window(QWidget):
 
         # Reload the images based on the selected mode
         if self.image_mode == "HA":
-            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "HA")
+            self.data_reader = DataReader(Path(self.output_path) / "HA")
         elif self.image_mode == "IA":
-            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "IA")
+            self.data_reader = DataReader(Path(self.output_path) / "IA")
         elif self.image_mode == "FA":
-            self.data_reader = DataReader(Path(self.OUTPUT_DIR) / "FA")
+            self.data_reader = DataReader(Path(self.output_path) / "FA")
         else:
             print("Invalid image mode")
 

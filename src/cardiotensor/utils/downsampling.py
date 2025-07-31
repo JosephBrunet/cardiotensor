@@ -254,15 +254,22 @@ def process_image_block(
     """
     h, w = cv2.imread(str(file_list[0]), cv2.IMREAD_UNCHANGED).shape
     block = file_list[block_idx * bin_factor : (block_idx + 1) * bin_factor]
-    array = np.empty((len(block), h, w), dtype=np.float32)
+    array = np.full((len(block), h, w), np.nan, dtype=np.float32)
 
     for i, p in enumerate(block):
         img = cv2.imread(str(p), cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise ValueError(f"❌ Failed to read image: {p}")
+        if img is None or img.size == 0:
+            print(f"⚠️ Warning: Failed to read image {p}, filling with NaNs")
+            continue
         array[i] = img
 
+    # Compute mean ignoring NaNs
     mean_z = np.nanmean(array, axis=0)
+
+    # Optional: if all slices were NaN, handle gracefully
+    if np.isnan(mean_z).all():
+        raise ValueError("❌ All slices in this block are empty or unreadable")
+
     downsampled = block_reduce(
         mean_z, block_size=(bin_factor, bin_factor), func=np.mean
     )

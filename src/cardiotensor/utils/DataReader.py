@@ -179,7 +179,7 @@ class DataReader:
             crop_end = min(crop_end, volume.shape[0])
             
             volume = volume[crop_start:crop_end, :, :]
-            
+                
         return volume
 
 
@@ -215,7 +215,7 @@ class DataReader:
             end_index = len(file_list)
 
         total_files = end_index - start_index
-        print(f"Loading {total_files} files...")
+        # print(f"Loading {total_files} files...")
         
         if start_index < 0 or end_index > len(file_list):
             raise ValueError(

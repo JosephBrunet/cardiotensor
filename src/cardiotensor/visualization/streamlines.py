@@ -1,6 +1,96 @@
-import random
-import fury
+from pathlib import Path
 import numpy as np
+from cardiotensor.visualization.fury_plotting_streamlines import (
+    show_streamlines,
+)
+
+
+
+
+def visualize_streamlines(
+    streamlines_file: str | Path,
+    color_by: str = "ha",
+    mode: str = "tube",
+    line_width: float = 4.0,
+    subsample_factor: int = 1,
+    filter_min_len: int | None = None,
+    downsample_factor: int = 1,
+    max_streamlines: int | None = None,
+    crop_bounds: tuple | None = None,
+    interactive: bool = True,
+    screenshot_path: str | None = None,
+    window_size: tuple[int, int] = (800, 800),
+):
+    """
+    Visualize precomputed streamlines with optional coloring.
+
+    Parameters
+    ----------
+    streamlines_file : str or Path
+        Path to a .npz file containing streamlines and optional ha_values.
+    color_by : {"ha", "elevation"}
+        Color streamlines by Helix Angle (HA) or elevation angle.
+    mode : {"tube", "fake_tube", "line"}
+        Rendering mode for streamlines.
+    line_width : float
+        Tube/line thickness.
+    subsample_factor : int
+        Factor to subsample streamline points for rendering speed.
+    filter_min_len : int, optional
+        Minimum streamline length to display.
+    downsample_factor : int
+        Downsampling factor for streamlines (visual only).
+    max_streamlines : int, optional
+        Maximum number of streamlines to visualize.
+    crop_bounds : tuple, optional
+        ((x_min, x_max), (y_min, y_max), (z_min, z_max)) for cropping.
+    interactive : bool
+        If False, window will close immediately after rendering or screenshot.
+    screenshot_path : str or Path, optional
+        Save a screenshot instead of opening interactive window.
+    window_size : (int, int)
+        Window width and height in pixels.
+    """
+    streamlines_file = Path(streamlines_file)
+    if not streamlines_file.exists():
+        raise FileNotFoundError(f"❌ Streamlines file not found: {streamlines_file}")
+
+    data = np.load(streamlines_file, allow_pickle=True)
+    raw_streamlines = data.get("streamlines")
+    if raw_streamlines is None:
+        raise ValueError("'streamlines' array missing in .npz.")
+
+    # Convert (z, y, x) to (x, y, z)
+    streamlines_xyz = [
+        np.array([(pt[2], pt[1], pt[0]) for pt in sl], dtype=np.float32)
+        for sl in raw_streamlines.tolist()
+    ]
+
+    # Compute coloring
+    if color_by == "elevation":
+        color_values = compute_elevation_angles(streamlines_xyz)
+    else:  # color_by == "ha"
+        ha_values = data.get("ha_values")
+        if ha_values is None:
+            raise ValueError("'ha_values' array missing in .npz.")
+        color_values = ha_values.astype(np.float32)
+
+    # Render streamlines
+    show_streamlines(
+        streamlines_xyz=streamlines_xyz,
+        color_values=color_values,
+        mode=mode,
+        line_width=line_width,
+        interactive=interactive,
+        screenshot_path=screenshot_path,
+        window_size=window_size,
+        downsample_factor=downsample_factor,
+        max_streamlines=max_streamlines,
+        filter_min_len=filter_min_len,
+        subsample_factor=subsample_factor,
+        crop_bounds=crop_bounds,
+    )
+
 
 
 def compute_elevation_angles(streamlines):
@@ -20,206 +110,3 @@ def compute_elevation_angles(streamlines):
         )  # repeat last value to match point count
         all_angles.append(elev.astype(np.float32))
     return all_angles
-
-
-def downsample_streamline(streamline, factor=2):
-    return streamline if len(streamline) < 3 else streamline[::factor]
-
-
-def show_streamlines(
-    streamlines_xyz: list[np.ndarray],
-    color_values: list[np.ndarray],
-    mode: str = "tube",
-    line_width: int = 4,
-    interactive: bool = True,
-    screenshot_path: str | None = None,
-    window_size: tuple[int, int] = (800, 800),
-    downsample_factor: int = 2,
-    max_streamlines: int | None = None,
-    filter_min_len: int | None = None,
-    subsample_factor: int = 1,
-    crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]] | None = None,
-):
-    print(f"Initial number of streamlines: {len(streamlines_xyz)}")
-    if filter_min_len:
-        print(f"Filtering out streamlines shorter than {filter_min_len} points")
-    if downsample_factor > 1:
-        print(f"Downsampling each streamline by factor {downsample_factor}")
-    if subsample_factor > 1:
-        print(f"Subsampling: keeping 1 in every {subsample_factor} streamlines")
-    if max_streamlines:
-        print(f"Limiting to max {max_streamlines} streamlines")
-
-
-
-
-
-
-    # Crop streamlines and color values (point-wise) if bounds are provided
-    print(f"Cropping streamlines within bounds: {crop_bounds}" if crop_bounds else "No cropping applied.")
-    if crop_bounds is not None:
-        z_min, z_max = crop_bounds[2]
-        y_min, y_max = crop_bounds[1]
-        x_min, x_max = crop_bounds[0]
-
-        new_streamlines = []
-        new_color_values = []
-        color_idx = 0
-
-        for sl in streamlines_xyz:
-            n_pts = len(sl)
-            cl = color_values[color_idx : color_idx + n_pts]
-
-            sl = np.asarray(sl)
-            cl = np.asarray(cl)
-
-            within = (
-                (sl[:, 0] >= x_min) & (sl[:, 0] <= x_max) &
-                (sl[:, 1] >= y_min) & (sl[:, 1] <= y_max) &
-                (sl[:, 2] >= z_min) & (sl[:, 2] <= z_max)
-            )
-
-            if np.any(within):  # Keep only remaining points
-                new_sl = sl[within]
-                new_cl = cl[within]
-                if len(new_sl) > 0:
-                    new_streamlines.append(new_sl)
-                    new_color_values.append(new_cl)
-
-            color_idx += n_pts
-
-        streamlines_xyz = new_streamlines
-        color_values = np.concatenate(new_color_values) if new_color_values else np.array([])
-    else:
-        print("No cropping applied.")
-
-
-    # Downsample and filter
-    downsampled_streamlines = []
-    downsampled_colors = []
-    idx = 0
-    for sl in streamlines_xyz:
-        color_slice = color_values[idx : idx + len(sl)]
-        ds_sl = downsample_streamline(sl, downsample_factor)
-        ds_cl = downsample_streamline(color_slice, downsample_factor)
-
-        if filter_min_len is None or len(ds_sl) >= filter_min_len:
-            downsampled_streamlines.append(ds_sl)
-            downsampled_colors.append(ds_cl)
-
-        idx += len(sl)
-
-    streamlines_xyz = downsampled_streamlines
-    color_values = downsampled_colors
-
-    if not streamlines_xyz:
-        raise ValueError("❌ No streamlines left after downsampling and filtering.")
-
-    # Subsample
-    if subsample_factor > 1:
-        total = len(streamlines_xyz)
-        selected_idx = sorted(random.sample(range(total), total // subsample_factor))
-        streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
-        color_values = [color_values[i] for i in selected_idx]
-
-    # Cap max
-    if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
-        selected_idx = sorted(
-            random.sample(range(len(streamlines_xyz)), max_streamlines)
-        )
-        streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
-        color_values = [color_values[i] for i in selected_idx]
-
-    print(f"Final number of streamlines to render: {len(streamlines_xyz)}")
-
-
-
-    if not color_values:
-        raise ValueError("❌ No streamlines left after filtering and cropping. Adjust parameters like --crop or --min-length.")
-    
-    flat_colors = np.concatenate(color_values)
-    print(f"Coloring mode: min={flat_colors.min():.2f}, max={flat_colors.max():.2f}")
-    print(f"Rendering mode: {mode}")
-
-    lut = fury.actor.colormap_lookup_table(
-        scale_range=(flat_colors.min(), flat_colors.max()),
-        hue_range=(0.7, 0.0),
-        saturation_range=(0.5, 1.0),
-    )
-
-    scene = fury.window.Scene()
-
-    if mode == "tube":
-        actor = fury.actor.streamtube(
-            streamlines_xyz,
-            flat_colors,
-            linewidth=line_width,
-            opacity=1,
-            lookup_colormap=lut,
-        )
-    elif mode == "fake_tube":
-        actor = fury.actor.line(
-            streamlines_xyz,
-            flat_colors,
-            linewidth=line_width,
-            fake_tube=True,
-            depth_cue=True,
-        )
-    elif mode == "line":
-        actor = fury.actor.line(
-            streamlines_xyz,
-            flat_colors,
-            linewidth=line_width,
-            fake_tube=False,
-            depth_cue=False,
-            lookup_colormap=lut,
-        )
-    else:
-        raise ValueError(f"Unknown mode: {mode}")
-
-    scene.add(actor)
-    scene.add(fury.actor.scalar_bar(lut))
-    scene.reset_camera()
-
-
-
-    radii = 7
-    # Example coordinates of the point (x, y, z)
-    highlight_point = np.array([[6548-6000,8001-7500,17296-17041]])/2  # 3D coords in same space as streamlines
-    # Create a sphere actor for the point
-    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
-    # Add the point to the scene
-    scene.add(sphere_actor)
-
-    # Example coordinates of the point (x, y, z)
-    highlight_point = np.array([[0,0,0]])  # 3D coords in same space as streamlines
-    # Create a sphere actor for the point
-    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
-    # Add the point to the scene
-    scene.add(sphere_actor)
-
-
-    # Example coordinates of the point (x, y, z)
-    highlight_point = np.array([[6570-6000,7970-7500,17142-17041]])/2  # 3D coords in same space as streamlines
-    # Create a sphere actor for the point
-    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
-    # Add the point to the scene
-    scene.add(sphere_actor)
-    
-    
-    # Example coordinates of the point (x, y, z)
-    highlight_point = np.array([[6548-6000,7997-7500,17394-17041]])/2  # 3D coords in same space as streamlines
-    # Create a sphere actor for the point
-    sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
-    # Add the point to the scene
-    scene.add(sphere_actor)
-
-
-    if interactive:
-        print("🕹️ Opening interactive window...")
-        fury.window.show(scene, size=window_size, reset_camera=False)
-    else:
-        if not screenshot_path:
-            raise ValueError("Must specify screenshot_path when interactive=False.")
-        print(f"📸 Saving screenshot to: {screenshot_path}")
-        fury.window.record(scene=scene, out_path=screenshot_path, size=window_size)
