@@ -47,10 +47,20 @@ cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](htt
 Have a look at our [simple example](https://www.josephbrunet.fr/cardiotensor/getting-started/examples/) that runs you through all the commands of the package
 
 <p align="center">
-    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/pipeline.png" alt="Example Slice" style="max-width: 70%">
+    <img src="https://github.com/JosephBrunet/cardiotensor/raw/main/assets/images/pipeline.png" 
+         alt="Cardiotensor pipeline for 3D cardiac orientation analysis" 
+         style="max-width: 100%; border-radius: 6px;">
     <br>
-    <em>Helical angle map of a heart scanned using synchrtron X-ray imaging.</em>
+    <em>
+        <strong>Overview of the <code>cardiotensor</code> pipeline for 3D cardiac orientation analysis and tractography.</strong>
+        <strong>(a)</strong> Input data consist of a whole‑ or partial‑heart volume and, optionally, a binary mask to restrict analysis to myocardial tissue.
+        <strong>(b)</strong> Local cardiomyocyte orientation is derived by 3D structure tensor computation and eigenvector decomposition. 
+        The third eigenvector (smallest eigenvalue) is visualized as arrows, color‑coded by helix angle (HA); inset shows a zoom of the ventricular septum highlighting transmural fiber rotation.
+        <strong>(c)</strong> After transforming to a cylindrical coordinate system aligned with the left ventricle, voxel‑wise HA, transverse angle (TA), and fractional anisotropy (FA) maps are computed for quantitative analysis.
+        <strong>(d)</strong> Streamline tractography generated from the eigenvector field reveals continuous cardiomyocyte bundles throughout the heart, color‑coded by HA.
+    </em>
 </p>
+
 
 ## More Information
 
