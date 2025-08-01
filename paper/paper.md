@@ -84,17 +84,16 @@ Efficient computation is achieved through a chunk‑based processing strategy wi
 
 # Architecture
 
-The core functionality of cardiotensor is organized into four main modules:
+Cardiotensor is organized into five main modules, designed for clarity and scalability:
 
-- **`orientation`**: Implements the chunked-based structure tensor framework for estimating local cardiomyocyte orientation. This includes structure-tensor computation, eigenvalue decomposition, rotation to cylindrical coordinate system, and quantification of helix and transverse angles, as well as fractional anisotropy (FA).
+- **`orientation`**: Computes local cardiomyocyte orientation using a chunked 3D structure tensor pipeline, including eigenvalue decomposition, cylindrical coordinate rotation, and calculation of helix angle (HA), transverse angle (TA), and fractional anisotropy (FA).
+- **`tractography`**: Generates and filters streamlines tracing cardiomyocyte trajectories from the orientation field for fiber‑level reconstruction and analysis.
+- **`analysis`**: Provides high‑level functions for regional quantification and plotting transmural profile.
+- **`visualization`**: Supports interactive 3D visualization of vector fields and streamlines, HA color‑coding, and export to VTK/ParaView for large‑scale rendering.
+- **`utils`**: Contains general utilities for I/O, image preprocessing, configuration parsing, and vector math, supporting the entire pipeline.
 
-- **`tractography`**: Provides tools for generating and filtering streamlines that trace cardiomyocyte trajectories based on the orientation field. This module enables fiber-level reconstruction and visualization.
+This modular architecture ensures reproducibility, maintainability, and easy integration into larger cardiac imaging workflows.
 
-- **`analysis`**: Contains higher-level methods that integrate orientation and tractography data for regional or statistical analysis. It also supports interpolation, centerline alignment, and cardiac anatomical mapping.
-
-- **`utils`**: Includes general-purpose utilities such as I/O functions, image preprocessing, vector math, and configuration parsing. These functions support the broader package infrastructure. A general high-level volume reader is implemented using Dask for parallelisation.
-
-This modular structure promotes clarity, reproducibility, and ease of extension for cardiac imaging researchers working with large 3D datasets.
 
 
 ## Documentation and Usage
