@@ -96,10 +96,10 @@ def adjust_start_end_index(
     start_index: int,
     end_index: int,
     N_img: int,
-    padding_start: int,
-    padding_end: int,
-    is_test: bool,
-    n_slice: int,
+    padding_start: int = 0,
+    padding_end: int = 0,
+    is_test: bool = False,
+    n_slice: int = 0,
 ) -> tuple[int, int]:
     """
     Adjusts start and end indices for image processing, considering padding and test mode.
@@ -309,7 +309,6 @@ def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:
 
     return img_FA
 
-
 def rotate_vectors_to_new_axis(
     vector_field_slice: np.ndarray, new_axis_vec: np.ndarray
 ) -> np.ndarray:
@@ -317,42 +316,52 @@ def rotate_vectors_to_new_axis(
     Rotates a vector field slice to align with a new axis.
 
     Args:
-        vector_field_slice (np.ndarray): Array of vectors to rotate.
-        new_axis_vec (np.ndarray): The new axis to align vectors with.
+        vector_field_slice (np.ndarray): Array of shape (3, Y, X) for a slice.
+        new_axis_vec (np.ndarray): The new axis to align vectors with (3,).
 
     Returns:
-        np.ndarray: Rotated vectors aligned with the new axis.
+        np.ndarray: Rotated vectors with the same shape as input.
     """
-    # Ensure new_axis_vec is normalized
+    # Normalize the new axis
     new_axis_vec = new_axis_vec / np.linalg.norm(new_axis_vec)
 
-    # Calculate the rotation matrix
-    vec1 = np.array([1, 0, 0])  # Initial vertical axis
+    # Define the original reference axis (X-axis here)
+    vec1 = np.array([1, 0, 0], dtype=np.float32)
 
+    # Adjust for sign (optional)
     vec1 = vec1 * np.sign(new_axis_vec[0])
 
-    a = (vec1 / np.linalg.norm(vec1)).reshape(3)
-    b = (new_axis_vec).reshape(3)
+    # Compute rotation matrix using Rodrigues' formula
+    a = vec1 / np.linalg.norm(vec1)
+    b = new_axis_vec
     v = np.cross(a, b)
     c = np.dot(a, b)
 
-    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    if np.any(kmat):
+    kmat = np.array([
+        [0, -v[2], v[1]],
+        [v[2], 0, -v[0]],
+        [-v[1], v[0], 0]
+    ])
+
+    if np.linalg.norm(v) != 0:
         rotation_matrix = (
             np.eye(3) + kmat + np.dot(kmat, kmat) * ((1 - c) / (np.linalg.norm(v) ** 2))
         )
     else:
         rotation_matrix = np.eye(3)
 
-    # Reshape vec_2D to (3, N) for matrix multiplication
-    vec_2D_reshaped = np.reshape(vector_field_slice, (3, -1))
+    # Flatten the vector field to shape (3, N)
+    vec_reshaped = np.reshape(vector_field_slice, (3, -1))
 
-    vec_2D_reshaped = vec_2D_reshaped / np.linalg.norm(vec_2D_reshaped, axis=0)
+    # Normalize safely
+    norms = np.linalg.norm(vec_reshaped, axis=0)
+    nonzero_mask = norms > 0
+    vec_reshaped[:, nonzero_mask] /= norms[nonzero_mask]
 
-    # Rotate the vectors
-    rotated_vecs = np.dot(rotation_matrix, vec_2D_reshaped)
+    # Rotate
+    rotated_vecs = np.dot(rotation_matrix, vec_reshaped)
 
-    # Reshape back to the original shape
+    # Reshape back
     rotated_vecs = rotated_vecs.reshape(vector_field_slice.shape)
 
     return rotated_vecs
@@ -485,9 +494,9 @@ def write_images(
     img_intrusion: np.ndarray,
     img_FA: np.ndarray,
     start_index: int,
-    OUTPUT_DIR: str,
-    OUTPUT_FORMAT: str,
-    OUTPUT_TYPE: str,
+    output_dir: str,
+    output_format: str,
+    output_type: str,
     z: int,
 ) -> None:
     """
@@ -498,9 +507,9 @@ def write_images(
         img_intrusion (np.ndarray): Image data for intrusion angles.
         img_FA (np.ndarray): Image data for fractional anisotropy.
         start_index (int): Starting index for filenames.
-        OUTPUT_DIR (str): Directory to save the images.
-        OUTPUT_FORMAT (str): Format of the output files ('tif' or 'jp2').
-        OUTPUT_TYPE (str): Type of output ('8bit' or 'rgb').
+        output_dir (str): Directory to save the images.
+        output_format (str): Format of the output files ('tif' or 'jp2').
+        output_type (str): Type of output ('8bit' or 'rgb').
         z (int): Current slice index.
 
     Returns:
@@ -508,27 +517,27 @@ def write_images(
     """
 
     try:
-        os.makedirs(OUTPUT_DIR + "/HA", exist_ok=True)
-        os.makedirs(OUTPUT_DIR + "/IA", exist_ok=True)
-        os.makedirs(OUTPUT_DIR + "/FA", exist_ok=True)
+        os.makedirs(output_dir + "/HA", exist_ok=True)
+        os.makedirs(output_dir + "/IA", exist_ok=True)
+        os.makedirs(output_dir + "/FA", exist_ok=True)
     except PermissionError:
         print("⚠️ - Permission error during creation of output directories")
 
     # print(f"Saving image: {z}")
 
-    if "8bit" in OUTPUT_TYPE:
+    if "8bit" in output_type:
         # Convert the float64 image to int8
         img_helix = convert_to_8bit(img_helix, min_value=-90, max_value=90)
         img_intrusion = convert_to_8bit(img_intrusion, min_value=-90, max_value=90)
         img_FA = convert_to_8bit(img_FA, min_value=0, max_value=1)
 
-        if OUTPUT_FORMAT == "jp2":
+        if output_format == "jp2":
             ratio_compression = 10
 
             # Define file paths
-            ha_path = f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2"
-            ia_path = f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2"
-            fa_path = f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2"
+            ha_path = f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2"
+            ia_path = f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2"
+            fa_path = f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2"
 
             # Remove existing files if they exist
             for file_path in [ha_path, ia_path, fa_path]:
@@ -557,18 +566,18 @@ def write_images(
                 numres=8,
                 irreversible=True,
             )
-        elif OUTPUT_FORMAT == "tif":
+        elif output_format == "tif":
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif", img_helix
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", img_helix
             )
             tifffile.imwrite(
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif", img_intrusion
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", img_intrusion
             )
-            tifffile.imwrite(f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif", img_FA)
+            tifffile.imwrite(f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", img_FA)
         else:
-            sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
+            sys.exit(f"I don't recognise the output_format ({output_format})")
 
-    elif "rgb" in OUTPUT_TYPE:
+    elif "rgb" in output_type:
 
         def write_img_rgb(
             img: np.ndarray,
@@ -596,7 +605,7 @@ def write_images(
             img = (img[:, :, :3] * 255).astype(np.uint8)
 
             print(f"Writing image to {output_path}")
-            if OUTPUT_FORMAT == "jp2":
+            if output_format == "jp2":
                 ratio_compression = 10
                 glymur.Jp2k(
                     output_path,
@@ -605,45 +614,45 @@ def write_images(
                     numres=8,
                     irreversible=True,
                 )
-            elif OUTPUT_FORMAT == "tif":
+            elif output_format == "tif":
                 tifffile.imwrite(output_path, img)
             else:
-                sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
+                sys.exit(f"I don't recognise the output_format ({output_format})")
 
-        if OUTPUT_FORMAT == "jp2":
+        if output_format == "jp2":
             write_img_rgb(
                 img_helix,
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.jp2",
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2",
                 cmap=plt.get_cmap("hsv"),
             )
             write_img_rgb(
                 img_intrusion,
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.jp2",
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2",
                 cmap=plt.get_cmap("hsv"),
             )
             write_img_rgb(
                 img_FA,
-                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.jp2",
+                f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2",
                 cmap=plt.get_cmap("inferno"),
             )
-        elif OUTPUT_FORMAT == "tif":
+        elif output_format == "tif":
             write_img_rgb(
                 img_helix,
-                f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.tif",
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.tif",
                 cmap=plt.get_cmap("hsv"),
             )
             write_img_rgb(
                 img_intrusion,
-                f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.tif",
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.tif",
                 cmap=plt.get_cmap("hsv"),
             )
             write_img_rgb(
                 img_FA,
-                f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.tif",
+                f"{output_dir}/FA/FA_{(start_index + z):06d}.tif",
                 cmap=plt.get_cmap("inferno"),
             )
         else:
-            sys.exit(f"I don't recognise the OUTPUT_FORMAT ({OUTPUT_FORMAT})")
+            sys.exit(f"I don't recognise the output_format ({output_format})")
 
 
 def write_vector_field(

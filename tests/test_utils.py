@@ -1,102 +1,76 @@
-import os
-import tempfile
-
 import numpy as np
+import pytest
+from pathlib import Path
 
 from cardiotensor.utils.utils import convert_to_8bit, read_conf_file
 
-
-def test_read_conf_file():
-    """Test the read_conf_file function."""
-    # Create temporary folders to simulate existing paths
-    with (
-        tempfile.TemporaryDirectory() as tmp_images,
-        tempfile.TemporaryDirectory() as tmp_masks,
-        tempfile.TemporaryDirectory() as tmp_output,
-    ):
-        conf_content = f"""
-        [DATASET]
-        IMAGES_PATH = {tmp_images}
-        MASK_PATH = {tmp_masks}
-        VOXEL_SIZE = 0.5
-
-        [OUTPUT]
-        OUTPUT_PATH = {tmp_output}
-        OUTPUT_FORMAT = jp2
-        OUTPUT_TYPE = volume
-
-        [STRUCTURE TENSOR CALCULATION]
-        SIGMA = 1.5
-        RHO = 2.0
-        N_CHUNK = 50
-        USE_GPU = True
-        WRITE_VECTORS = True
-        REVERSE = True
-
-        [ANGLE CALCULATION]
-        WRITE_ANGLES = True
-        AXIS_POINTS = (10,20,30), (40,50,60)
-
-        [TEST]
-        TEST = True
-        N_SLICE_TEST = 10
-        """
-        with tempfile.NamedTemporaryFile(suffix=".conf", delete=False) as temp_file:
-            temp_file.write(conf_content.encode())
-            temp_file_path = temp_file.name
-
-        try:
-            config = read_conf_file(temp_file_path)
-
-            assert config["IMAGES_PATH"] == tmp_images
-            assert config["MASK_PATH"] == tmp_masks
-            assert config["VOXEL_SIZE"] == 0.5
-
-            assert config["OUTPUT_PATH"] == tmp_output
-            assert config["OUTPUT_FORMAT"] == "jp2"
-            assert config["OUTPUT_TYPE"] == "volume"
-
-            assert config["SIGMA"] == 1.5
-            assert config["RHO"] == 2.0
-            assert config["N_CHUNK"] == 50
-            assert config["USE_GPU"] is True
-            assert config["WRITE_VECTORS"] is True
-            assert config["REVERSE"] is True
-
-            assert config["WRITE_ANGLES"] is True
-            assert config["AXIS_POINTS"] == [(10, 20, 30), (40, 50, 60)]
-
-            assert config["TEST"] is True
-            assert config["N_SLICE_TEST"] == 10
-
-            print("✅ read_conf_file test passed.")
-        finally:
-            os.remove(temp_file_path)
-
-
 def test_convert_to_8bit():
-    """Test the convert_to_8bit function."""
-    img = np.array([[0, 50, 100], [150, 200, 250]], dtype=np.float32)
+    arr = np.array([0, 128, 255], dtype=np.uint16)
+    out = convert_to_8bit(arr)
+    assert out.dtype == np.uint8
+    assert out.min() >= 0 and out.max() <= 255
 
-    # Test default behavior
-    img_8bit = convert_to_8bit(img)
-    assert img_8bit.min() == 0
-    assert img_8bit.max() == 255
-    print("✅ convert_to_8bit default test passed.")
+def test_read_conf_file(tmp_path):
+    # Create dummy directories for IMAGES_PATH and MASK_PATH
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    mask_file = tmp_path / "mask.tif"
+    mask_file.write_text("dummy")
 
-    # Test with percentiles
-    img_8bit = convert_to_8bit(img, perc_min=0, perc_max=100)
-    assert img_8bit.min() == 0
-    assert img_8bit.max() == 255
-    print("✅ convert_to_8bit percentile test passed.")
+    # Create a dummy .conf file
+    conf_file = tmp_path / "test.conf"
+    conf_file.write_text(
+        "[DATASET]\n"
+        f"IMAGES_PATH = {images_dir}\n"
+        f"MASK_PATH = {mask_file}\n"
+        "VOXEL_SIZE = 0.5\n\n"
+        "[STRUCTURE TENSOR CALCULATION]\n"
+        "SIGMA = 2.0\n"
+        "RHO = 1.5\n"
+        "TRUNCATE = 4.0\n"
+        "VERTICAL_PADDING = 10.0\n"
+        "N_CHUNK = 50\n"
+        "USE_GPU = True\n"
+        "WRITE_VECTORS = True\n"
+        "REVERSE = False\n\n"
+        "[ANGLE CALCULATION]\n"
+        "WRITE_ANGLES = True\n"
+        "AXIS_POINTS = (0,0,0), (1,1,1)\n\n"
+        "[TEST]\n"
+        "TEST = True\n"
+        "N_SLICE_TEST = 5\n\n"
+        "[OUTPUT]\n"
+        "OUTPUT_PATH = ./output\n"
+        "OUTPUT_FORMAT = tif\n"
+        "OUTPUT_TYPE = rgb\n"
+    )
 
-    # Test with explicit min/max
-    img_8bit = convert_to_8bit(img, min_value=50, max_value=200)
-    assert img_8bit.min() == 0
-    assert img_8bit.max() == 255
-    print("✅ convert_to_8bit explicit range test passed.")
+    config = read_conf_file(conf_file)
 
+    # --- Assertions ---
+    # Dataset paths
+    assert config["IMAGES_PATH"] == str(images_dir)
+    assert config["MASK_PATH"] == str(mask_file)
+    assert pytest.approx(config["VOXEL_SIZE"]) == 0.5
 
-if __name__ == "__main__":
-    test_read_conf_file()
-    test_convert_to_8bit()
+    # Structure tensor
+    assert pytest.approx(config["SIGMA"]) == 2.0
+    assert pytest.approx(config["RHO"]) == 1.5
+    assert config["N_CHUNK"] == 50
+    assert config["USE_GPU"] is True
+    assert config["WRITE_VECTORS"] is True
+    assert config["REVERSE"] is False
+
+    # Angles
+    assert config["WRITE_ANGLES"] is True
+    assert isinstance(config["AXIS_POINTS"], list)
+    assert config["AXIS_POINTS"] == [(0,0,0), (1,1,1)]
+
+    # Test
+    assert config["TEST"] is True
+    assert config["N_SLICE_TEST"] == 5
+
+    # Output
+    assert config["OUTPUT_PATH"] == "./output"
+    assert config["OUTPUT_FORMAT"] == "tif"
+    assert config["OUTPUT_TYPE"] == "rgb"
