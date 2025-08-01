@@ -1,10 +1,10 @@
 from pathlib import Path
+
 import numpy as np
+
 from cardiotensor.visualization.fury_plotting_streamlines import (
     show_streamlines,
 )
-
-
 
 
 def visualize_streamlines(
@@ -90,7 +90,6 @@ def visualize_streamlines(
         subsample_factor=subsample_factor,
         crop_bounds=crop_bounds,
     )
-
 
 
 def compute_elevation_angles(streamlines):

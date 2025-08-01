@@ -2,7 +2,7 @@
 
 ## Sign conventions
 
-Cardiotensor processes full-field orientation data in 3D volumes. Consistent with NumPy matrix indexing, the position (0, 0, 0) refers to the corner at the top-left of the first slice. 
+Cardiotensor processes full-field orientation data in 3D volumes. Consistent with NumPy matrix indexing, the position (0, 0, 0) refers to the corner at the top-left of the first slice.
 
 This convention is maintained across all processing pipelines, including structure tensor calculation and streamline generation.
 

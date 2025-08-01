@@ -8,7 +8,7 @@ def export_vector_field_to_vtk(
     color_volume: np.ndarray,
     voxel_size: float,
     stride: int = 32,
-    save_path: Path = None,
+    save_path: Path | None = None,
 ) -> Path:
     if vector_field.ndim != 4 or vector_field.shape[-1] != 3:
         raise ValueError("vector_field must have shape (Z, Y, X, 3)")

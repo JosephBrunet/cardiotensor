@@ -25,7 +25,6 @@ from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import remove_corrupted_files
 
 
-
 # --- small helpers ---
 def check_already_processed(
     output_dir: str,
@@ -33,7 +32,7 @@ def check_already_processed(
     end_index: int,
     write_vectors: bool,
     write_angles: bool,
-    output_format: str
+    output_format: str,
 ) -> bool:
     """
     Check whether all required output files already exist.
@@ -53,11 +52,13 @@ def check_already_processed(
         expected_files = []
 
         if write_angles:
-            expected_files.extend([
-                f"{output_dir}/HA/HA_{idx:06d}.{output_format}",
-                f"{output_dir}/IA/IA_{idx:06d}.{output_format}",
-                f"{output_dir}/FA/FA_{idx:06d}.{output_format}",
-            ])
+            expected_files.extend(
+                [
+                    f"{output_dir}/HA/HA_{idx:06d}.{output_format}",
+                    f"{output_dir}/IA/IA_{idx:06d}.{output_format}",
+                    f"{output_dir}/FA/FA_{idx:06d}.{output_format}",
+                ]
+            )
 
         if write_vectors:
             expected_files.append(f"{output_dir}/eigen_vec/eigen_vec_{idx:06d}.npy")
@@ -71,7 +72,6 @@ def check_already_processed(
 
     print(f"Checking already processed files: All expected files exist in {output_dir}")
     return True
-
 
 
 # --- main API ---
@@ -136,7 +136,6 @@ Parameters:
     - Test mode:      {is_test}
     """)
 
-
     print("\n" + "-" * 40)
     print("READING VOLUME INFORMATION")
     print("-" * 40 + "\n")
@@ -149,22 +148,23 @@ Parameters:
         end_index = data_reader.shape[0]
 
     print(f"Number of slices: {data_reader.shape[0]}")
-    
-        
+
     # --- Check if already processed ---
     print("Check if file is already processed...")
-    if check_already_processed(
-        output_dir,
-        start_index,
-        end_index,
-        write_vectors,
-        write_angles,
-        output_format,
-    ) and not is_test:
+    if (
+        check_already_processed(
+            output_dir,
+            start_index,
+            end_index,
+            write_vectors,
+            write_angles,
+            output_format,
+        )
+        and not is_test
+    ):
         print("\nAll images are already processed. Skipping computation.\n")
         return
-    
-    
+
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE\n")
     center_line = interpolate_points(axis_points, data_reader.shape[0])
@@ -333,8 +333,6 @@ Parameters:
                     is_test,
                 )
                 bar()  # Update the progress bar for each slice
-
-
 
     print(f"\n🤖 - Finished processing slices {start_index} - {end_index}")
     print("---------------------------------\n\n")

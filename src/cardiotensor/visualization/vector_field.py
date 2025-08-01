@@ -5,15 +5,16 @@ High-level functions for loading, processing, and visualizing 3D vector fields
 using FURY or exporting to VTK.
 """
 
-import sys
 import math
+import sys
 from pathlib import Path
+
 import numpy as np
 
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
-from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_with_fury
 from cardiotensor.utils.vector_vtk_export import export_vector_field_to_vtk
+from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_with_fury
 
 
 def visualize_vector_field(
@@ -69,11 +70,14 @@ def visualize_vector_field(
     start_idx = start or 0
     end_idx = end if end is not None else Z_full
 
-
     # Downsample if needed
     if bin_factor > 1:
-        downsample_vector_volume(vector_field_path, bin_factor, vector_field_path.parent)
-        vec_load_dir = vector_field_path.parent / f"bin{bin_factor}" / vector_field_path.name
+        downsample_vector_volume(
+            vector_field_path, bin_factor, vector_field_path.parent
+        )
+        vec_load_dir = (
+            vector_field_path.parent / f"bin{bin_factor}" / vector_field_path.name
+        )
         start_binned = start_idx // bin_factor
         end_binned = math.ceil(end_idx / bin_factor) if end_idx else None
     else:
@@ -83,7 +87,9 @@ def visualize_vector_field(
 
     print(f"📥 Loading vector field from {vec_load_dir} ...")
     vec_reader = DataReader(vec_load_dir)
-    vector_field = vec_reader.load_volume(start_index=start_binned, end_index=end_binned)
+    vector_field = vec_reader.load_volume(
+        start_index=start_binned, end_index=end_binned
+    )
 
     # Ensure Z-component orientation
     print("🔄 Aligning vector orientations...")
@@ -107,7 +113,7 @@ def visualize_vector_field(
         mask = (mask_volume > 0).astype(np.uint8)
         vector_field[mask == 0, :] = np.nan
 
-    # Optional for coloring  
+    # Optional for coloring
     color_volume = None
     if color_volume_path:
         print(f"🎨 Loading color volume from {color_volume_path} ...")
@@ -122,13 +128,17 @@ def visualize_vector_field(
                 min_value=0,
                 max_value=255,
             )
-            color_load_dir = color_volume_path.parent / f"bin{bin_factor}" / color_volume_path.name
+            color_load_dir = (
+                color_volume_path.parent / f"bin{bin_factor}" / color_volume_path.name
+            )
         else:
             color_load_dir = color_volume_path
 
         print(f"🎨 Loading color volume from {color_load_dir} ...")
         color_reader = DataReader(color_load_dir)
-        color_volume = color_reader.load_volume(start_index=start_binned, end_index=end_binned)
+        color_volume = color_reader.load_volume(
+            start_index=start_binned, end_index=end_binned
+        )
 
     # Plot using FURY
     plot_vector_field_with_fury(
