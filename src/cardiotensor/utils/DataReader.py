@@ -6,10 +6,10 @@ from typing import Any
 import cv2
 import dask
 import numpy as np
+import psutil
 import SimpleITK as sitk
 from alive_progress import alive_bar
 from scipy.ndimage import zoom
-import psutil
 
 
 class DataReader:
@@ -23,7 +23,6 @@ class DataReader:
         self.path = Path(path)
         self.supported_extensions = ["tif", "tiff", "jp2", "png", "npy"]
         self.volume_info = self._get_volume_info()
-
 
     # ---------------------------
     # Properties
@@ -43,7 +42,6 @@ class DataReader:
         """Returns the total size of the volume in GB."""
         n_bytes = np.prod(self.shape) * np.dtype(self.dtype).itemsize
         return n_bytes / (1024**3)
-
 
     def _get_volume_info(self) -> dict:
         """
@@ -72,14 +70,20 @@ class DataReader:
                 image_files.items(), key=lambda item: len(item[1])
             )
             if not volume_info["file_list"]:
-                raise ValueError("No supported image files found in the specified directory.")
+                raise ValueError(
+                    "No supported image files found in the specified directory."
+                )
 
             # Inspect first file
             first_image = self._custom_image_reader(volume_info["file_list"][0])
             volume_info["dtype"] = first_image.dtype
 
             # Shape: handle scalar vs vector
-            if volume_info["type"] == "npy" and first_image.ndim == 3 and first_image.shape[0] == 3:
+            if (
+                volume_info["type"] == "npy"
+                and first_image.ndim == 3
+                and first_image.shape[0] == 3
+            ):
                 # Vector field stored as (3, Y, X)
                 volume_info["shape"] = (
                     3,
@@ -91,7 +95,7 @@ class DataReader:
                 # 4D scalar stack (Z from files)
                 volume_info["shape"] = (
                     len(volume_info["file_list"]),
-                    *first_image.shape
+                    *first_image.shape,
                 )
             else:
                 # Standard 3D stack
@@ -113,7 +117,6 @@ class DataReader:
             raise ValueError(f"Unsupported volume type for path: {self.path}")
 
         return volume_info
-
 
     def load_volume(
         self,
@@ -170,18 +173,19 @@ class DataReader:
 
             # Ensure float32 for better memory and speed
             volume = volume.astype(np.float32)
-            volume = zoom(volume, zoom=zoom_factors, order=0)  # Nearest-neighbor for mask
+            volume = zoom(
+                volume, zoom=zoom_factors, order=0
+            )  # Nearest-neighbor for mask
 
             # Final crop to original range
             crop_start = int(abs(start_index * zoom_factors[0] - start_index_ini))
             crop_end = crop_start + (end_index_ini - start_index_ini)
             crop_start = max(crop_start, 0)
             crop_end = min(crop_end, volume.shape[0])
-            
-            volume = volume[crop_start:crop_end, :, :]
-                
-        return volume
 
+            volume = volume[crop_start:crop_end, :, :]
+
+        return volume
 
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
@@ -216,7 +220,7 @@ class DataReader:
 
         total_files = end_index - start_index
         # print(f"Loading {total_files} files...")
-        
+
         if start_index < 0 or end_index > len(file_list):
             raise ValueError(
                 f"Invalid indices: start_index={start_index}, end_index={end_index}, total_files={len(file_list)}"
@@ -253,8 +257,6 @@ class DataReader:
 
         return volume
 
-
-
     def check_memory_requirement(self, shape, dtype, safety_factor=0.8):
         """
         Check if the dataset can fit in available memory.
@@ -266,19 +268,18 @@ class DataReader:
         """
         # Compute dataset size in bytes
         n_bytes = np.prod(shape) * np.dtype(dtype).itemsize
-        size_gb = n_bytes / (1024 ** 3)
+        size_gb = n_bytes / (1024**3)
 
         # Check available memory
-        available_gb = psutil.virtual_memory().available / (1024 ** 3)
-        
-        print(f"Dataset size: {size_gb:.2f} GB | Available memory: {available_gb:.2f} GB")
+        available_gb = psutil.virtual_memory().available / (1024**3)
+
+        print(
+            f"Dataset size: {size_gb:.2f} GB | Available memory: {available_gb:.2f} GB"
+        )
 
         if size_gb > available_gb * safety_factor:
             print("❌ Dataset is too large to safely load into memory.")
             sys.exit(1)
-
-
-
 
 
 def _read_mhd(filename: PathLike[str]) -> dict[str, Any]:
@@ -412,4 +413,3 @@ def _load_raw_data_with_mhd(
     # End 3D fix
 
     return (data, meta_dict)
-

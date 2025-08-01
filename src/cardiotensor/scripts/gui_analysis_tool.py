@@ -1,6 +1,6 @@
 import argparse
 import sys
-from pathlib import Path
+
 from PyQt5.QtWidgets import QApplication
 
 from cardiotensor.analysis.gui_analysis_tool import Window
@@ -19,11 +19,19 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Open a GUI to interactively plot transmural profiles of the angles."
     )
-    parser.add_argument("conf_file_path", type=str, help="Path to the configuration file")
-    parser.add_argument("--N_slice", type=int, default=None, help="Slice number (optional)")
+    parser.add_argument(
+        "conf_file_path", type=str, help="Path to the configuration file"
+    )
+    parser.add_argument(
+        "--N_slice", type=int, default=None, help="Slice number (optional)"
+    )
     parser.add_argument("--N_line", type=int, default=5, help="Number of lines")
-    parser.add_argument("--angle_range", type=float, default=20, help="Angle range in degrees")
-    parser.add_argument("--image_mode", type=str, default="HA", help="Output mode (HA, IA, or FA)")
+    parser.add_argument(
+        "--angle_range", type=float, default=20, help="Angle range in degrees"
+    )
+    parser.add_argument(
+        "--image_mode", type=str, default="HA", help="Output mode (HA, IA, or FA)"
+    )
     return parser.parse_args()
 
 
@@ -45,7 +53,9 @@ def script() -> None:
     output_dir = params.get("OUTPUT_PATH", "./output")
 
     # Determine slice number: CLI overrides config
-    N_slice = args.N_slice if args.N_slice is not None else params.get("N_SLICE_TEST", 0)
+    N_slice = (
+        args.N_slice if args.N_slice is not None else params.get("N_SLICE_TEST", 0)
+    )
 
     # Initialize the PyQt5 application
     app = QApplication(sys.argv)

@@ -4,12 +4,12 @@ This section provides a deeper understanding of how `cardiotensor` works, includ
 
 ## Topics Covered
 
-- [Conventions](./conventions.md)  
+- [Conventions](./conventions.md)
 
 - [Structure Tensor](./structure_tensor.md): Mathematical background on the structure tensor and eigen decomposition
 
 - [Angle Definitions](./angles.md): Detailed explanation of helix and intrusion angles
 
-- [Fractional Anisotropy](./fractional_anisotropy.md)  
+- [Fractional Anisotropy](./fractional_anisotropy.md)
 
-- [Tractography](./tractography.md)  
+- [Tractography](./tractography.md)

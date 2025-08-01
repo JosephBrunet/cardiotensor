@@ -1,4 +1,3 @@
-import argparse
 import sys
 from pathlib import Path
 
@@ -18,7 +17,6 @@ from PyQt5.QtGui import (
 )
 from PyQt5.QtWidgets import (
     QAction,
-    QApplication,
     QButtonGroup,
     QFileDialog,
     QGraphicsEllipseItem,
@@ -47,7 +45,6 @@ from cardiotensor.analysis.analysis_functions import (
     save_intensity,
 )
 from cardiotensor.utils.DataReader import DataReader
-
 
 
 def np2pixmap(np_img: np.ndarray) -> QPixmap:
@@ -684,4 +681,3 @@ class Window(QWidget):
 
         # Close the dialog
         self.dialog.close()
-

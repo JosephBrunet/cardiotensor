@@ -1,11 +1,11 @@
+import math
+from pathlib import Path
+
 import numpy as np
 from alive_progress import alive_bar
-from pathlib import Path
-import math
 
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
-
 
 
 def trilinear_interpolate_vector(
@@ -182,7 +182,6 @@ def trace_streamline(
     return coords
 
 
-
 def generate_streamlines_from_vector_field(
     vector_field: np.ndarray,
     seed_points: np.ndarray,
@@ -243,8 +242,6 @@ def generate_streamlines_from_vector_field(
             bar()
 
     return all_streamlines
-
-
 
 
 def generate_streamlines_from_params(
@@ -360,7 +357,7 @@ def generate_streamlines_from_params(
     if mask_path:
         print(f"🩹 Applying mask: {mask_path}")
         mask_reader = DataReader(mask_path)
-        
+
         mask = mask_reader.load_volume(
             start_index=start_z_binned,
             end_index=end_z_binned,
@@ -369,7 +366,7 @@ def generate_streamlines_from_params(
 
         mask = mask[:, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
         mask = (mask > 0).astype(np.uint8)
-        
+
         vector_field[:, mask == 0] = np.nan
 
     # --- Load FA and create seed points ---
@@ -382,7 +379,9 @@ def generate_streamlines_from_params(
     seed_mask = fa_volume > (fa_threshold * 255)
     valid_indices = np.argwhere(seed_mask)
     if len(valid_indices) < num_seeds:
-        print("⚠️ Not enough valid seed points; using all available voxels above threshold.")
+        print(
+            "⚠️ Not enough valid seed points; using all available voxels above threshold."
+        )
         chosen_indices = valid_indices
     else:
         chosen_indices = valid_indices[
@@ -414,7 +413,11 @@ def generate_streamlines_from_params(
         Z, Y, X = ha_volume.shape
         for z, y, x in streamline:
             zi, yi, xi = map(int, [round(z), round(y), round(x)])
-            zi, yi, xi = max(0, min(zi, Z - 1)), max(0, min(yi, Y - 1)), max(0, min(xi, X - 1))
+            zi, yi, xi = (
+                max(0, min(zi, Z - 1)),
+                max(0, min(yi, Y - 1)),
+                max(0, min(xi, X - 1)),
+            )
             values.append(float(ha_volume[zi, yi, xi]))
         return values
 
@@ -428,4 +431,3 @@ def generate_streamlines_from_params(
         ha_values=np.array(all_ha, dtype=np.float32),
     )
     print(f"✅ Saved {len(streamlines)} streamlines to {out_path}")
-

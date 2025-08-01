@@ -5,7 +5,9 @@ import time
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
-from cardiotensor.orientation.orientation_computation_pipeline import compute_orientation
+from cardiotensor.orientation.orientation_computation_pipeline import (
+    compute_orientation,
+)
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import read_conf_file
 
@@ -54,7 +56,10 @@ def script() -> None:
         conf_file_path: str = askopenfilename(
             initialdir=f"{os.getcwd()}/param_files",
             title="Select a configuration file",
-            filetypes=[("Config files", "*.conf *.json *.yaml *.yml"), ("All files", "*.*")]
+            filetypes=[
+                ("Config files", "*.conf *.json *.yaml *.yml"),
+                ("All files", "*.*"),
+            ],
         )
         if not conf_file_path:
             sys.exit("❌ No file selected! Exiting.")

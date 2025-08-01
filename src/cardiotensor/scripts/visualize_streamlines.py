@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.streamlines import visualize_streamlines
 
