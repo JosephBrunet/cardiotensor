@@ -22,144 +22,168 @@ from cardiotensor.orientation.orientation_computation_functions import (
     write_vector_field,
 )
 from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import read_conf_file, remove_corrupted_files
+from cardiotensor.utils.utils import remove_corrupted_files
 
-# @profile
+
+
+# --- small helpers ---
+def check_already_processed(
+    output_dir: str,
+    start_index: int,
+    end_index: int,
+    write_vectors: bool,
+    write_angles: bool,
+    output_format: str
+) -> bool:
+    """
+    Check whether all required output files already exist.
+
+    Args:
+        output_dir: Path to output directory.
+        start_index: Start slice index.
+        end_index: End slice index (exclusive).
+        write_vectors: If True, eigenvector fields are expected.
+        write_angles: If True, HA/IA/FA maps are expected.
+        output_format: Output image format (e.g., "jp2", "tif").
+
+    Returns:
+        bool: True if all expected files exist and are valid, else False.
+    """
+    for idx in range(start_index, end_index):
+        expected_files = []
+
+        if write_angles:
+            expected_files.extend([
+                f"{output_dir}/HA/HA_{idx:06d}.{output_format}",
+                f"{output_dir}/IA/IA_{idx:06d}.{output_format}",
+                f"{output_dir}/FA/FA_{idx:06d}.{output_format}",
+            ])
+
+        if write_vectors:
+            expected_files.append(f"{output_dir}/eigen_vec/eigen_vec_{idx:06d}.npy")
+
+        # Remove small/corrupted files before checking
+        remove_corrupted_files(expected_files)
+
+        # If any file is missing, processing is required
+        if not all(os.path.exists(file) for file in expected_files):
+            return False
+
+    print(f"Checking already processed files: All expected files exist in {output_dir}")
+    return True
+
+
+
+# --- main API ---
 def compute_orientation(
-    conf_file_path: str,
+    volume_path: str,
+    mask_path: str | None = None,
+    output_dir: str = "./output",
+    output_format: str = "jp2",
+    output_type: str = "8bit",
+    sigma: float = 1.0,
+    rho: float = 3.0,
+    truncate: float = 4.0,
+    axis_points: np.ndarray | None = None,
+    vertical_padding: float | None = None,
+    write_vectors: bool = False,
+    write_angles: bool = True,
+    use_gpu: bool = True,
+    is_test: bool = False,
+    n_slice_test: int | None = None,
     start_index: int = 0,
     end_index: int | None = None,
 ) -> None:
     """
-    Compute the orientation for a volume dataset based on the configuration.
+    Compute the orientation for a volume dataset.
 
     Args:
-        conf_file_path (str): Path to the configuration file.
-        start_index (int, optional): Start index for processing. Default is 0.
-        end_index (int | None): End index for processing. Default is None.
-
-    Returns:
-        None
+        volume_path: Path to the 3D volume.
+        mask_path: Optional binary mask path.
+        output_dir: Output directory for results.
+        output_format: Image format for results.
+        output_type: Image type ("8bit" or "rgb").
+        sigma: Noise scale for structure tensor.
+        rho: Integration scale for structure tensor.
+        truncate: Gaussian kernel truncation.
+        axis_points: 3D points defining LV axis for cylindrical coordinates.
+        vertical_padding: Padding slices for tensor computation.
+        write_vectors: Whether to save eigenvectors.
+        write_angles: Whether to save HA/IA/FA maps.
+        use_gpu: Use GPU acceleration for tensor computation.
+        is_test: If True, runs in test mode and outputs plots.
+        n_slice_test: Number of slices to process in test mode.
+        start_index: Start slice index.
+        end_index: End slice index (None = last slice).
     """
 
-    print("\n" + "-" * 40)
-    print(f"READING PARAMETER FILE : {conf_file_path}")
-    print("-" * 40 + "\n")
+    # --- Sanity checks ---
+    if sigma > rho:
+        raise ValueError("sigma must be <= rho")
 
-    try:
-        params = read_conf_file(conf_file_path)
-    except Exception as e:
-        print(f"⚠️  Error reading parameter file '{conf_file_path}': {e}")
-        sys.exit(1)
-
-    # Extracting parameters safely using .get() with defaults where necessary
-    VOLUME_PATH = params.get("IMAGES_PATH", "")
-    MASK_PATH = params.get("MASK_PATH", "")
-    OUTPUT_DIR = params.get("OUTPUT_PATH", "./output")
-    OUTPUT_FORMAT = params.get("OUTPUT_FORMAT", "jp2")
-    OUTPUT_TYPE = params.get("OUTPUT_TYPE", "8bit")
-    WRITE_VECTORS = params.get("WRITE_VECTORS", False)
-    WRITE_ANGLES = params.get("WRITE_ANGLES", True)
-    SIGMA = params.get("SIGMA", 1.0)
-    RHO = params.get("RHO", 3.0)
-    TRUNCATE = params.get("TRUNCATE", 4.0)
-    VERTICAL_PADDING = params.get("VERTICAL_PADDING", None)
-    AXIS_PTS = params.get("AXIS_POINTS", None)
-    IS_TEST = params.get("TEST", False)
-    N_SLICE_TEST = params.get("N_SLICE_TEST", None)
-    USE_GPU = params.get("USE_GPU", True)
-
-    # Print summary
     print(f"""
 Parameters:
-    - Volume path:    {VOLUME_PATH}
-    - Mask path:      {MASK_PATH or "[None]"}
-    - Output dir:     {OUTPUT_DIR}
-    - Output format:  {OUTPUT_FORMAT}
-    - Output type:    {OUTPUT_TYPE}
-    - Sigma / Rho:    {SIGMA} / {RHO}
-    - Truncate:       {TRUNCATE}
-    - Write angles:   {WRITE_ANGLES}
-    - Write vectors:  {WRITE_VECTORS}
-    - Use GPU:        {USE_GPU}
+    - Volume path:    {volume_path}
+    - Mask path:      {mask_path or "[None]"}
+    - Output dir:     {output_dir}
+    - Output format:  {output_format}
+    - Output type:    {output_type}
+    - sigma / rho:    {sigma} / {rho}
+    - truncate:       {truncate}
+    - Write angles:   {write_angles}
+    - Write vectors:  {write_vectors}
+    - Use GPU:        {use_gpu}
+    - Test mode:      {is_test}
     """)
 
-    if SIGMA > RHO:
-        raise ValueError(
-            "SIGMA must be less than or equal to RHO. Please check your configuration file."
-        )
 
     print("\n" + "-" * 40)
     print("READING VOLUME INFORMATION")
     print("-" * 40 + "\n")
 
-    print(f"Volume path: {VOLUME_PATH}")
+    print(f"Volume path: {volume_path}")
 
-    data_reader = DataReader(VOLUME_PATH)
+    data_reader = DataReader(volume_path)
 
     if end_index is None:
         end_index = data_reader.shape[0]
 
     print(f"Number of slices: {data_reader.shape[0]}")
-
-    # Check if already done the processing
-    if not IS_TEST:
-        is_already_done = True
-
-        if end_index is None:
-            is_already_done = False
-
-        for idx in range(start_index, end_index):
-            existing_files = []
-
-            if WRITE_ANGLES:
-                existing_files.extend(
-                    [
-                        f"{OUTPUT_DIR}/HA/HA_{idx:06d}.{OUTPUT_FORMAT}",
-                        f"{OUTPUT_DIR}/IA/IA_{idx:06d}.{OUTPUT_FORMAT}",
-                        f"{OUTPUT_DIR}/FA/FA_{idx:06d}.{OUTPUT_FORMAT}",
-                    ]
-                )
-
-            if WRITE_VECTORS:
-                existing_files.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{idx:06d}.npy")
-
-            # Remove small files before checking existence
-            remove_corrupted_files(existing_files)
-
-            # If any required file is missing, mark processing as needed
-            if not all(os.path.exists(file) for file in existing_files):
-                is_already_done = False
-
-        if is_already_done:
-            print("\nAll images are already processed. Skipping computation.\n")
-            return
-
-    if MASK_PATH:
-        is_mask = True
-    else:
-        print("Mask path not provided")
-        is_mask = False
-
+    
+        
+    # --- Check if already processed ---
+    print("Check if file is already processed...")
+    if check_already_processed(
+        output_dir,
+        start_index,
+        end_index,
+        write_vectors,
+        write_angles,
+        output_format,
+    ) and not is_test:
+        print("\nAll images are already processed. Skipping computation.\n")
+        return
+    
+    
     print("\n---------------------------------")
     print("CALCULATE CENTER LINE\n")
-    center_line = interpolate_points(AXIS_PTS, data_reader.shape[0])
+    center_line = interpolate_points(axis_points, data_reader.shape[0])
 
     print("\n---------------------------------")
     print("CALCULATE PADDING START AND ENDING INDEXES\n")
 
-    if VERTICAL_PADDING is None:
-        VERTICAL_PADDING = TRUNCATE * RHO + 0.5
+    if vertical_padding is None:
+        vertical_padding = truncate * rho + 0.5
 
-    padding_start = padding_end = math.ceil(VERTICAL_PADDING)
-    if not IS_TEST:
+    padding_start = padding_end = math.ceil(vertical_padding)
+    if not is_test:
         if padding_start > start_index:
             padding_start = start_index
         if padding_end > (data_reader.shape[0] - end_index):
             padding_end = data_reader.shape[0] - end_index
-    if IS_TEST:
-        if N_SLICE_TEST > data_reader.shape[0]:
-            sys.exit("Error: N_SLICE_TEST > number of images")
+    if is_test:
+        if n_slice_test > data_reader.shape[0]:
+            sys.exit("Error: n_slice_test > number of images")
 
     print(f"Padding start, Padding end : {padding_start}, {padding_end}")
     start_index_padded, end_index_padded = adjust_start_end_index(
@@ -168,8 +192,8 @@ Parameters:
         data_reader.shape[0],
         padding_start,
         padding_end,
-        IS_TEST,
-        N_SLICE_TEST,
+        is_test,
+        n_slice_test,
     )
     print(
         f"Start index padded, End index padded : {start_index_padded}, {end_index_padded}"
@@ -182,10 +206,10 @@ Parameters:
     )
     print(f"Loaded volume shape {volume.shape}")
 
-    if is_mask:
+    if mask_path is not None:
         print("\n---------------------------------")
         print("LOAD MASK\n")
-        mask_reader = DataReader(MASK_PATH)
+        mask_reader = DataReader(mask_path)
 
         mask = mask_reader.load_volume(
             start_index_padded, end_index_padded, unbinned_shape=data_reader.shape
@@ -202,12 +226,12 @@ Parameters:
     print("-" * 40 + "\n")
     t1 = time.perf_counter()  # start time
     val, vec = calculate_structure_tensor(
-        volume, SIGMA, RHO, TRUNCATE=TRUNCATE, use_gpu=USE_GPU
+        volume, sigma, rho, truncate=truncate, use_gpu=use_gpu
     )
 
     print(f"Vector field shape: {vec.shape}")
 
-    if is_mask:
+    if mask_path is not None:
         print("Applying mask to tensors and vectors...")
 
         volume[mask == 0] = np.nan
@@ -242,7 +266,7 @@ Parameters:
     print("ANGLE & ANISOTROPY CALCULATION")
     print("-" * 40 + "\n")
 
-    if not IS_TEST:
+    if not is_test:
         num_slices = vec.shape[1]
         print(f"Using {mp.cpu_count()} CPU cores")
 
@@ -271,13 +295,13 @@ Parameters:
                             np.around(center_line[z]),
                             val[:, z, :, :],
                             center_line,
-                            OUTPUT_DIR,
-                            OUTPUT_FORMAT,
-                            OUTPUT_TYPE,
+                            output_dir,
+                            output_format,
+                            output_type,
                             start_index,
-                            WRITE_VECTORS,
-                            WRITE_ANGLES,
-                            IS_TEST,
+                            write_vectors,
+                            write_angles,
+                            is_test,
                         ),
                         callback=update_bar,  # ✅ Update progress bar after each task
                     )
@@ -285,6 +309,32 @@ Parameters:
 
                 for result in results:
                     result.wait()  # Ensure all tasks are completed before exiting
+
+    else:
+        # Add a progress bar for single-threaded processing
+        with alive_bar(
+            vec.shape[1], title="Processing slices (Single-thread)", bar="smooth"
+        ) as bar:
+            for z in range(vec.shape[1]):
+                # Call the function directly
+                compute_slice_angles_and_anisotropy(
+                    z,
+                    vec[:, z, :, :],
+                    volume[z, :, :],
+                    np.around(center_line[z]),
+                    val[:, z, :, :],
+                    center_line,
+                    output_dir,
+                    output_format,
+                    output_type,
+                    start_index,
+                    write_vectors,
+                    write_angles,
+                    is_test,
+                )
+                bar()  # Update the progress bar for each slice
+
+
 
     print(f"\n🤖 - Finished processing slices {start_index} - {end_index}")
     print("---------------------------------\n\n")
@@ -298,13 +348,13 @@ def compute_slice_angles_and_anisotropy(
     center_point: np.ndarray,
     eigen_val_slice: np.ndarray,
     center_line: np.ndarray,
-    OUTPUT_DIR: str,
-    OUTPUT_FORMAT: str,
-    OUTPUT_TYPE: str,
+    output_dir: str,
+    output_format: str,
+    output_type: str,
     start_index: int,
-    WRITE_VECTORS: bool,
-    WRITE_ANGLES: bool,
-    IS_TEST: bool,
+    write_vectors: bool,
+    write_angles: bool,
+    is_test: bool,
 ) -> None:
     """
     Compute helix angles, transverse angles, and fractional anisotropy for a slice.
@@ -316,13 +366,13 @@ def compute_slice_angles_and_anisotropy(
         center_point (np.ndarray): Center point for alignment.
         eigen_val_slice (np.ndarray): Eigenvalues for the slice.
         center_line (np.ndarray): Center line for alignment.
-        OUTPUT_DIR (str): Directory to save the output.
-        OUTPUT_FORMAT (str): Format for the output files (e.g., "tif").
-        OUTPUT_TYPE (str): Type of output (e.g., "8bits", "rgb").
+        output_dir (str): Directory to save the output.
+        output_format (str): Format for the output files (e.g., "tif").
+        output_type (str): Type of output (e.g., "8bits", "rgb").
         start_index (int): Start index of the slice.
-        WRITE_VECTORS (bool): Whether to output vector fields.
-        WRITE_ANGLES (bool): Whether to output angles and fractional anisotropy.
-        IS_TEST (bool): Whether in test mode.
+        write_vectors (bool): Whether to output vector fields.
+        write_angles (bool): Whether to output angles and fractional anisotropy.
+        is_test (bool): Whether in test mode.
 
     Returns:
         None
@@ -330,17 +380,17 @@ def compute_slice_angles_and_anisotropy(
     # print(f"Processing image: {start_index + z}")
 
     paths = []
-    if WRITE_ANGLES:
+    if write_angles:
         paths = [
-            f"{OUTPUT_DIR}/HA/HA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
-            f"{OUTPUT_DIR}/IA/IA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
-            f"{OUTPUT_DIR}/FA/FA_{(start_index + z):06d}.{OUTPUT_FORMAT}",
+            f"{output_dir}/HA/HA_{(start_index + z):06d}.{output_format}",
+            f"{output_dir}/IA/IA_{(start_index + z):06d}.{output_format}",
+            f"{output_dir}/FA/FA_{(start_index + z):06d}.{output_format}",
         ]
-    if WRITE_VECTORS:
-        paths.append(f"{OUTPUT_DIR}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
+    if write_vectors:
+        paths.append(f"{output_dir}/eigen_vec/eigen_vec_{(start_index + z):06d}.npy")
 
     # Skip processing if files already exist (unless in test mode)
-    if not IS_TEST and all(os.path.exists(path) for path in paths):
+    if not is_test and all(os.path.exists(path) for path in paths):
         # print(f"File {(start_index + z):06d} already exists")
         return
 
@@ -356,7 +406,7 @@ def compute_slice_angles_and_anisotropy(
     # print(f"(Center vector: {center_vec})")
 
     # Compute angles and FA if needed
-    if WRITE_ANGLES or IS_TEST:
+    if write_angles or is_test:
         img_FA = compute_fraction_anisotropy(eigen_val_slice)
         vector_field_slice_rotated = rotate_vectors_to_new_axis(
             vector_field_slice, center_vec
@@ -367,31 +417,31 @@ def compute_slice_angles_and_anisotropy(
         )
 
     # Visualization in test mode
-    if IS_TEST:
+    if is_test:
         plot_images(img_slice, img_helix, img_intrusion, img_FA, center_point)
         write_images(
             img_helix,
             img_intrusion,
             img_FA,
             start_index,
-            OUTPUT_DIR + "/test_slice",
-            OUTPUT_FORMAT,
-            OUTPUT_TYPE,
+            output_dir + "/test_slice",
+            output_format,
+            output_type,
             z,
         )
         return
 
     # Save results
-    if WRITE_ANGLES:
+    if write_angles:
         write_images(
             img_helix,
             img_intrusion,
             img_FA,
             start_index,
-            OUTPUT_DIR,
-            OUTPUT_FORMAT,
-            OUTPUT_TYPE,
+            output_dir,
+            output_format,
+            output_type,
             z,
         )
-    if WRITE_VECTORS:
-        write_vector_field(vector_field_slice, start_index, OUTPUT_DIR, z)
+    if write_vectors:
+        write_vector_field(vector_field_slice, start_index, output_dir, z)

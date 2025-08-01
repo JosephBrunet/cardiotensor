@@ -168,9 +168,9 @@ def get_gpu_count() -> int:
 
 def calculate_structure_tensor(
     volume: np.ndarray,
-    SIGMA: float,
-    RHO: float,
-    TRUNCATE: float = 4.0,
+    sigma: float,
+    rho: float,
+    truncate: float = 4.0,
     devices: list[str] | None = None,
     block_size: int = 200,
     use_gpu: bool = False,
@@ -181,8 +181,8 @@ def calculate_structure_tensor(
 
     Args:
         volume (np.ndarray): The 3D volume data.
-        SIGMA (float): Sigma value for Gaussian smoothing.
-        RHO (float): Rho value for Gaussian smoothing.
+        sigma (float): sigma value for Gaussian smoothing.
+        rho (float): rho value for Gaussian smoothing.
         devices (Optional[list[str]]): List of devices for parallel processing (e.g., ['cpu', 'cuda:0']).
         block_size (int): Size of the blocks for processing. Default is 200.
         use_gpu (bool): If True, uses GPU for calculations. Default is False.
@@ -223,7 +223,7 @@ def calculate_structure_tensor(
 
     print("\nStarting structure tensor computation...")
     print(f"---  Volume shape: {volume.shape}")
-    print(f"---  Sigma: {SIGMA}, Rho: {RHO}, Block size: {block_size}")
+    print(f"---  sigma: {sigma}, rho: {rho}, Block size: {block_size}")
     if use_gpu and num_gpus > 0:
         device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
     else:
@@ -239,11 +239,11 @@ def calculate_structure_tensor(
     with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
         S, val, vec = parallel_structure_tensor_analysis(
             volume,
-            SIGMA,
-            RHO,
+            sigma,
+            rho,
             devices=devices,
             block_size=block_size,
-            truncate=TRUNCATE,
+            truncate=truncate,
             structure_tensor=None,
             eigenvectors=dtype,
             eigenvalues=dtype,
