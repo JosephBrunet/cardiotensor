@@ -14,7 +14,7 @@ import numpy as np
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.vector_vtk_export import export_vector_field_to_vtk
-from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_with_fury
+from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_fury
 
 
 def visualize_vector_field(
@@ -23,12 +23,14 @@ def visualize_vector_field(
     mask_path: str | Path | None = None,
     stride: int = 10,
     bin_factor: int = 1,
-    size_arrow: float = 1.0,
+    size: float = 1.0,
+    radius: float = 0.5,
     start: int | None = None,
     end: int | None = None,
     save_path: str | Path | None = None,
     voxel_size: float = 1.0,
     is_vtk: bool = False,
+    mode: str = "arrow",  # "arrow" or "cylinder"
 ):
     """
     High-level visualization of a 3D vector field with FURY or optional VTK export.
@@ -37,24 +39,28 @@ def visualize_vector_field(
     ----------
     vector_field_path : str or Path
         Path to the 3D vector field (directory or file).
+    color_volume_path : str or Path, optional
+        Optional scalar volume for coloring (e.g., HA map).
+    mask_path : str or Path, optional
+        Optional mask volume to filter the vector field.
     stride : int, optional
         Step size for downsampling during visualization. Default is 10.
     bin_factor : int, optional
         Spatial downsampling factor for the vector field. Default is 1.
-    size_arrow : float, optional
-        Scaling factor for the arrows in visualization. Default is 1.0.
+    size : float, optional
+        Scaling factor for the arrows/cylinders. Default is 1.0.
+    radius : float, optional
+        Radius of cylinders (ignored if mode="arrow"). Default is 0.5.
     start, end : int, optional
         Z slice range to visualize. Default is full volume.
     save_path : str or Path, optional
         If provided, saves the visualization image.
-    mask_path : str or Path, optional
-        Optional mask volume to filter the vector field.
-    color_path : str or Path, optional
-        Optional HA volume for coloring the vector field.
     voxel_size : float, optional
         Voxel size for VTK export. Default is 1.0.
     is_vtk : bool, optional
         If True, exports the vector field to VTK.
+    mode : str, optional
+        Visualization mode: "arrow" or "cylinder". Default is "arrow".
     """
 
     vector_field_path = Path(vector_field_path)
@@ -113,7 +119,7 @@ def visualize_vector_field(
         mask = (mask_volume > 0).astype(np.uint8)
         vector_field[mask == 0, :] = np.nan
 
-    # Optional for coloring
+    # Optional color volume
     color_volume = None
     if color_volume_path:
         print(f"🎨 Loading color volume from {color_volume_path} ...")
@@ -134,18 +140,28 @@ def visualize_vector_field(
         else:
             color_load_dir = color_volume_path
 
-        print(f"🎨 Loading color volume from {color_load_dir} ...")
         color_reader = DataReader(color_load_dir)
-        color_volume = color_reader.load_volume(
-            start_index=start_binned, end_index=end_binned
-        )
+
+        # If RGB, average channels
+        if color_reader.shape[-1] == 3:
+            color_volume = color_reader.load_volume(
+                start_index=start_binned, end_index=end_binned
+            )
+            color_volume = np.mean(color_volume, axis=-1)
+        else:
+            color_volume = color_reader.load_volume(
+                start_index=start_binned, end_index=end_binned
+            )
 
     # Plot using FURY
-    plot_vector_field_with_fury(
+    plot_vector_field_fury(
         vector_field,
-        size_arrow=size_arrow,
+        size=size,
+        radius=radius,
         stride=stride,
         color_volume=color_volume,
+        voxel_size=voxel_size * bin_factor,
+        mode=mode,
         save_path=save_path,
     )
 

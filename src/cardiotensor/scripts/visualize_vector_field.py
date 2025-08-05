@@ -3,6 +3,7 @@
 visualize_vector_field.py
 -------------------------
 CLI tool to visualize 3D vector fields using FURY from a configuration file.
+Supports arrow or cylinder visualization, optional VTK export.
 """
 
 import argparse
@@ -30,10 +31,22 @@ def script():
         help="Binning factor used during preprocessing (default: 1)",
     )
     parser.add_argument(
-        "--size-arrow",
+        "--size",
         type=float,
         default=1.0,
-        help="Scaling factor for arrow size (default: 1.0)",
+        help="Scaling factor for arrows/cylinders (default: 1.0)",
+    )
+    parser.add_argument(
+        "--radius",
+        type=float,
+        default=0.5,
+        help="Cylinder radius (ignored if mode=arrow, default: 0.5)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["arrow", "cylinder"],
+        default="arrow",
+        help="Visualization mode (default: arrow)",
     )
     parser.add_argument("--start", type=int, default=None, help="Start slice index")
     parser.add_argument("--end", type=int, default=None, help="End slice index")
@@ -61,7 +74,9 @@ def script():
         mask_path=mask_path,
         stride=args.stride,
         bin_factor=args.bin,
-        size_arrow=args.size_arrow,
+        size=args.size,
+        radius=args.radius,
+        mode=args.mode,
         start=args.start,
         end=args.end,
         save_path=args.save,
