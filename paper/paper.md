@@ -46,11 +46,11 @@ bibliography: paper.bib
 
 # Summary
 
-Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major challenge. Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole- or partial-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, allowing detailed assessments of anatomical continuity and regional organization.
+Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major challenge. Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole- or partial-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel-scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, allowing detailed assessments of anatomical continuity and regional organization.
 
 # Statement of Need
 
-Despite major advances in high-resolution 3D imaging, there is a lack of open-source tools to analyze cardiomyocyte orientation in large volumetric datasets. Most established frameworks were developed for diffusion tensor MRI (DT-MRI), where orientation is inferred from water diffusion. Examples include MRtrix3 [@tournier_mrtrix3_2019], DIPY [@garyfallidis_dipy_2014], and DSI Studio [@yeh_dsi_2010]. While powerful for diffusion-based neuroimaging and cardiac applications [@mekkaoui_diffusion_2017], these packages are not designed to handle direct image-gradient–based orientation estimation or the teravoxel-scale datasets produced by synchrotron tomography, micro-CT, or optical imaging.
+Despite major advances in high-resolution 3D imaging, there is a lack of open-source tools to analyze cardiomyocyte orientation in large volumetric datasets. Most established frameworks were developed for diffusion tensor MRI (DT-MRI), where orientation is inferred from water diffusion. Examples include MRtrix3 [@tournier_mrtrix3_2019], DIPY [@garyfallidis_dipy_2014], and DSI Studio [@yeh_dsi_2025]. While powerful for diffusion-based neuroimaging and cardiac applications [@mekkaoui_diffusion_2017], these packages are not designed to handle direct image-gradient–based orientation estimation or the teravoxel-scale datasets produced by synchrotron tomography, micro-CT, or optical imaging.
 
 For non-diffusion imaging modalities, researchers have historically relied on custom structure tensor implementations to estimate fiber orientation directly from image intensity gradients. However, most of these are in-house codes, often unpublished or not generalizable. For example, structure tensor analysis has been applied in the heart using micro-CT [@reichardt_fiber_2020], microscopy [@dileep_cardiomyocyte_2023; @garcia-canadilla_detailed_2022], and synchrotron tomography [@dejea_comprehensive_2019], but these methods were tailored to specific datasets and lacked scalability or public availability.
 
@@ -65,7 +65,6 @@ The third eigenvector field (smallest eigenvalue) is visualized as arrows color�
 (c) Transformation to a cylindrical coordinate system enables computation of voxel‑wise helix angle (HA), transverse angle (TA), and fractional anisotropy (FA) maps.
 (d) Streamline tractography reconstructs continuous cardiomyocyte trajectories, color‑coded by HA.\label{fig:pipeline}](figs/pipeline.png)
 
-
 ## Implementation
 
 Cardiotensor is implemented in pure Python and designed to efficiently process very large 3D cardiac imaging datasets. It relies primarily on NumPy [@van_der_walt_numpy_2011] for numerical computation, with I/O accelerated by tifffile [@gohlke_cgohlketifffile_2025], Glymur for JPEG 2000 volumes [@evans_quintusdiasglymur_2025], and OpenCV [@bradski_opencv_2000]. Dask [@rocklin_dask_2015] is used exclusively to parallelize file reading, while the core computations rely on Python’s multiprocessing module for local parallelism. The package builds on the structure-tensor library [@jeppesen_quantifying_2021] to calculate the 3D structure tensor and eigenvector decomposition.
@@ -77,7 +76,6 @@ The package supports multiple use cases:
 - Embedded use in larger Python pipelines for specific cardiac imaging analysis.
 
 Efficient computation is achieved through a chunk‑based processing strategy with padding, which avoids edge artifacts. This architecture allows cardiotensor to process whole‑heart volumes in hours rather than days while maintaining practical memory requirements, and can be parallelized across a computing cluster by splitting volumes into independent jobs.
-
 
 # Architecture
 
@@ -116,4 +114,3 @@ Peter D. Lee is a CIFAR MacMillan Fellow in the Multiscale Human program. This r
 AC’s research is enabled through the Noé Heart Centre Laboratories, which are gratefully supported by the Rachel Charitable Trust via Great Ormond Street Hospital Children’s Charity (GOSH Charity). The Noé Heart Centre Laboratories are based in The Zayed Centre for Research into Rare Disease in Children, which was made possible thanks to Her Highness Sheikha Fatima bint Mubarak, wife of the late Sheikh Zayed bin Sultan Al Nahyan, founding father of the United Arab Emirates, as well as other generous funders.
 
 # References
-
