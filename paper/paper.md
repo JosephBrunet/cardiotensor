@@ -58,13 +58,13 @@ Cardiotensor addresses this gap by providing an open-source Python package speci
 
 Cardiotensor has already been successfully applied in published work to characterize 3D cardiomyocyte architecture in healthy and diseased human hearts using synchrotron tomography [@brunet_multidimensional_2024] to datasets over a terabyte in size. While cardiotensor was conceived for cardiac imaging, the package is modality‑ and tissue‑agnostic. Any volumetric dataset exhibiting coherent fibrous or laminar microstructure can be analyzed, including brain white matter, skeletal muscle, and tendon. This generality makes the library useful for both cardiovascular and broader anatomical or histological studies.
 
-![Helix angle map computed from a human heart dataset using `cardiotensor`.](figs/pipeline.png)
+![**Figure 1.** Cardiotensor pipeline for 3D cardiac orientation analysis and tractography.
+(a) Input whole‑ or partial‑heart volume with optional myocardial mask.
+(b) Local cardiomyocyte orientation estimated via 3D structure tensor and eigenvector decomposition.
+The third eigenvector field (smallest eigenvalue) is visualized as arrows color‑coded by helix angle (HA); inset shows septal fiber rotation.
+(c) Transformation to a cylindrical coordinate system enables computation of voxel‑wise helix angle (HA), transverse angle (TA), and fractional anisotropy (FA) maps.
+(d) Streamline tractography reconstructs continuous cardiomyocyte trajectories, color‑coded by HA.\label{fig:pipeline}](figs/pipeline.png)
 
-**Figure 1**: **Overview of the `cardiotensor` pipeline for 3D cardiac orientation analysis and tractography.**  
-(a) Input data consist of a whole‑ or partial-heart image volume and, optionally, a binary mask to restrict analysis to myocardial tissue.
-(b) Local cardiomyocyte orientation is estimated by computing the 3D structure tensor and performing eigenvector decomposition. The third eigenvector field (smallest eigenvalue) is visualized as arrows color‑coded by helix angle (HA); the inset shows a zoomed view of the ventricular septum highlighting the transmural fiber rotation.
-(c) After transforming to a cylindrical coordinate system aligned with the left ventricle, voxel‑wise helical angle (HA), transverse angle (TA), and fractional anisotropy (FA) maps are computed for quantitative tissue analysis.
-(d) Streamline tractography is generated from the vector field, revealing continuous cardiomyocyte bundles trajectories throughout the heart, color‑coded by HA.
 
 ## Implementation
 
