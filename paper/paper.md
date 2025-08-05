@@ -5,9 +5,10 @@ tags:
   - cardiac imaging
   - structure tensor
   - orientation analysis
-  - histoanatomy
+  - tractography
   - fiber architecture
-  - heart
+  - synchrotron tomography
+
 authors:
   - name: Joseph Brunet
     orcid: 0000-0002-8424-9510
