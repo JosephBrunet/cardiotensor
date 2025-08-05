@@ -58,7 +58,7 @@ Cardiotensor addresses this gap by providing an open-source Python package speci
 
 Cardiotensor has already been successfully applied in published work to characterize 3D cardiomyocyte architecture in healthy and diseased human hearts using synchrotron tomography [@brunet_multidimensional_2024] to datasets over a terabyte in size. While cardiotensor was conceived for cardiac imaging, the package is modality‑ and tissue‑agnostic. Any volumetric dataset exhibiting coherent fibrous or laminar microstructure can be analyzed, including brain white matter, skeletal muscle, and tendon. This generality makes the library useful for both cardiovascular and broader anatomical or histological studies.
 
-![**Figure 1.** Cardiotensor pipeline for 3D cardiac orientation analysis and tractography.
+![Cardiotensor pipeline for 3D cardiac orientation analysis and tractography.
 (a) Input whole‑ or partial‑heart volume with optional myocardial mask.
 (b) Local cardiomyocyte orientation estimated via 3D structure tensor and eigenvector decomposition.
 The third eigenvector field (smallest eigenvalue) is visualized as arrows color‑coded by helix angle (HA); inset shows septal fiber rotation.
