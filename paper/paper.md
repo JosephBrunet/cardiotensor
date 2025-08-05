@@ -12,27 +12,24 @@ authors:
   - name: Joseph Brunet
     orcid: 0000-0002-8424-9510
     affiliation: "1, 2"
-  - name: Andrew Cook
-    orcid: 0000-0001-5079-7546
-    affiliation: 3
   - name: Lisa Chestnutt
     orcid: 0009-0008-0783-7299
     affiliation: 3
+  - name: Matthieu Chourrout
+    orcid: 0000-0002-2282-6976
+    affiliation: 1
   - name: Hector Dejea
     orcid: 0000-0003-2584-9812
     affiliation: 2
   - name: Vaishnavi Sabarigirivasan
     orcid: 0000-0003-2550-6262
     affiliation: 2
-  - name: Matthieu Chourrout
-    orcid: 0000-0002-2282-6976
-    affiliation: 1
-  - name: David Stansby
-    orcid: 0000-0002-1365-1908
-    affiliation: 1
   - name: Peter D. Lee
     orcid: 0000-0002-3898-8881
     affiliation: "1, 4"
+  - name: Andrew Cook
+    orcid: 0000-0001-5079-7546
+    affiliation: 3
 
 affiliations:
   - name: Department of Mechanical Engineering, University College London, London, UK
@@ -49,7 +46,7 @@ bibliography: paper.bib
 
 # Summary
 
-Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major challenge. Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, allowing detailed assessments of anatomical continuity and regional organization.
+Understanding the architecture of the human heart requires analyzing its microstructural organization across scales. With the advent of high-resolution imaging techniques such as synchrotron-based tomography, it has become possible to visualize entire hearts at micron-scale resolution. However, translating these large, complex volumetric datasets into interpretable, quantitative descriptors of cardiac organization remains a major challenge. Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte orientation in whole- or partial-heart imaging datasets. It provides efficient, scalable implementations of structure tensor analysis, enabling extraction of directional metrics such as helix angle (HA), transverse angle (TA), and fractional anisotropy (FA). The package supports datasets reaching teravoxel scale and is optimized for high-performance computing environments, including parallel and chunk-based processing pipelines. In addition, cardiotensor includes tractography functionality to reconstruct continuous cardiomyocyte trajectories. This enables fiber-level visualization and structural mapping of cardiac tissue, allowing detailed assessments of anatomical continuity and regional organization.
 
 # Statement of Need
 
@@ -94,8 +91,6 @@ Cardiotensor is organized into five main modules, designed for clarity and scala
 
 This modular architecture ensures reproducibility, maintainability, and easy integration into larger cardiac imaging workflows.
 
-
-
 ## Documentation and Usage
 
 The documentation for cardiotensor is available online at:
@@ -110,9 +105,13 @@ The main components of the documentation are:
 
 # Acknowledgements
 
-This project has been made possible in part by grant number 2022-316777 from the Chan Zuckerberg Initiative DAF, an advised fund of Silicon Valley Community Foundation.
+The authors would like to thank David Stansby for his guidance on the Python package structure, documentation framework, and best practices for scientific software development.
 
-The authors also acknowledge ESRF beamtimes md1290 and md1389 as sources of the data.
+This project has been made possible in part by grant number 2022‑316777 from the Chan Zuckerberg Initiative DAF, an advised fund of Silicon Valley Community Foundation. This work was also supported in part by the Wellcome Trust [310796/Z/24/Z].
+
+The authors gratefully acknowledge ESRF beamtimes md1290 and md1389 on BM18 as sources of the data.
+
+Peter D. Lee is a CIFAR MacMillan Fellow in the Multiscale Human program. This research is also based on work supported by a CIFAR Catalyst Award.
 
 AC’s research is enabled through the Noé Heart Centre Laboratories, which are gratefully supported by the Rachel Charitable Trust via Great Ormond Street Hospital Children’s Charity (GOSH Charity). The Noé Heart Centre Laboratories are based in The Zayed Centre for Research into Rare Disease in Children, which was made possible thanks to Her Highness Sheikha Fatima bint Mubarak, wife of the late Sheikh Zayed bin Sultan Al Nahyan, founding father of the United Arab Emirates, as well as other generous funders.
 
