@@ -1,7 +1,7 @@
 import random
+
 import fury
 import numpy as np
-
 
 
 def downsample_streamline(streamline, factor=2):
@@ -20,7 +20,8 @@ def show_streamlines(
     max_streamlines: int | None = None,
     filter_min_len: int | None = None,
     subsample_factor: int = 1,
-    crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]] | None = None,
+    crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
+    | None = None,
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
     if filter_min_len:
@@ -32,14 +33,12 @@ def show_streamlines(
     if max_streamlines:
         print(f"Limiting to max {max_streamlines} streamlines")
 
-
-
-
-
-
-
     # Crop streamlines and color values (point-wise) if bounds are provided
-    print(f"Cropping streamlines within bounds: {crop_bounds}" if crop_bounds else "No cropping applied.")
+    print(
+        f"Cropping streamlines within bounds: {crop_bounds}"
+        if crop_bounds
+        else "No cropping applied."
+    )
     if crop_bounds is not None:
         z_min, z_max = crop_bounds[2]
         y_min, y_max = crop_bounds[1]
@@ -57,9 +56,12 @@ def show_streamlines(
             cl = np.asarray(cl)
 
             within = (
-                (sl[:, 0] >= x_min) & (sl[:, 0] <= x_max) &
-                (sl[:, 1] >= y_min) & (sl[:, 1] <= y_max) &
-                (sl[:, 2] >= z_min) & (sl[:, 2] <= z_max)
+                (sl[:, 0] >= x_min)
+                & (sl[:, 0] <= x_max)
+                & (sl[:, 1] >= y_min)
+                & (sl[:, 1] <= y_max)
+                & (sl[:, 2] >= z_min)
+                & (sl[:, 2] <= z_max)
             )
 
             if np.any(within):  # Keep only remaining points
@@ -72,10 +74,11 @@ def show_streamlines(
             color_idx += n_pts
 
         streamlines_xyz = new_streamlines
-        color_values = np.concatenate(new_color_values) if new_color_values else np.array([])
+        color_values = (
+            np.concatenate(new_color_values) if new_color_values else np.array([])
+        )
     else:
         print("No cropping applied.")
-
 
     # Downsample and filter
     downsampled_streamlines = []
@@ -115,11 +118,11 @@ def show_streamlines(
 
     print(f"Final number of streamlines to render: {len(streamlines_xyz)}")
 
-
-
     if not color_values:
-        raise ValueError("❌ No streamlines left after filtering and cropping. Adjust parameters like --crop or --min-length.")
-    
+        raise ValueError(
+            "❌ No streamlines left after filtering and cropping. Adjust parameters like --crop or --min-length."
+        )
+
     flat_colors = np.concatenate(color_values)
     print(f"Coloring mode: min={flat_colors.min():.2f}, max={flat_colors.max():.2f}")
     print(f"Rendering mode: {mode}")
@@ -164,8 +167,6 @@ def show_streamlines(
     scene.add(fury.actor.scalar_bar(lut))
     scene.reset_camera()
 
-
-
     # radii = 7
     # # Example coordinates of the point (x, y, z)
     # highlight_point = np.array([[6548-6000,8001-7500,17296-17041]])/2  # 3D coords in same space as streamlines
@@ -181,22 +182,19 @@ def show_streamlines(
     # # Add the point to the scene
     # scene.add(sphere_actor)
 
-
     # # Example coordinates of the point (x, y, z)
     # highlight_point = np.array([[6570-6000,7970-7500,17142-17041]])/2  # 3D coords in same space as streamlines
     # # Create a sphere actor for the point
     # sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
     # # Add the point to the scene
     # scene.add(sphere_actor)
-    
-    
+
     # # Example coordinates of the point (x, y, z)
     # highlight_point = np.array([[6548-6000,7997-7500,17394-17041]])/2  # 3D coords in same space as streamlines
     # # Create a sphere actor for the point
     # sphere_actor = fury.actor.sphere(centers=highlight_point, colors=(1, 0, 0), radii=radii)
     # # Add the point to the scene
     # scene.add(sphere_actor)
-
 
     if interactive:
         print("🕹️ Opening interactive window...")

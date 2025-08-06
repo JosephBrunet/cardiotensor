@@ -1,14 +1,15 @@
 import numpy as np
 import pytest
-from pathlib import Path
 
 from cardiotensor.utils.utils import convert_to_8bit, read_conf_file
+
 
 def test_convert_to_8bit():
     arr = np.array([0, 128, 255], dtype=np.uint16)
     out = convert_to_8bit(arr)
     assert out.dtype == np.uint8
     assert out.min() >= 0 and out.max() <= 255
+
 
 def test_read_conf_file(tmp_path):
     # Create dummy directories for IMAGES_PATH and MASK_PATH
@@ -64,7 +65,7 @@ def test_read_conf_file(tmp_path):
     # Angles
     assert config["WRITE_ANGLES"] is True
     assert isinstance(config["AXIS_POINTS"], list)
-    assert config["AXIS_POINTS"] == [(0,0,0), (1,1,1)]
+    assert config["AXIS_POINTS"] == [(0, 0, 0), (1, 1, 1)]
 
     # Test
     assert config["TEST"] is True

@@ -93,7 +93,7 @@ def visualize_streamlines(
 
 
 def compute_elevation_angles(streamlines):
-    """Compute per-vertex elevation angle."""
+    """Compute per-vertex elevation angle as a flat 1D array."""
     all_angles = []
     for pts in streamlines:
         if len(pts) < 2:
@@ -104,8 +104,8 @@ def compute_elevation_angles(streamlines):
         normalized = np.divide(vecs, norms, where=norms != 0)
         z_components = normalized[:, 2]
         elev = np.arcsin(z_components) * 180.0 / np.pi
-        elev = np.concatenate(
-            [elev, [elev[-1]]]
-        )  # repeat last value to match point count
+        elev = np.concatenate([elev, [elev[-1]]])  # match #points
         all_angles.append(elev.astype(np.float32))
-    return all_angles
+
+    # flatten into a single array
+    return np.hstack(all_angles).astype(np.float32)

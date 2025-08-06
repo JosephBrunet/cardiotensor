@@ -86,8 +86,8 @@ def plot_vector_field_fury(
             centers=centers,
             directions=directions,
             colors=color_array,
-            heights=size*5000,
-            radius=radius*0.1,
+            heights=size * 5000,
+            radius=radius * 0.1,
             capped=True,
         )
         scene.add(cylinder_actor)

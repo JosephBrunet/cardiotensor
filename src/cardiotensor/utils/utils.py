@@ -74,7 +74,6 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     if not output_dir:
         output_dir = "./output"  # Default output directory if not specified
 
-
     return {
         # DATASET
         "IMAGES_PATH": images_path,
