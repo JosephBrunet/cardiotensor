@@ -82,6 +82,9 @@ def script() -> None:
 
     # Extract parameters
     volume_path = params.get("IMAGES_PATH", "")
+    if not volume_path:
+        print("❌ No volume path specified in the configuration file.")
+        sys.exit(1)
     mask_path = params.get("MASK_PATH", None)
     output_dir = params.get("OUTPUT_PATH", "./output")
     output_format = params.get("OUTPUT_FORMAT", "jp2")
