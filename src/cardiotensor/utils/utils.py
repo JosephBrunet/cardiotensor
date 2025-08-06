@@ -69,6 +69,12 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     if mask_path and not os.path.exists(mask_path):
         raise FileNotFoundError(f"The MASK_PATH '{mask_path}' does not exist.")
 
+    # OUTPUT
+    output_dir = config.get("OUTPUT", "OUTPUT_PATH", fallback="").strip()
+    if not output_dir:
+        output_dir = "./output"  # Default output directory if not specified
+
+
     return {
         # DATASET
         "IMAGES_PATH": images_path,
@@ -104,7 +110,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "TEST": config.getboolean("TEST", "TEST", fallback=False),
         "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
         # OUTPUT
-        "OUTPUT_PATH": config.get("OUTPUT", "OUTPUT_PATH", fallback="./output").strip(),
+        "OUTPUT_PATH": output_dir,
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
     }
