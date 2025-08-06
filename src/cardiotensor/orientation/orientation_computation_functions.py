@@ -309,6 +309,7 @@ def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:
 
     return img_FA
 
+
 def rotate_vectors_to_new_axis(
     vector_field_slice: np.ndarray, new_axis_vec: np.ndarray
 ) -> np.ndarray:
@@ -337,11 +338,7 @@ def rotate_vectors_to_new_axis(
     v = np.cross(a, b)
     c = np.dot(a, b)
 
-    kmat = np.array([
-        [0, -v[2], v[1]],
-        [v[2], 0, -v[0]],
-        [-v[1], v[0], 0]
-    ])
+    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
 
     if np.linalg.norm(v) != 0:
         rotation_matrix = (

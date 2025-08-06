@@ -1,15 +1,12 @@
-import numpy as np
-import pytest
 from pathlib import Path
+
+import numpy as np
 
 from cardiotensor.orientation.orientation_computation_functions import (
     adjust_start_end_index,
-    calculate_center_vector,
     calculate_structure_tensor,
     compute_fraction_anisotropy,
-    compute_helix_and_transverse_angles,
     interpolate_points,
-    remove_padding,
     rotate_vectors_to_new_axis,
     write_images,
     write_vector_field,
@@ -19,14 +16,14 @@ from cardiotensor.orientation.orientation_computation_functions import (
 def test_interpolate_points_linear():
     p1 = (0, 0, 0)
     p2 = (10, 10, 10)
-    
+
     # Interpolate 5 points between p1 and p2
     points = interpolate_points([p1, p2], N_img=20)
-    
+
     # Validate shape (20 points, 3 coordinates)
     assert isinstance(points, np.ndarray)
     assert points.shape == (20, 3)
-    
+
     # Ensure points are evenly spaced
     diffs = np.diff(points, axis=0)
     distances = np.linalg.norm(diffs, axis=1)
@@ -41,19 +38,18 @@ def test_adjust_start_end_index():
 
     # Case 2: Normal mode, with padding
     start, end = adjust_start_end_index(0, 5, 10, 2, 2, False, 0)
-    assert start == 0       # cannot go below 0
-    assert end == 7         # 5 + 2
+    assert start == 0  # cannot go below 0
+    assert end == 7  # 5 + 2
 
     # Case 3: Normal mode, with end clamping
     start, end = adjust_start_end_index(8, 9, 10, 1, 5, False, 0)
-    assert start == 7       # 8 - 1
-    assert end == 10        # clamped to N_img
+    assert start == 7  # 8 - 1
+    assert end == 10  # clamped to N_img
 
     # Case 4: Test mode, centered on n_slice with padding
     start, end = adjust_start_end_index(0, 0, 10, 1, 1, True, 5)
-    assert start == 4       # 5 - 1
-    assert end == 7         # 5 + 1 + 1
-
+    assert start == 4  # 5 - 1
+    assert end == 7  # 5 + 1 + 1
 
 
 def test_structure_tensor_and_fa():
@@ -73,7 +69,7 @@ def test_structure_tensor_and_fa():
     assert vec.shape == (3,) + volume.shape
 
     # Compute Fractional Anisotropy (FA) from eigenvalues
-    fa_map = compute_fraction_anisotropy(val[:,0,:,:])
+    fa_map = compute_fraction_anisotropy(val[:, 0, :, :])
     assert isinstance(fa_map, np.ndarray)
     assert fa_map.shape == volume.shape[1:]
     assert np.all(np.isfinite(fa_map)), "FA map contains NaN or Inf"
@@ -93,10 +89,14 @@ def test_vector_rotation_and_angles():
     vector_slice[2, :, :] = 1.0  # all vectors = (0, 0, 1)
 
     # --- Test 1: Rotate to the same axis (Z-axis) ---
-    rotated_same = rotate_vectors_to_new_axis(vector_slice, np.array([1, 0, 0], dtype=np.float32))
+    rotated_same = rotate_vectors_to_new_axis(
+        vector_slice, np.array([1, 0, 0], dtype=np.float32)
+    )
     assert isinstance(rotated_same, np.ndarray)
     assert rotated_same.shape == vector_slice.shape
-    assert np.allclose(rotated_same, vector_slice, atol=1e-6), "Rotation to same axis should not change vectors"
+    assert np.allclose(rotated_same, vector_slice, atol=1e-6), (
+        "Rotation to same axis should not change vectors"
+    )
 
 
 def test_write_images_and_vectors(tmp_path: Path):
