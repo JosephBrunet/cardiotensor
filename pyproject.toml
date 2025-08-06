@@ -30,12 +30,12 @@ dependencies = [
     "matplotlib",
     "numpy>=1.20",
     "opencv-python-headless",
+    "pandas",
+    "psutil",
     "scikit-image",
     "structure-tensor>=0.3.0",
     "tifffile",
     "tqdm",
-    "pandas",
-    "psutil",
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
@@ -43,7 +43,7 @@ license = {file = "LICENSE"}
 name = "cardiotensor"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "1.1.1"
+version = "1.1.2"
 
 [project.optional-dependencies]
 cupy = ["cupy>=8"]
