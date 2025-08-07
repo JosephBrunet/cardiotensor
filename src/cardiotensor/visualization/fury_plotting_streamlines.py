@@ -2,17 +2,62 @@ import random
 
 import fury
 import numpy as np
+import matplotlib.pyplot as plt
+import vtk
 
 
 def downsample_streamline(streamline, factor=2):
     return streamline if len(streamline) < 3 else streamline[::factor]
 
 
+
+def matplotlib_cmap_to_fury_lut(cmap, value_range=(-1, 1), n_colors=256):
+    """
+    Convert a Matplotlib colormap to a VTK LookupTable for FURY.
+
+    Parameters
+    ----------
+    cmap : str or matplotlib colormap
+        Name or object of Matplotlib colormap.
+    value_range : (float, float)
+        Tuple specifying the (min, max) of scalar values.
+    n_colors : int
+        Number of LUT entries.
+
+    Returns
+    -------
+    lut : vtk.vtkLookupTable
+        A VTK-compatible lookup table.
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    colors = cmap(np.linspace(0, 1, n_colors))  # RGBA in [0,1]
+    lut = vtk.vtkLookupTable()
+    lut.SetNumberOfTableValues(n_colors)
+    lut.SetRange(*value_range)
+    lut.Build()
+
+    for i in range(n_colors):
+        r, g, b, a = colors[i]
+        lut.SetTableValue(i, r, g, b, a)
+
+    return lut
+
+
+
+
+
+
+
 def show_streamlines(
     streamlines_xyz: list[np.ndarray],
     color_values: list[np.ndarray],
     mode: str = "tube",
-    line_width: int = 4,
+    line_width: float = 4,
     interactive: bool = True,
     screenshot_path: str | None = None,
     window_size: tuple[int, int] = (800, 800),
@@ -22,7 +67,41 @@ def show_streamlines(
     subsample_factor: int = 1,
     crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
     | None = None,
+    colormap=None,
 ):
+    """
+    Render 3D streamlines in FURY with per-vertex coloring.
+
+    Parameters
+    ----------
+    streamlines_xyz : list of np.ndarray
+        Each streamline as an array of (x, y, z) points.
+    color_values : list of np.ndarray
+        Flattened per-vertex scalar values for coloring.
+    mode : {"tube", "fake_tube", "line"}
+        Rendering mode for streamlines.
+    line_width : float
+        Thickness of tubes/lines.
+    interactive : bool
+        Whether to open an interactive FURY window.
+    screenshot_path : str, optional
+        Save screenshot if not interactive.
+    window_size : (int, int)
+        Window size for display or screenshot.
+    downsample_factor : int
+        Step size to reduce points in each streamline.
+    max_streamlines : int, optional
+        Maximum number of streamlines to display.
+    filter_min_len : int, optional
+        Minimum streamline length (after downsampling) to keep.
+    subsample_factor : int
+        Randomly keep 1 of every N streamlines.
+    crop_bounds : tuple of ((x_min,x_max),...), optional
+        Crop streamlines within bounds.
+    colormap : callable or str, optional
+        Function or name of Matplotlib colormap to map scalar values to RGB.
+        If None, defaults to FURY HSV mapping.
+    """
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
     if filter_min_len:
         print(f"Filtering out streamlines shorter than {filter_min_len} points")
@@ -33,12 +112,8 @@ def show_streamlines(
     if max_streamlines:
         print(f"Limiting to max {max_streamlines} streamlines")
 
-    # Crop streamlines and color values (point-wise) if bounds are provided
-    print(
-        f"Cropping streamlines within bounds: {crop_bounds}"
-        if crop_bounds
-        else "No cropping applied."
-    )
+    # --- Cropping
+    print(f"Cropping streamlines within bounds: {crop_bounds}" if crop_bounds else "No cropping applied.")
     if crop_bounds is not None:
         z_min, z_max = crop_bounds[2]
         y_min, y_max = crop_bounds[1]
@@ -77,10 +152,8 @@ def show_streamlines(
         color_values = (
             np.concatenate(new_color_values) if new_color_values else np.array([])
         )
-    else:
-        print("No cropping applied.")
 
-    # Downsample and filter
+    # --- Downsample and filter
     downsampled_streamlines = []
     downsampled_colors = []
     idx = 0
@@ -101,18 +174,16 @@ def show_streamlines(
     if not streamlines_xyz:
         raise ValueError("❌ No streamlines left after downsampling and filtering.")
 
-    # Subsample
+    # --- Subsample
     if subsample_factor > 1:
         total = len(streamlines_xyz)
         selected_idx = sorted(random.sample(range(total), total // subsample_factor))
         streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
         color_values = [color_values[i] for i in selected_idx]
 
-    # Cap max
+    # --- Cap max
     if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
-        selected_idx = sorted(
-            random.sample(range(len(streamlines_xyz)), max_streamlines)
-        )
+        selected_idx = sorted(random.sample(range(len(streamlines_xyz)), max_streamlines))
         streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
         color_values = [color_values[i] for i in selected_idx]
 
@@ -127,18 +198,37 @@ def show_streamlines(
     print(f"Coloring mode: min={flat_colors.min():.2f}, max={flat_colors.max():.2f}")
     print(f"Rendering mode: {mode}")
 
-    lut = fury.actor.colormap_lookup_table(
-        scale_range=(flat_colors.min(), flat_colors.max()),
-        hue_range=(0.7, 0.0),
-        saturation_range=(0.5, 1.0),
-    )
+    min_val = float(flat_colors.min())
+    max_val = float(flat_colors.max())
+
+    # Convert your 0–255 values into real [-90, 90] degrees
+    flat_colors = flat_colors / 255 * 180 - 90
+
+    if colormap is None:
+        # Default HSV colormap from FURY
+        lut = fury.actor.colormap_lookup_table(
+            scale_range=(min_val, max_val),
+            hue_range=(0.7, 0.0),
+            saturation_range=(0.5, 1.0),
+        )
+    else:
+        # Convert Matplotlib cmap to VTK LUT
+        lut = matplotlib_cmap_to_fury_lut(
+            cmap=colormap,
+            value_range=(-90, 90),
+            n_colors=256,
+        )
+    # Map scalar values to LUT indices
+    lookup_colors = flat_colors
+    
 
     scene = fury.window.Scene()
 
+    # --- Render according to mode
     if mode == "tube":
         actor = fury.actor.streamtube(
             streamlines_xyz,
-            flat_colors,
+            lookup_colors,
             linewidth=line_width,
             opacity=1,
             lookup_colormap=lut,
@@ -146,7 +236,7 @@ def show_streamlines(
     elif mode == "fake_tube":
         actor = fury.actor.line(
             streamlines_xyz,
-            flat_colors,
+            lookup_colors,
             linewidth=line_width,
             fake_tube=True,
             depth_cue=True,
@@ -154,7 +244,7 @@ def show_streamlines(
     elif mode == "line":
         actor = fury.actor.line(
             streamlines_xyz,
-            flat_colors,
+            lookup_colors,
             linewidth=line_width,
             fake_tube=False,
             depth_cue=False,
@@ -164,8 +254,10 @@ def show_streamlines(
         raise ValueError(f"Unknown mode: {mode}")
 
     scene.add(actor)
-    scene.add(fury.actor.scalar_bar(lut))
+    if lut is not None:
+        scene.add(fury.actor.scalar_bar(lut))
     scene.reset_camera()
+    
 
     # radii = 7
     # # Example coordinates of the point (x, y, z)
@@ -196,6 +288,10 @@ def show_streamlines(
     # # Add the point to the scene
     # scene.add(sphere_actor)
 
+
+
+
+    # --- Display or screenshot
     if interactive:
         print("🕹️ Opening interactive window...")
         fury.window.show(scene, size=window_size, reset_camera=False)
@@ -204,3 +300,6 @@ def show_streamlines(
             raise ValueError("Must specify screenshot_path when interactive=False.")
         print(f"📸 Saving screenshot to: {screenshot_path}")
         fury.window.record(scene=scene, out_path=screenshot_path, size=window_size)
+
+
+

@@ -1,10 +1,9 @@
 from pathlib import Path
-
 import numpy as np
+import matplotlib.pyplot as plt
 
-from cardiotensor.visualization.fury_plotting_streamlines import (
-    show_streamlines,
-)
+from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def visualize_streamlines(
@@ -20,6 +19,7 @@ def visualize_streamlines(
     interactive: bool = True,
     screenshot_path: str | None = None,
     window_size: tuple[int, int] = (800, 800),
+    colormap=None,
 ):
     """
     Visualize precomputed streamlines with optional coloring.
@@ -50,6 +50,8 @@ def visualize_streamlines(
         Save a screenshot instead of opening interactive window.
     window_size : (int, int)
         Window width and height in pixels.
+    colormap : callable or None
+        Colormap function mapping values to RGB. If None, defaults to helix_angle_cmap.
     """
     streamlines_file = Path(streamlines_file)
     if not streamlines_file.exists():
@@ -75,6 +77,10 @@ def visualize_streamlines(
             raise ValueError("'ha_values' array missing in .npz.")
         color_values = ha_values.astype(np.float32)
 
+    # Default to helix_angle_cmap if no colormap is provided
+    if colormap is None:
+        colormap = helix_angle_cmap
+
     # Render streamlines
     show_streamlines(
         streamlines_xyz=streamlines_xyz,
@@ -89,6 +95,7 @@ def visualize_streamlines(
         filter_min_len=filter_min_len,
         subsample_factor=subsample_factor,
         crop_bounds=crop_bounds,
+        colormap=colormap,  # <-- Pass to the FURY renderer
     )
 
 

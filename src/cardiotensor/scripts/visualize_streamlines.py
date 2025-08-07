@@ -1,8 +1,19 @@
+#!/usr/bin/env python3
+"""
+visualize_streamlines.py
+------------------------
+CLI tool to visualize cardiac streamlines from a .npz file using FURY.
+Supports coloring by helix angle or elevation, custom colormaps,
+and optional screenshot export.
+"""
+
 import argparse
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.streamlines import visualize_streamlines
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def script():
@@ -24,8 +35,29 @@ def script():
     parser.add_argument("--screenshot", type=str, default=None)
     parser.add_argument("--width", type=int, default=800)
     parser.add_argument("--height", type=int, default=800)
+    parser.add_argument(
+        "--colormap",
+        type=str,
+        default="helix_angle",
+        help=(
+            "Colormap for coloring streamlines. "
+            "Use 'helix_angle' for the custom cardiac colormap "
+            "or any Matplotlib colormap name (e.g., viridis, hsv). "
+            "Default: helix_angle"
+        ),
+    )
 
     args = parser.parse_args()
+
+    # Determine colormap
+    if args.colormap.lower() == "helix_angle":
+        chosen_cmap = helix_angle_cmap
+    else:
+        try:
+            chosen_cmap = plt.get_cmap(args.colormap)
+        except ValueError:
+            print(f"⚠️ Unknown colormap '{args.colormap}', falling back to helix_angle_cmap.")
+            chosen_cmap = helix_angle_cmap
 
     # Read conf file only in CLI
     params = read_conf_file(args.conf_file)
@@ -55,6 +87,7 @@ def script():
         interactive=not args.no_interactive,
         screenshot_path=args.screenshot,
         window_size=(args.width, args.height),
+        colormap=chosen_cmap, 
     )
 
 
