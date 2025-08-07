@@ -1,16 +1,17 @@
 import numpy as np
 from fury import actor, colormap, window
-
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 def plot_vector_field_fury(
-    vector_field,
-    size=1.0,
-    radius=0.5,
-    color_volume=None,
-    stride=10,
-    voxel_size=1.0,
-    mode="arrow",  # "arrow" or "cylinder"
-    save_path=None,
+    vector_field: np.ndarray,
+    size: float = 1.0,
+    radius: float = 0.5,
+    color_volume: np.ndarray = None,
+    stride: int = 10,
+    voxel_size: float = 1.0,
+    mode: str = "arrow",  # "arrow" or "cylinder"
+    save_path: str = None,
+    colormap=None, 
 ):
     """
     Visualize a 3D vector field using FURY as arrows or cylinders.
@@ -33,8 +34,16 @@ def plot_vector_field_fury(
         Visualization mode: "arrow" or "cylinder".
     save_path : Path or str, optional
         If provided, save the screenshot to this path.
+    colormap : matplotlib colormap, optional
+        Colormap to use for coloring the vectors.
+        Default is helix_angle_cmap.
     """
     print("Starting FURY vector field visualization...")
+
+    # Default colormap
+    if colormap is None:
+        colormap = helix_angle_cmap
+
     Z, Y, X, _ = vector_field.shape
 
     # Downsample grid
@@ -62,7 +71,13 @@ def plot_vector_field_fury(
         color_sub = color_volume[0:Z:stride, 0:Y:stride, 0:X:stride]
         color_flat = color_sub.reshape(-1)
         color_values = color_flat[valid_mask]
-        color_array = colormap.create_colormap(color_values, name="hsv", auto=True)
+
+        # Normalize to [0, 1]
+        cmin, cmax = np.nanmin(color_values), np.nanmax(color_values)
+        color_values = (color_values - cmin) / (cmax - cmin + 1e-8)
+
+        # Map to RGB using the chosen colormap
+        color_array = colormap(color_values)[:, :3]  # drop alpha
     else:
         color_array = np.tile([1.0, 0.0, 0.0], (centers.shape[0], 1))
 
@@ -71,23 +86,25 @@ def plot_vector_field_fury(
 
     if mode == "arrow":
         print("Rendering as arrows...")
+        scales = norms * voxel_size * size
+        scales = np.repeat(scales[:, None], 3, axis=1)  # Nx3 for arrows
         arrow_actor = actor.arrow(
             centers,
             directions,
             colors=color_array,
-            scales=10000 * size,
+            scales=10 * scales,
         )
         scene.add(arrow_actor)
 
     elif mode == "cylinder":
         print("Rendering as cylinders...")
-        lengths = norms * size
+        heights = norms * voxel_size * size
         cylinder_actor = actor.cylinder(
             centers=centers,
             directions=directions,
             colors=color_array,
-            heights=size * 5000,
-            radius=radius * 0.1,
+            heights=heights * 10,
+            radius=radius * voxel_size * 0.0002,
             capped=True,
         )
         scene.add(cylinder_actor)

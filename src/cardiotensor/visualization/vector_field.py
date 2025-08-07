@@ -15,6 +15,7 @@ from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.vector_vtk_export import export_vector_field_to_vtk
 from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_fury
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def visualize_vector_field(
@@ -31,37 +32,71 @@ def visualize_vector_field(
     voxel_size: float = 1.0,
     is_vtk: bool = False,
     mode: str = "arrow",  # "arrow" or "cylinder"
+    colormap=None,  # <-- New parameter
 ):
     """
-    High-level visualization of a 3D vector field with FURY or optional VTK export.
+    High-level visualization of a 3D vector field using FURY for interactive
+    visualization or optional VTK export for ParaView.
+
+    This function loads a 3D vector field, optionally applies a mask and a
+    scalar volume for coloring, downsamples the data for visualization, and
+    displays it in FURY as arrows or cylinders. The user can also save a
+    snapshot or export the vector field to a VTK file.
 
     Parameters
     ----------
     vector_field_path : str or Path
-        Path to the 3D vector field (directory or file).
+        Path to the 3D vector field (directory or file). The vector field must
+        be stored as (3, Z, Y, X) or (Z, Y, X, 3) numpy arrays.
     color_volume_path : str or Path, optional
-        Optional scalar volume for coloring (e.g., HA map).
+        Path to a scalar volume used to color the vectors (e.g., helix angles).
+        If RGB, the channels will be averaged to a single scalar map.
     mask_path : str or Path, optional
-        Optional mask volume to filter the vector field.
+        Path to a binary mask volume. Vectors outside the mask are set to NaN
+        and ignored in visualization.
     stride : int, optional
-        Step size for downsampling during visualization. Default is 10.
+        Step size for downsampling the vectors in each dimension for
+        visualization. Default is 10.
     bin_factor : int, optional
-        Spatial downsampling factor for the vector field. Default is 1.
+        Spatial downsampling factor applied before visualization. Useful for
+        large volumes. Default is 1 (no binning).
     size : float, optional
-        Scaling factor for the arrows/cylinders. Default is 1.0.
+        Global scaling factor for arrow or cylinder lengths. Default is 1.0.
     radius : float, optional
-        Radius of cylinders (ignored if mode="arrow"). Default is 0.5.
-    start, end : int, optional
-        Z slice range to visualize. Default is full volume.
+        Radius of cylinders if `mode="cylinder"`. Ignored in arrow mode.
+        Default is 0.5.
+    start : int, optional
+        Starting Z slice index to visualize. Default is 0.
+    end : int, optional
+        Ending Z slice index (exclusive). Default is the last slice.
     save_path : str or Path, optional
-        If provided, saves the visualization image.
+        If provided, saves a rendered screenshot to this path instead of
+        opening an interactive window.
     voxel_size : float, optional
-        Voxel size for VTK export. Default is 1.0.
+        Physical voxel size used for scaling coordinates and lengths in 3D
+        space. Default is 1.0.
     is_vtk : bool, optional
-        If True, exports the vector field to VTK.
+        If True, exports the vector field to a VTK file (`paraview.vtk`)
+        for visualization in ParaView.
     mode : str, optional
-        Visualization mode: "arrow" or "cylinder". Default is "arrow".
+        Visualization mode, either:
+        - "arrow" : draws 3D arrows
+        - "cylinder" : draws cylinders aligned with vector directions
+        Default is "arrow".
+    colormap : matplotlib colormap, optional
+        Colormap used for coloring the vectors based on `color_volume`.
+        Accepts any Matplotlib colormap (e.g., `plt.cm.turbo`) or your
+        custom `helix_angle_cmap`. Default is `helix_angle_cmap`.
+
+    Returns
+    -------
+    None
+        Displays the 3D vector field interactively or saves a screenshot/VK file.
     """
+    # Default colormap
+    if colormap is None:
+        colormap = helix_angle_cmap
+
 
     vector_field_path = Path(vector_field_path)
     if not vector_field_path.exists():
@@ -163,6 +198,7 @@ def visualize_vector_field(
         voxel_size=voxel_size * bin_factor,
         mode=mode,
         save_path=save_path,
+        colormap=colormap,
     )
 
     # Optional VTK export
