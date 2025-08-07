@@ -446,8 +446,6 @@ def plot_images(
     Returns:
         None
     """
-    import matplotlib.pyplot as plt
-    from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
     # Default colormaps
     if colormap_angle is None:
@@ -526,8 +524,6 @@ def write_images(
     Returns:
         None
     """
-    import matplotlib.pyplot as plt
-    from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
     # Default colormaps
     if colormap_angle is None:
@@ -573,36 +569,43 @@ def write_images(
     # ---- RGB output ----
     elif "rgb" in output_type:
 
-        def write_img_rgb(img: np.ndarray, output_path: str, cmap: plt.Colormap | None) -> None:
+        def write_img_rgb(img: np.ndarray, output_path: str, cmap: plt.Colormap, vmin: float, vmax: float) -> None:
             """
-            Writes an RGB image to the specified output path.
+            Writes a single 2D RGB image using a fixed colormap range.
+
+            Args:
+                img (np.ndarray): Input scalar image.
+                output_path (str): Path to save the RGB image.
+                cmap (plt.Colormap): Matplotlib colormap (e.g., inferno, custom HA cmap).
+                vmin (float): Minimum value for normalization.
+                vmax (float): Maximum value for normalization.
             """
-            minimum = np.nanmin(img)
-            maximum = np.nanmax(img)
-            img_norm = (img - minimum) / (maximum - minimum + 1e-8)
+            img_clipped = np.clip(img, vmin, vmax)
+            img_norm = (img_clipped - vmin) / (vmax - vmin + 1e-8)
+                        
+            img_rgb = cmap(img_norm)[..., :3]  # Drop alpha channel
+            img_rgb = (img_rgb * 255).astype(np.uint8)
 
-            if cmap is not None:
-                img_rgb = cmap(img_norm)
-            img_rgb = (img_rgb[:, :, :3] * 255).astype(np.uint8)
+            print(img_rgb.shape, img_rgb.dtype)
 
-            # print(f"Writing image to {output_path}")
-            if output_format == "jp2":
+            if output_path.endswith(".jp2"):
                 ratio_compression = 10
                 glymur.Jp2k(output_path, data=img_rgb, cratios=[ratio_compression], numres=8, irreversible=True)
-            elif output_format == "tif":
+            elif output_path.endswith(".tif"):
                 tifffile.imwrite(output_path, img_rgb)
             else:
-                sys.exit(f"I don't recognise the output_format ({output_format})")
+                sys.exit(f"I don't recognise the output path format: {output_path}")
+
 
         if output_format == "jp2":
-            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2", cmap=colormap_angle)
-            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2", cmap=colormap_angle)
-            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2", cmap=colormap_FA)
+            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2", cmap=colormap_angle, vmin=-90, vmax=90)
+            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2", cmap=colormap_angle, vmin=-90, vmax=90)
+            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2", cmap=colormap_FA, vmin=0, vmax=1)
 
         elif output_format == "tif":
-            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", cmap=colormap_angle)
-            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", cmap=colormap_angle)
-            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", cmap=colormap_FA)
+            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", cmap=colormap_angle, vmin=-90, vmax=90)
+            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", cmap=colormap_angle, vmin=-90, vmax=90)
+            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", cmap=colormap_FA, vmin=0, vmax=1)
 
         else:
             sys.exit(f"I don't recognise the output_format ({output_format})")
