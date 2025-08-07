@@ -6,6 +6,26 @@ from cardiotensor.visualization.fury_plotting_streamlines import show_streamline
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
+
+def compute_elevation_angles(streamlines):
+    """Compute per-vertex elevation angle as a flat 1D array."""
+    all_angles = []
+    for pts in streamlines:
+        if len(pts) < 2:
+            all_angles.append(np.zeros((len(pts),), dtype=np.float32))
+            continue
+        vecs = np.diff(pts, axis=0)
+        norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+        normalized = np.divide(vecs, norms, where=norms != 0)
+        z_components = normalized[:, 2]
+        elev = np.arcsin(z_components) * 180.0 / np.pi
+        elev = np.concatenate([elev, [elev[-1]]])  # match #points
+        all_angles.append(elev.astype(np.float32))
+
+    # flatten into a single array
+    return np.hstack(all_angles).astype(np.float32)
+
+
 def visualize_streamlines(
     streamlines_file: str | Path,
     color_by: str = "ha",
@@ -98,21 +118,3 @@ def visualize_streamlines(
         colormap=colormap,  # <-- Pass to the FURY renderer
     )
 
-
-def compute_elevation_angles(streamlines):
-    """Compute per-vertex elevation angle as a flat 1D array."""
-    all_angles = []
-    for pts in streamlines:
-        if len(pts) < 2:
-            all_angles.append(np.zeros((len(pts),), dtype=np.float32))
-            continue
-        vecs = np.diff(pts, axis=0)
-        norms = np.linalg.norm(vecs, axis=1, keepdims=True)
-        normalized = np.divide(vecs, norms, where=norms != 0)
-        z_components = normalized[:, 2]
-        elev = np.arcsin(z_components) * 180.0 / np.pi
-        elev = np.concatenate([elev, [elev[-1]]])  # match #points
-        all_angles.append(elev.astype(np.float32))
-
-    # flatten into a single array
-    return np.hstack(all_angles).astype(np.float32)
