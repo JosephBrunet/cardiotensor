@@ -138,7 +138,10 @@ class DataReader:
         if end_index is None:
             end_index = self.shape[0]
 
-        self.check_memory_requirement(self.shape, self.dtype)
+        #Check memory available is enough
+        effective_shape = list(self.shape)
+        effective_shape[0] = end_index - start_index
+        self.check_memory_requirement(tuple(effective_shape), self.dtype)
 
         # Decide if resize is needed
         need_resize = False
