@@ -138,9 +138,9 @@ class DataReader:
         if end_index is None:
             end_index = self.shape[0]
 
-        #Check memory available is enough
+        # Check memory available is enough
         effective_shape = list(self.shape)
-        if len(effective_shape) == 3:        
+        if len(effective_shape) == 3:
             effective_shape[0] = end_index - start_index
         elif len(effective_shape) == 4:
             effective_shape[1] = end_index - start_index

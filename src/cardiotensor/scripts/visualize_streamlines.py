@@ -9,11 +9,12 @@ and optional screenshot export.
 
 import argparse
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.streamlines import visualize_streamlines
-from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def script():
@@ -30,13 +31,13 @@ def script():
     parser.add_argument(
         "conf_file",
         type=Path,
-        help="Path to configuration file (.conf) containing OUTPUT_PATH with streamlines.npz."
+        help="Path to configuration file (.conf) containing OUTPUT_PATH with streamlines.npz.",
     )
     parser.add_argument(
         "--color-by",
         choices=["ha", "elevation"],
         default="ha",
-        help="Scalar quantity used for coloring the streamlines."
+        help="Scalar quantity used for coloring the streamlines.",
     )
     parser.add_argument(
         "--mode",
@@ -46,81 +47,75 @@ def script():
             "'tube': 3D tubes with lighting, "
             "'fake_tube': flat but shaded lines, "
             "'line': simple lines without shading."
-        )
+        ),
     )
     parser.add_argument(
         "--line-width",
         type=float,
         default=4,
-        help="Line or tube width in display units."
+        help="Line or tube width in display units.",
     )
     parser.add_argument(
         "--subsample",
         type=int,
         default=1,
-        help="Keep every Nth streamline for faster rendering."
+        help="Keep every Nth streamline for faster rendering.",
     )
     parser.add_argument(
         "--min-length",
         type=int,
         default=None,
-        help="Filter out streamlines shorter than this length (in vertices)."
+        help="Filter out streamlines shorter than this length (in vertices).",
     )
     parser.add_argument(
         "--downsample-factor",
         type=int,
         default=1,
-        help="Keep every Nth vertex along each streamline."
+        help="Keep every Nth vertex along each streamline.",
     )
     parser.add_argument(
         "--max-streamlines",
         type=int,
         default=None,
-        help="Maximum number of streamlines to render (after filtering)."
+        help="Maximum number of streamlines to render (after filtering).",
     )
     parser.add_argument(
         "--crop-x",
         nargs=2,
         type=float,
         metavar=("XMIN", "XMAX"),
-        help="Crop streamlines to an X range."
+        help="Crop streamlines to an X range.",
     )
     parser.add_argument(
         "--crop-y",
         nargs=2,
         type=float,
         metavar=("YMIN", "YMAX"),
-        help="Crop streamlines to a Y range."
+        help="Crop streamlines to a Y range.",
     )
     parser.add_argument(
         "--crop-z",
         nargs=2,
         type=float,
         metavar=("ZMIN", "ZMAX"),
-        help="Crop streamlines to a Z range."
+        help="Crop streamlines to a Z range.",
     )
     parser.add_argument(
         "--no-interactive",
         action="store_true",
-        help="Disable interactive rendering (useful for saving screenshots only)."
+        help="Disable interactive rendering (useful for saving screenshots only).",
     )
     parser.add_argument(
         "--screenshot",
         type=str,
         default=None,
-        help="Path to save a screenshot (PNG). If not set, no screenshot is saved."
+        help="Path to save a screenshot (PNG). If not set, no screenshot is saved.",
     )
     parser.add_argument(
-        "--width",
-        type=int,
-        default=800,
-        help="Width of the render window in pixels."
+        "--width", type=int, default=800, help="Width of the render window in pixels."
     )
     parser.add_argument(
-        "--height",
-        type=int,
-        default=800,
-        help="Height of the render window in pixels."
+        "--height", type=int, default=800, help="Height of the render window in pixels."
     )
     parser.add_argument(
         "--colormap",
@@ -142,7 +137,9 @@ def script():
         try:
             chosen_cmap = plt.get_cmap(args.colormap)
         except ValueError:
-            print(f"⚠️ Unknown colormap '{args.colormap}', falling back to helix_angle_cmap.")
+            print(
+                f"⚠️ Unknown colormap '{args.colormap}', falling back to helix_angle_cmap."
+            )
             chosen_cmap = helix_angle_cmap
 
     # Read conf file only in CLI
@@ -173,7 +170,7 @@ def script():
         interactive=not args.no_interactive,
         screenshot_path=args.screenshot,
         window_size=(args.width, args.height),
-        colormap=chosen_cmap, 
+        colormap=chosen_cmap,
     )
 
 

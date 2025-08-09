@@ -11,11 +11,11 @@ from pathlib import Path
 
 import numpy as np
 
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 from cardiotensor.utils.vector_vtk_export import export_vector_field_to_vtk
 from cardiotensor.visualization.fury_plotting_vectors import plot_vector_field_fury
-from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def visualize_vector_field(
@@ -96,7 +96,6 @@ def visualize_vector_field(
     # Default colormap
     if colormap is None:
         colormap = helix_angle_cmap
-
 
     vector_field_path = Path(vector_field_path)
     if not vector_field_path.exists():

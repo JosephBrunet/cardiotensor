@@ -12,9 +12,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.vector_field import visualize_vector_field
-from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def script():
@@ -52,15 +52,15 @@ def script():
         default="arrow",
         help="Visualization mode (default: arrow)",
     )
-    
+
     parser.add_argument(
         "--colormap",
         type=str,
         default="helix_angle",
         help="Colormap for coloring vectors. "
-             "Use 'helix_angle' for custom colormap or any Matplotlib colormap name (default: helix_angle)",
+        "Use 'helix_angle' for custom colormap or any Matplotlib colormap name (default: helix_angle)",
     )
-    
+
     parser.add_argument("--start", type=int, default=None, help="Start slice index")
     parser.add_argument("--end", type=int, default=None, help="End slice index")
     parser.add_argument(
@@ -104,7 +104,7 @@ def script():
         save_path=args.save,
         voxel_size=voxel_size,
         is_vtk=args.vtk,
-        colormap=chosen_cmap, 
+        colormap=chosen_cmap,
     )
 
 
