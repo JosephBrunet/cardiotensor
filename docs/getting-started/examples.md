@@ -29,7 +29,9 @@ The `./examples/` directory contains:
 
 1. Clone the repository and install the package:
     ```console
-    $ pip install cardiotensor
+    $ git clone https://github.com/JosephBrunet/cardiotensor.git
+    $ cd cardiotensor
+    $ pip install .
     ```
 
 2. Navigate to the `examples` directory:
