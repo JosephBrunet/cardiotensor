@@ -2,15 +2,12 @@ import argparse
 import os
 import sys
 import time
-from tkinter import Tk
-from tkinter.filedialog import askopenfilename
 
 from cardiotensor.orientation.orientation_computation_pipeline import (
     compute_orientation,
 )
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import read_conf_file
-
 
 def script() -> None:
     """
@@ -48,30 +45,11 @@ def script() -> None:
         help="Process slices in reverse order starting from the end.",
     )
 
-    # --- Interactive Mode ---
-    if len(sys.argv) < 2:
-        parser.print_help()
-        print("\nNo configuration file provided. Launching interactive mode...")
-        Tk().withdraw()
-        conf_file_path: str = askopenfilename(
-            initialdir=f"{os.getcwd()}/param_files",
-            title="Select a configuration file",
-            filetypes=[
-                ("Config files", "*.conf *.json *.yaml *.yml"),
-                ("All files", "*.*"),
-            ],
-        )
-        if not conf_file_path:
-            sys.exit("❌ No file selected! Exiting.")
-        start_index: int = 0
-        end_index: int | None = None
-        reverse: bool = False
-    else:
-        args = parser.parse_args()
-        conf_file_path = args.conf_file_path
-        start_index = args.start_index
-        end_index = args.end_index
-        reverse = args.reverse
+    args = parser.parse_args()
+    conf_file_path = args.conf_file_path
+    start_index = args.start_index
+    end_index = args.end_index
+    reverse = args.reverse
 
     # --- Read configuration ---
     try:
