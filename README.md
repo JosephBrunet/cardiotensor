@@ -27,12 +27,12 @@
 
 ## Installation
 
-Clone the repository and install the package using pip:
+cardiotensor is published as a [Python package](https://pypi.org/project/cardiotensor/) and can be installed with
+`pip`, ideally by using a [virtual environment](https://realpython.com/what-is-pip/). Open up a terminal and install
+cardiotensor with:
 
 ```bash
-git clone https://github.com/JosephBrunet/cardiotensor.git
-cd cardiotensor
-pip install .
+pip install cardiotensor
 ```
 
 ⚠️ Require python 3.10 or newer
