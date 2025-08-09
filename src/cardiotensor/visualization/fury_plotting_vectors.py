@@ -1,6 +1,8 @@
 import numpy as np
-from fury import actor, colormap, window
+from fury import actor, window
+
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+
 
 def plot_vector_field_fury(
     vector_field: np.ndarray,
@@ -11,7 +13,7 @@ def plot_vector_field_fury(
     voxel_size: float = 1.0,
     mode: str = "arrow",  # "arrow" or "cylinder"
     save_path: str = None,
-    colormap=None, 
+    colormap=None,
 ):
     """
     Visualize a 3D vector field using FURY as arrows or cylinders.

@@ -19,9 +19,8 @@ from scipy.interpolate import CubicSpline
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from tqdm import tqdm
 
-from cardiotensor.utils.utils import convert_to_8bit
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
-
+from cardiotensor.utils.utils import convert_to_8bit
 
 
 def interpolate_points(
@@ -555,21 +554,51 @@ def write_images(
                 if os.path.exists(file_path):
                     os.remove(file_path)
 
-            glymur.Jp2k(ha_path, data=img_helix_8bit, cratios=[ratio_compression], numres=8, irreversible=True)
-            glymur.Jp2k(ia_path, data=img_intrusion_8bit, cratios=[ratio_compression], numres=8, irreversible=True)
-            glymur.Jp2k(fa_path, data=img_FA_8bit, cratios=[ratio_compression], numres=8, irreversible=True)
+            glymur.Jp2k(
+                ha_path,
+                data=img_helix_8bit,
+                cratios=[ratio_compression],
+                numres=8,
+                irreversible=True,
+            )
+            glymur.Jp2k(
+                ia_path,
+                data=img_intrusion_8bit,
+                cratios=[ratio_compression],
+                numres=8,
+                irreversible=True,
+            )
+            glymur.Jp2k(
+                fa_path,
+                data=img_FA_8bit,
+                cratios=[ratio_compression],
+                numres=8,
+                irreversible=True,
+            )
 
         elif output_format == "tif":
-            tifffile.imwrite(f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", img_helix_8bit)
-            tifffile.imwrite(f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", img_intrusion_8bit)
-            tifffile.imwrite(f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", img_FA_8bit)
+            tifffile.imwrite(
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", img_helix_8bit
+            )
+            tifffile.imwrite(
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", img_intrusion_8bit
+            )
+            tifffile.imwrite(
+                f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", img_FA_8bit
+            )
         else:
             sys.exit(f"I don't recognise the output_format ({output_format})")
 
     # ---- RGB output ----
     elif "rgb" in output_type:
 
-        def write_img_rgb(img: np.ndarray, output_path: str, cmap: plt.Colormap, vmin: float, vmax: float) -> None:
+        def write_img_rgb(
+            img: np.ndarray,
+            output_path: str,
+            cmap: plt.Colormap,
+            vmin: float,
+            vmax: float,
+        ) -> None:
             """
             Writes a single 2D RGB image using a fixed colormap range.
 
@@ -582,7 +611,7 @@ def write_images(
             """
             img_clipped = np.clip(img, vmin, vmax)
             img_norm = (img_clipped - vmin) / (vmax - vmin + 1e-8)
-                        
+
             img_rgb = cmap(img_norm)[..., :3]  # Drop alpha channel
             img_rgb = (img_rgb * 255).astype(np.uint8)
 
@@ -590,26 +619,66 @@ def write_images(
 
             if output_path.endswith(".jp2"):
                 ratio_compression = 10
-                glymur.Jp2k(output_path, data=img_rgb, cratios=[ratio_compression], numres=8, irreversible=True)
+                glymur.Jp2k(
+                    output_path,
+                    data=img_rgb,
+                    cratios=[ratio_compression],
+                    numres=8,
+                    irreversible=True,
+                )
             elif output_path.endswith(".tif"):
                 tifffile.imwrite(output_path, img_rgb)
             else:
                 sys.exit(f"I don't recognise the output path format: {output_path}")
 
-
         if output_format == "jp2":
-            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2", cmap=colormap_angle, vmin=-90, vmax=90)
-            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2", cmap=colormap_angle, vmin=-90, vmax=90)
-            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2", cmap=colormap_FA, vmin=0, vmax=1)
+            write_img_rgb(
+                img_helix,
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2",
+                cmap=colormap_angle,
+                vmin=-90,
+                vmax=90,
+            )
+            write_img_rgb(
+                img_intrusion,
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2",
+                cmap=colormap_angle,
+                vmin=-90,
+                vmax=90,
+            )
+            write_img_rgb(
+                img_FA,
+                f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2",
+                cmap=colormap_FA,
+                vmin=0,
+                vmax=1,
+            )
 
         elif output_format == "tif":
-            write_img_rgb(img_helix, f"{output_dir}/HA/HA_{(start_index + z):06d}.tif", cmap=colormap_angle, vmin=-90, vmax=90)
-            write_img_rgb(img_intrusion, f"{output_dir}/IA/IA_{(start_index + z):06d}.tif", cmap=colormap_angle, vmin=-90, vmax=90)
-            write_img_rgb(img_FA, f"{output_dir}/FA/FA_{(start_index + z):06d}.tif", cmap=colormap_FA, vmin=0, vmax=1)
+            write_img_rgb(
+                img_helix,
+                f"{output_dir}/HA/HA_{(start_index + z):06d}.tif",
+                cmap=colormap_angle,
+                vmin=-90,
+                vmax=90,
+            )
+            write_img_rgb(
+                img_intrusion,
+                f"{output_dir}/IA/IA_{(start_index + z):06d}.tif",
+                cmap=colormap_angle,
+                vmin=-90,
+                vmax=90,
+            )
+            write_img_rgb(
+                img_FA,
+                f"{output_dir}/FA/FA_{(start_index + z):06d}.tif",
+                cmap=colormap_FA,
+                vmin=0,
+                vmax=1,
+            )
 
         else:
             sys.exit(f"I don't recognise the output_format ({output_format})")
-
 
 
 def write_vector_field(

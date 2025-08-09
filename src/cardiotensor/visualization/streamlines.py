@@ -1,10 +1,9 @@
 from pathlib import Path
+
 import numpy as np
-import matplotlib.pyplot as plt
 
-from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
-
+from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
 
 
 def compute_elevation_angles(streamlines):
@@ -117,4 +116,3 @@ def visualize_streamlines(
         crop_bounds=crop_bounds,
         colormap=colormap,  # <-- Pass to the FURY renderer
     )
-

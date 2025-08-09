@@ -1,14 +1,13 @@
 import random
 
 import fury
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import vtk
 
 
 def downsample_streamline(streamline, factor=2):
     return streamline if len(streamline) < 3 else streamline[::factor]
-
 
 
 def matplotlib_cmap_to_fury_lut(cmap, value_range=(-1, 1), n_colors=256):
@@ -29,7 +28,6 @@ def matplotlib_cmap_to_fury_lut(cmap, value_range=(-1, 1), n_colors=256):
     lut : vtk.vtkLookupTable
         A VTK-compatible lookup table.
     """
-    import matplotlib.pyplot as plt
     import numpy as np
 
     if isinstance(cmap, str):
@@ -46,11 +44,6 @@ def matplotlib_cmap_to_fury_lut(cmap, value_range=(-1, 1), n_colors=256):
         lut.SetTableValue(i, r, g, b, a)
 
     return lut
-
-
-
-
-
 
 
 def show_streamlines(
@@ -113,7 +106,11 @@ def show_streamlines(
         print(f"Limiting to max {max_streamlines} streamlines")
 
     # --- Cropping
-    print(f"Cropping streamlines within bounds: {crop_bounds}" if crop_bounds else "No cropping applied.")
+    print(
+        f"Cropping streamlines within bounds: {crop_bounds}"
+        if crop_bounds
+        else "No cropping applied."
+    )
     if crop_bounds is not None:
         z_min, z_max = crop_bounds[2]
         y_min, y_max = crop_bounds[1]
@@ -183,7 +180,9 @@ def show_streamlines(
 
     # --- Cap max
     if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
-        selected_idx = sorted(random.sample(range(len(streamlines_xyz)), max_streamlines))
+        selected_idx = sorted(
+            random.sample(range(len(streamlines_xyz)), max_streamlines)
+        )
         streamlines_xyz = [streamlines_xyz[i] for i in selected_idx]
         color_values = [color_values[i] for i in selected_idx]
 
@@ -220,7 +219,6 @@ def show_streamlines(
         )
     # Map scalar values to LUT indices
     lookup_colors = flat_colors
-    
 
     scene = fury.window.Scene()
 
@@ -257,7 +255,6 @@ def show_streamlines(
     if lut is not None:
         scene.add(fury.actor.scalar_bar(lut))
     scene.reset_camera()
-    
 
     # radii = 7
     # # Example coordinates of the point (x, y, z)
@@ -288,9 +285,6 @@ def show_streamlines(
     # # Add the point to the scene
     # scene.add(sphere_actor)
 
-
-
-
     # --- Display or screenshot
     if interactive:
         print("🕹️ Opening interactive window...")
@@ -300,6 +294,3 @@ def show_streamlines(
             raise ValueError("Must specify screenshot_path when interactive=False.")
         print(f"📸 Saving screenshot to: {screenshot_path}")
         fury.window.record(scene=scene, out_path=screenshot_path, size=window_size)
-
-
-
