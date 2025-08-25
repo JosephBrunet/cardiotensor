@@ -218,31 +218,31 @@ def show_streamlines(
             n_colors=256,
         )
     # Map scalar values to LUT indices
-    lookup_colors = flat_colors
-
     scene = fury.window.Scene()
+    colors = flat_colors  # per-vertex scalars
 
     # --- Render according to mode
     if mode == "tube":
         actor = fury.actor.streamtube(
             streamlines_xyz,
-            lookup_colors,
+            colors=colors,
             linewidth=line_width,
-            opacity=1,
+            opacity=1.0,
             lookup_colormap=lut,
         )
     elif mode == "fake_tube":
         actor = fury.actor.line(
             streamlines_xyz,
-            lookup_colors,
+            colors=colors,
             linewidth=line_width,
             fake_tube=True,
             depth_cue=True,
+            lookup_colormap=lut,
         )
     elif mode == "line":
         actor = fury.actor.line(
             streamlines_xyz,
-            lookup_colors,
+            colors=colors,
             linewidth=line_width,
             fake_tube=False,
             depth_cue=False,
