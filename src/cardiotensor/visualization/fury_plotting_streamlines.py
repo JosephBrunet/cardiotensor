@@ -250,7 +250,6 @@ def show_streamlines(
 
     scene.add(actor)
     if lut is not None:
-        # scene.add(fury.actor.scalar_bar(lut))
         scene.add(fury.actor.scalar_bar(lookup_table=lut, title="Angle (deg)"))
 
     scene.reset_camera()
