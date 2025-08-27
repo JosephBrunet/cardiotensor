@@ -200,9 +200,6 @@ def show_streamlines(
     min_val = float(flat_colors.min())
     max_val = float(flat_colors.max())
 
-    # Convert your 0–255 values into real [-90, 90] degrees
-    flat_colors = flat_colors / 255 * 180 - 90
-
     if colormap is None:
         # Default HSV colormap from FURY
         lut = fury.actor.colormap_lookup_table(
@@ -253,7 +250,9 @@ def show_streamlines(
 
     scene.add(actor)
     if lut is not None:
-        scene.add(fury.actor.scalar_bar(lut))
+        # scene.add(fury.actor.scalar_bar(lut))
+        scene.add(fury.actor.scalar_bar(lookup_table=lut, title="Angle (deg)"))
+
     scene.reset_camera()
 
     # radii = 7
