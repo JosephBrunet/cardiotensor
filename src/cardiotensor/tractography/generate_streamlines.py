@@ -254,6 +254,7 @@ def generate_streamlines_from_params(
     end_xyz: tuple[int | None, int | None, int | None] = (None, None, None),
     bin_factor: int = 1,
     num_seeds: int = 20000,
+    fa_seed_min: float = 0.4,
     fa_threshold: float = 0.1,
     step_length: float = 0.5,
     max_steps: int | None = None,
@@ -341,7 +342,9 @@ def generate_streamlines_from_params(
 
     # --- Load vector field ---
     print("📥 Loading vector field...")
-    vector_field = DataReader(vec_load_dir).load_volume(
+
+    vec_reader = DataReader(vec_load_dir)
+    vector_field = vec_reader.load_volume(
         start_index=start_z_binned, end_index=end_z_binned
     )[:, :, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
 
@@ -376,7 +379,7 @@ def generate_streamlines_from_params(
     )
     fa_volume = fa_volume[:, start_y_binned:end_y_binned, start_x_binned:end_x_binned]
 
-    seed_mask = fa_volume > (fa_threshold * 255)
+    seed_mask = fa_volume > (fa_seed_min * 255)
     valid_indices = np.argwhere(seed_mask)
     if len(valid_indices) < num_seeds:
         print(
