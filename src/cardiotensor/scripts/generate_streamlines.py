@@ -18,8 +18,10 @@ from cardiotensor.utils.utils import read_conf_file
 
 def script():
     parser = argparse.ArgumentParser(
-        description="Generate streamlines from a 3D vector field and save to .npz"
+        description=("Generate streamlines from a 3D vector field and save to .npz"),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    
     parser.add_argument(
         "conf_file", type=Path, help="Path to configuration .conf file."
     )
@@ -31,6 +33,7 @@ def script():
     parser.add_argument("--end-x", type=int, default=None, help="End slice index in X")
     parser.add_argument("--bin", type=int, default=1, help="Downsampling factor")
     parser.add_argument("--seeds", type=int, default=20000, help="Number of seeds")
+    parser.add_argument("--fa-seed-min", type=float, default=0.4, help="Min FA for seeding")
     parser.add_argument("--fa-threshold", type=float, default=0.1, help="FA threshold")
     parser.add_argument("--step", type=float, default=0.5, help="Step length in voxels")
     parser.add_argument(
@@ -69,6 +72,7 @@ def script():
         end_xyz=(args.end_z, args.end_y, args.end_x),
         bin_factor=args.bin,
         num_seeds=args.seeds,
+        fa_seed_min=args.fa_seed_min,
         fa_threshold=args.fa_threshold,
         step_length=args.step,
         max_steps=args.max_steps,
