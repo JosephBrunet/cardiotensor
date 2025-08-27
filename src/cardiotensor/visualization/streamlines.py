@@ -95,6 +95,8 @@ def visualize_streamlines(
         if ha_values is None:
             raise ValueError("'ha_values' array missing in .npz.")
         color_values = ha_values.astype(np.float32)
+        # Convert your 0–255 values into real [-90, 90] degrees
+        color_values = color_values / 255 * 180 - 90
 
     # Default to helix_angle_cmap if no colormap is provided
     if colormap is None:
