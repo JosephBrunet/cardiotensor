@@ -37,6 +37,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 from skimage.measure import block_reduce
+from matplotlib.colors import Colormap
 
 from cardiotensor.analysis.analysis_functions import (
     calculate_intensities,
@@ -45,6 +46,7 @@ from cardiotensor.analysis.analysis_functions import (
     save_intensity,
 )
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
 
 def np2pixmap(np_img: np.ndarray) -> QPixmap:
@@ -63,6 +65,7 @@ class Window(QWidget):
         N_line: int = 5,
         angle_range: float = 20,
         image_mode: str = "HA",
+        cmap: Colormap | str | None = None,
     ) -> None:
         super().__init__()
 
@@ -114,6 +117,18 @@ class Window(QWidget):
             sys.exit(
                 f"Invalid output mode: {self.image_mode}. Must be 'HA', 'IA', or 'FA'."
             )
+            
+        # choose a default by mode
+        if cmap is None:
+            if image_mode in ("HA", "IA"):
+                self.cmap = helix_angle_cmap        # custom HA colormap (callable)
+            else:  # FA
+                self.cmap = plt.get_cmap("inferno")
+        elif isinstance(cmap, str):
+            self.cmap = plt.get_cmap(cmap)
+        else:
+            self.cmap = cmap
+             
 
         if self.N_slice > self.data_reader.shape[0]:
             raise IndexError(
@@ -396,8 +411,8 @@ class Window(QWidget):
         current_img_bin = (current_img_bin + np.abs(minimum)) * (
             1 / (maximum - minimum)
         )
-        cmap = plt.get_cmap("hsv")
-        current_img_rgb = cmap(current_img_bin)
+
+        current_img_rgb = self.cmap(current_img_bin)
         current_img_rgb = (current_img_rgb[:, :, :3] * 255).astype(np.uint8)
 
         gray_color = [128, 128, 128]

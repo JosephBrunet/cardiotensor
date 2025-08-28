@@ -15,6 +15,7 @@ from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.utils import convert_to_8bit
 
 
+
 def interpolate_points(
     points: list[tuple[float, float, float]], N_img: int
 ) -> np.ndarray:
