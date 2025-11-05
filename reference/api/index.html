@@ -2279,6 +2279,30 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cardiotensor.utils.am_utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;am_utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" am_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cardiotensor.utils.am_utils.write_spatialgraph_am" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;write_spatialgraph_am
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cardiotensor.utils.downsampling" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;downsampling
@@ -4243,6 +4267,30 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cardiotensor.utils.am_utils" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;am_utils
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" am_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cardiotensor.utils.am_utils.write_spatialgraph_am" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;write_spatialgraph_am
+    </span>
+  </a>
   
 </li>
         
@@ -7127,6 +7175,13 @@ from <code>vector_field</code> (shape = (3, Z, Y, X)). Clamps to nearest voxel i
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            am_utils (cardiotensor.utils.am_utils)" href="#cardiotensor.utils.am_utils">am_utils</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            downsampling (cardiotensor.utils.downsampling)" href="#cardiotensor.utils.downsampling">downsampling</a></code></b>
           –
           <div class="doc-md-description">
@@ -7532,6 +7587,96 @@ integer-only resampling:
 
 </div>
 
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="cardiotensor.utils.am_utils" class="doc doc-heading"><a href="#cardiotensor.utils.am_utils" class="toclink">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">am_utils</span>
+
+
+</a><a href="#cardiotensor.utils.am_utils" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            write_spatialgraph_am (cardiotensor.utils.am_utils.write_spatialgraph_am)" href="#cardiotensor.utils.am_utils.write_spatialgraph_am">write_spatialgraph_am</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Minimal Amira SpatialGraph writer with optional EDGE scalar at @6.</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cardiotensor.utils.am_utils.write_spatialgraph_am" class="doc doc-heading"><a href="#cardiotensor.utils.am_utils.write_spatialgraph_am" class="toclink">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">write_spatialgraph_am</span>
+
+
+</a><a href="#cardiotensor.utils.am_utils.write_spatialgraph_am" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_spatialgraph_am</span><span class="p">(</span><span class="n"><span title="cardiotensor.utils.am_utils.write_spatialgraph_am(out_path)">out_path</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">,</span> <span class="n"><span title="cardiotensor.utils.am_utils.write_spatialgraph_am(streamlines_xyz)">streamlines_xyz</span></span><span class="p">:</span> <span class="n"><span title="typing.List">List</span></span><span class="p">[</span><span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">],</span> <span class="n"><span title="cardiotensor.utils.am_utils.write_spatialgraph_am(point_thickness)">point_thickness</span></span><span class="p">:</span> <span class="n"><span title="typing.Optional">Optional</span></span><span class="p">[</span><span class="n"><span title="typing.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><span title="cardiotensor.utils.am_utils.write_spatialgraph_am(edge_scalar)">edge_scalar</span></span><span class="p">:</span> <span class="n"><span title="typing.Optional">Optional</span></span><span class="p">[</span><span class="n"><span title="typing.Union">Union</span></span><span class="p">[</span><span class="n"><span title="typing.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="float">float</span></span><span class="p">],</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><span title="cardiotensor.utils.am_utils.write_spatialgraph_am(edge_scalar_name)">edge_scalar_name</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;EdgeHA&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Minimal Amira SpatialGraph writer with optional EDGE scalar at @6.</p>
+
+
+<details class="writes-blocks" open>
+  <summary>Writes blocks</summary>
+  <p>@1 VERTEX float[3]
+@2 EDGE   int[2]
+@3 EDGE   int          NumEdgePoints
+@4 POINT  float[3]     EdgePointCoordinates
+@5 POINT  float        thickness
+@6 EDGE   float <name> optional per edge scalar</p>
+</details>        <p>streamlines_xyz is a list of polylines in (x, y, z)
+point_thickness can be a flat array of length sum(N_i) or a list aligned to streamlines
+edge_scalar is one value per edge</p>
+
+
+    </div>
+
+</div>
 
 
 
