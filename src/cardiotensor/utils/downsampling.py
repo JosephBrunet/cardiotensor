@@ -1,6 +1,7 @@
 import math
 import multiprocessing as mp
 import os
+import sys
 from pathlib import Path
 
 import cv2
@@ -229,6 +230,8 @@ def chunked_downsample_vector_volume_mp(
 
     # Launch multiprocessing pool with a progress bar
     cpu_count = min(mp.cpu_count(), len(tasks))
+    if sys.platform.startswith("win"):
+        cpu_count = min(cpu_count, 59)
     with mp.Pool(processes=cpu_count) as pool:
         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
             results = [
@@ -338,8 +341,13 @@ def downsample_volume(
     if not tasks:
         print(f"✔️ All downsampled blocks already exist for '{subfolder}'. Skipping.")
         return
+    
+    if sys.platform.startswith("win"):
+        cpu_count = min(mp.cpu_count(), 59)
+    else: 
+        cpu_count = mp.cpu_count()
 
-    with mp.Pool(processes=mp.cpu_count()) as pool:
+    with mp.Pool(processes=cpu_count) as pool:
         with alive_bar(len(tasks), title=f"Downsampling '{subfolder}' volume") as bar:
             results = [
                 pool.apply_async(
