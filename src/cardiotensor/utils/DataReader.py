@@ -1,11 +1,12 @@
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from os import PathLike
 from pathlib import Path
 from typing import Any
 
 import cv2
+from dask import compute, delayed
+import glymur
 import numpy as np
 import psutil
 import SimpleITK as sitk
@@ -49,6 +50,42 @@ def _fit(
             constant_values=pad_value,
         )
     return arr
+
+
+def _read_image_file(file_path: Path) -> np.ndarray:
+    """Reads one image file to a NumPy array."""
+    suffix = file_path.suffix.lower()
+
+    if suffix == ".npy":
+        return np.load(file_path, mmap_mode="r")
+
+    if suffix in {".tif", ".tiff"}:
+        try:
+            return tiff.imread(file_path)
+        except Exception as e:
+            img = cv2.imread(str(file_path), -1)
+            if img is not None:
+                print(
+                    f"⚠ Falling back to OpenCV for TIFF '{file_path}' "
+                    f"(tifffile error: {e})"
+                )
+                return img
+            raise RuntimeError(
+                "Failed to read TIFF with tifffile and OpenCV. "
+                "If the file uses LZW/other codecs, install 'imagecodecs' "
+                "to enable decoding."
+            ) from e
+
+    if suffix == ".jp2":
+        return glymur.Jp2k(str(file_path))[:]
+
+    img = cv2.imread(str(file_path), -1)
+    if img is None:
+        raise RuntimeError(
+            f"cv2.imread failed for '{file_path}'. "
+            "File may be missing or in an unsupported/invalid format."
+        )
+    return img
 
 
 class DataReader:
@@ -295,50 +332,15 @@ class DataReader:
         """
         Reads an image from the given file path into a NumPy array.
         """
-        suffix = file_path.suffix.lower()
-
-        # 1) .npy → memory-mapped (no full copy)
-        if suffix == ".npy":
-            return np.load(file_path, mmap_mode="r")
-
-        # 2) TIFF → prefer tifffile, but gracefully fall back to OpenCV if codecs missing
-        if suffix in {".tif", ".tiff"}:
-            try:
-                # Best path: uses tifffile (and imagecodecs when available)
-                return tiff.imread(file_path)
-            except Exception as e:
-                # Fallback path: try OpenCV (handles many baseline TIFFs, including your tests)
-                img = cv2.imread(str(file_path), -1)
-                if img is not None:
-                    # Optional: warn once so users know performance/features may be reduced
-                    print(
-                        f"⚠ Falling back to OpenCV for TIFF '{file_path}' "
-                        f"(tifffile error: {e})"
-                    )
-                    return img
-                # If even OpenCV fails, raise a helpful error
-                raise RuntimeError(
-                    "Failed to read TIFF with tifffile and OpenCV. "
-                    "If the file uses LZW/other codecs, install 'imagecodecs' "
-                    "to enable decoding."
-                ) from e
-
-        # 3) Other formats → OpenCV (allow any depth/color)
-        img = cv2.imread(str(file_path), -1)
-        if img is None:
-            raise RuntimeError(
-                f"cv2.imread failed for '{file_path}'. "
-                "File may be missing or in an unsupported/invalid format."
-            )
-        return img
+        return _read_image_file(file_path)
 
     def _load_image_stack(
         self, file_list: list[Path], start_index: int, end_index: int
     ) -> np.ndarray:
         """
         Efficiently loads a stack of images into a 3D (or 4D for vector .npy) NumPy array
-        by preallocating the output and filling it in place. Uses a bounded thread pool
-        for I/O bound reads and keeps slice order via indices.
+        by preallocating the output and filling it in place. Uses batched dask
+        multiprocess reads and keeps slice order via indices.
         """
 
         if end_index == 0:
@@ -408,11 +410,7 @@ class DataReader:
                 volume[z_idx, :, :] = arr
 
         max_workers = min(8, (os.cpu_count() or 8))
-
-        def _read_one(local_idx: int, p: Path):
-            # local_idx is index within this slice of paths
-            arr = self._custom_image_reader(p)
-            return local_idx, arr
+        batch_size = max_workers * 2
 
         # Fill the rest with a progress bar
         with alive_bar(total_files, title="Loading Volume", length=40) as bar:
@@ -420,15 +418,18 @@ class DataReader:
             bar()  # account for the first already loaded slice
 
             if start_fill_idx < total_files:
-                with ThreadPoolExecutor(max_workers=max_workers) as ex:
-                    futures = {
-                        ex.submit(_read_one, i, p): i
-                        for i, p in enumerate(
-                            paths[start_fill_idx:], start=start_fill_idx
-                        )
-                    }
-                    for fut in as_completed(futures):
-                        z_idx, arr = fut.result()
+                for batch_start in range(start_fill_idx, total_files, batch_size):
+                    batch_end = min(batch_start + batch_size, total_files)
+                    delayed_reads = [
+                        delayed(_read_image_file)(paths[i])
+                        for i in range(batch_start, batch_end)
+                    ]
+                    batch_arrays = compute(
+                        *delayed_reads,
+                        scheduler="processes",
+                        num_workers=max_workers,
+                    )
+                    for z_idx, arr in enumerate(batch_arrays, start=batch_start):
                         _assign(z_idx, arr)
                         bar()
 
