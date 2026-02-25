@@ -138,11 +138,11 @@ Once the structure tensor and eigenvectors have been calculated on the whole vol
     $ cardio-generate-streamlines parameters_example.conf --seeds 10000 --start-z 150
     ```
 
-    - `--start`
-    : Show vectors only from slice 120 to the last slice.
+    - `--start-z`
+    : Show vectors only from slice 150 to the last slice.
 
     - `--seeds`
-    : Number of seeds to start streamlines
+    : Number of seeds start growing streamlines
 
     !!! note
 
