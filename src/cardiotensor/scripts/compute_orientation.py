@@ -74,6 +74,7 @@ def script() -> None:
     vertical_padding = params.get("VERTICAL_PADDING", None)
     write_vectors = params.get("WRITE_VECTORS", False)
     write_angles = params.get("WRITE_ANGLES", True)
+    write_MDI = params.get("WRITE_MDI", False)
     angle_mode = params.get("ANGLE_MODE", "ha_ia")
     use_gpu = params.get("USE_GPU", True)
     is_test = params.get("TEST", False)
@@ -107,6 +108,7 @@ def script() -> None:
             write_vectors=write_vectors,
             angle_mode=angle_mode,
             write_angles=write_angles,
+            write_MDI = write_MDI,
             use_gpu=use_gpu,
             is_test=is_test,
             n_slice_test=n_slice_test,
@@ -155,6 +157,7 @@ def script() -> None:
             n_slice_test=n_slice_test,
             start_index=s,
             end_index=e,
+            write_MDI=write_MDI
         )
 
         elapsed = time.time() - t0

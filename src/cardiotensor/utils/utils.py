@@ -97,6 +97,9 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "WRITE_VECTORS": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "WRITE_VECTORS", fallback=False
         ),
+        "WRITE_MDI": config.getboolean(
+            "STRUCTURE TENSOR CALCULATION", "WRITE_MDI", fallback=False
+        ),
         "REVERSE": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False
         ),
