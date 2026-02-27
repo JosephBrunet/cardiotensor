@@ -133,16 +133,16 @@ Once the structure tensor and eigenvectors have been calculated on the whole vol
 
 ### Generating and visualizing streamlines
 
-1. Use the `cardio-visualize-vector` command to generate the streamlines:
+1. Use the `cardio-generate-streamlines` command to generate the streamlines:
     ```console
-    $ cardio-generate-streamlines parameters_example.conf --seeds 10000 --start 150
+    $ cardio-generate-streamlines parameters_example.conf --seeds 10000 --start-z 150
     ```
 
-    - `--start`
-    : Show vectors only from slice 120 to the last slice.
+    - `--start-z`
+    : Show vectors only from slice 150 to the last slice.
 
     - `--seeds`
-    : Number of seeds to start streamlines
+    : Number of seeds start growing streamlines
 
     !!! note
 

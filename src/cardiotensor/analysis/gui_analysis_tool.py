@@ -4,6 +4,7 @@ from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from PyQt5.QtCore import Qt
 from matplotlib.colors import Colormap
 from PyQt5.QtGui import (
     QBrush,
@@ -148,6 +149,8 @@ class Window(QWidget):
 
         self.view = QGraphicsView()
         self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+        self.view.setTransformationAnchor(QGraphicsView.AnchorViewCenter)
 
         self.mask_path = mask_path
         self.output_path = Path(output_dir)
@@ -236,6 +239,9 @@ class Window(QWidget):
 
         self.input_angle_range.textChanged.connect(self.update_text)
         self.input_N_line.textChanged.connect(self.update_text)
+
+        # Keep a comfortable default window even for very small input images
+        self.setMinimumSize(900, 700)
 
         self.quit_shortcut = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.quit_shortcut.activated.connect(lambda: quit())
@@ -435,10 +441,19 @@ class Window(QWidget):
             self.bg_img.setPos(0, 0)
         self.scene.setSceneRect(0, 0, W, H)
         self.view.setScene(self.scene)
+        self._fit_view_to_scene()
 
         self.scene.mousePressEvent = self.mouse_press  # type: ignore
         self.scene.mouseMoveEvent = self.mouse_move  # type: ignore
         self.scene.mouseReleaseEvent = self.mouse_release  # type: ignore
+
+    def _fit_view_to_scene(self) -> None:
+        if hasattr(self, "scene") and self.scene is not None:
+            self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._fit_view_to_scene()
 
     # ---------- mouse handlers ----------
 

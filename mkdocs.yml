@@ -30,6 +30,10 @@ nav:
     - Angles: getting-technical/angles.md
     - Fractional Anisotropy: getting-technical/fractional_anisotropy.md
     - Tractography: getting-technical/tractography.md
+  - Advanced:
+    - advanced/index.md
+    - Transmural Analysis: advanced/cardio-analysis.md
+    - Streamlines: advanced/streamlines.md
   - Reference:
     - reference/index.md
     - CLI Commands: reference/cli.md

@@ -1,0 +1,14 @@
+# Advanced
+
+This section is for users who already run the standard `cardio-tensor` pipeline and want more detailed information of the analysis tools.
+
+Pages:
+
+- [Transmural Analysis](./cardio-analysis.md): Extract transmural profiles from angle and FA maps with `cardio-analysis`.
+- [Streamlines](./streamlines.md): Generate and visualize 3D streamlines with `cardio-generate-streamlines` and `cardio-visualize-streamlines`.
+
+See also:
+
+- [Configuration file](../reference/configuration.md)
+- [CLI commands](../reference/cli.md)
+- [Example workflow](../getting-started/examples.md)
