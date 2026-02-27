@@ -1,70 +1,112 @@
 # Streamlines
 
-This page covers advanced streamline generation and interpretation using `cardio-generate-streamlines` and `cardio-visualize-streamlines`.
+Use this page to generate and inspect 3D streamlines with:
 
-## Goal
+- `cardio-generate-streamlines`
+- `cardio-visualize-streamlines`
 
-Reconstruct coherent 3D myocyte trajectories from the orientation vector field and analyze regional organization patterns.
+## Before You Start
 
-## Prerequisites
+- In the config file, set `WRITE_VECTORS = True` and `TEST = False`.
+- Run `cardio-tensor` on your full dataset.
+- Make sure these outputs exist in `OUTPUT_PATH`:
+    - `eigen_vec/`
+    - `FA/`
+    - angle folders (`HA`/`IA` or `AZ`/`EL`, depending on `ANGLE_MODE`)
 
-Before generating streamlines:
+!!! note
 
-- Run `cardio-tensor` with `WRITE_VECTORS = True`.
-- Ensure orientation outputs are computed on the full volume.
-- Verify FA and vector consistency on representative slices.
+    It is usefull to provide a `MASK_PATH` to avoid placing seeds and tracing streamline outside the sample, even though the FA threshold should avoid this.
+
 
 ## Generate Streamlines
 
 Basic example:
 
 ```console
-$ cardio-generate-streamlines ./parameters_example.conf --seeds 10000 --start-z 150
+$ cardio-generate-streamlines ./parameters_example.conf 
 ```
 
-Commonly tuned arguments:
+Useful options:
 
-- `--seeds`: number of initial seed points (higher values improve coverage but increase runtime).
-- `--start-z`: start slice for generation when focusing on a sub-volume.
-- `--fa-threshold`: minimum FA to continue tracking.
-- `--angle`: maximum allowed turning angle between steps.
-- `--min_len`: minimum streamline length to keep.
+- `--seeds`: number of seeds (default: 20000).
+- `--fa-seed-min`: minimum FA to place seeds (default: 0.2).
+- `--fa-threshold`: minimum FA to continue tracking (default: 0.1).
+- `--angle`: maximum turning angle (degrees - default: 60.0).
+- `--step`: integration step length (voxels - default: 0.5).
+- `--min-len`: minimum streamline length (points - default: 10).
+- `--bin`: downsampling factor for faster processing.
+- `--start-z/--end-z` (and `x`, `y` variants): process only a sub-volume.
+
+Generated files:
+
+- `OUTPUT_PATH/streamlines.trk`
+
+
+!!! note
+
+    Use `--bin` if the dataset is too big to fit in RAM. This will bin the eigenvectors and the maps.
 
 ## Visualize Streamlines
 
 ```console
-$ cardio-visualize-streamlines ./parameters_example.conf --line-width 1
+$ cardio-visualize-streamlines ./parameters_example.conf --downsample 5
 ```
 
-Use thinner lines for dense datasets and thicker lines for sparse exploratory views.
+Useful options:
 
-## Robust Tuning Workflow
+- `--color-by`: `auto`, `elevation`, or stored fields like `HA`, `IA`, `AZ`, `EL`.
+- `--list-color-by`: list available fields in the `.trk`.
+- `--line-width`: tube width.
+- `--subsample`: keep every Nth streamline.
+- `--min-length`: filter short streamlines.
+- `--crop-x`, `--crop-y`, `--crop-z`: spatial crop ranges.
+- `--screenshot`: save a PNG snapshot.
 
-1. Start with moderate seeds and default thresholds.
-2. Inspect streamline coverage and continuity.
-3. Increase seeds to fill undersampled regions.
-4. Tighten turning-angle and FA thresholds if many anatomically implausible curves appear.
-5. Remove very short tracks using `--min_len`.
+!!! note
 
-## Quality Control
+    Use `--downsample` to keep fewer points per streamline and improve rendering performance on large datasets.
 
-Check the following before interpretation:
+<figure markdown="span">
+![Streamline visualization](../assets/images/streamline_all_advanced.png){ width="75%" }
+<figcaption>Example 3D streamline rendering in a human heart.</figcaption>
+</figure>
 
-- Streamlines stay within myocardium boundaries.
-- Trajectories remain smooth without abrupt direction flips.
-- Regional transmural transitions are coherent with HA maps.
-- Results are stable when repeating with nearby parameter values.
+The dataset used as an example here can be find at [DOI](https://doi.org/10.15151/esrf-dc-1634390196)
 
-## Interpretation Notes
 
-- High curvature clusters may indicate true architectural transitions or tracking instability.
-- Large empty regions can come from low FA, low seeding density, or masking issues.
-- Use transmural profiles (`cardio-analysis`) together with streamlines for stronger conclusions.
+## Keybindings
 
-## Export and Reuse
+In the interactive viewer:
 
-Generated streamlines are saved in `.trk` format and can be:
+- `O`: toggle clipping plane on/off.
+- `H`: show/hide clipping plane gizmo.
+- `I`: flip clipping plane normal.
+- `R`: reset clipping plane to center.
+- `+` / `-`: increase/decrease streamline thickness.
+- `B`: toggle background color (black/white).
+- `S`: show/hide scale bar.
+- `P`: save a high-resolution PNG snapshot.
 
-- Reloaded for additional filtering/quantification.
-- Visualized in 3D tools such as ParaView (after conversion if needed).
-- Compared across samples using matched tracking settings.
+!!! Note
+
+    During interaction (rotate/pan/zoom), the viewer switches to a low-resolution for better responsiveness, then automatically returns to full resolution when interaction ends.
+
+<figure markdown="span">
+![Streamline visualization](../assets/images/streamline_crop_advanced.png){ width="75%" }
+<figcaption>Example 3D streamline rendering in a human heart, cropped using the clipping plane.</figcaption>
+</figure>
+
+
+## Quick Tuning Workflow
+
+1. Start with `--seeds 10000`.
+2. Check global coverage and continuity.
+3. Increase `--seeds` if regions are undersampled.
+4. Increase `--fa-threshold` or decrease `--angle` to reduce implausible curves.
+5. Use `--subsample` and `--downsample` for faster visual inspection.
+
+!!! warning
+
+    Interpretation depends strongly on tracking parameters. Compare conditions only when parameters, such as seeding and thresholds, are similar.
+
