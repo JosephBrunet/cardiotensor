@@ -83,7 +83,7 @@ The `./examples/` directory contains:
 
 1. Use the `cardio-analysis` command:
     ```console
-    $ cardio-analysis ./parameters_example.conf 150
+    $ cardio-analysis ./parameters_example.conf --N-slice 150
     ```
     Replace `150` with the slice number you wish to analyze.
 
