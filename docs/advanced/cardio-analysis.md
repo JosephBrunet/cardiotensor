@@ -34,8 +34,11 @@ Useful options:
 
 <figure markdown="span">
 ![Cardio-analysis GUI](../assets/images/analyse_GUI_advanced.png){ width="70%" }
-<figcaption>Main GUI for profile definition and plotting.</figcaption>
+<figcaption>Main GUI for profile definition and plotting. 
+</figcaption>
 </figure>
+
+The dataset used as an example here can be find at [DOI](https://doi.org/10.15151/esrf-dc-1634390196)
 
 !!! warning
 
