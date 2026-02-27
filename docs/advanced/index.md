@@ -1,34 +1,14 @@
 # Advanced
 
-This section focuses on advanced workflows in `cardiotensor` for users who already run the standard orientation pipeline and want deeper analysis or larger 3D exploration.
+This section is for users who already run the standard `cardio-tensor` pipeline and want more detailed information of the analysis tools.
 
-## What You Can Do Here
+Pages:
 
-- Perform detailed transmural quantification with the `cardio-analysis` GUI.
-- Generate and inspect 3D streamlines from the computed orientation field.
-- Apply practical quality-control checks before interpreting biological patterns.
+- [Transmural Analysis](./cardio-analysis.md): Extract transmural profiles from angle and FA maps with `cardio-analysis`.
+- [Streamlines](./streamlines.md): Generate and visualize 3D streamlines with `cardio-generate-streamlines` and `cardio-visualize-streamlines`.
 
-## Recommended Prerequisites
-
-Before starting these workflows, make sure you have:
-
-- Run `cardio-tensor` on your full volume (not only test mode).
-- Saved orientation vectors with `WRITE_VECTORS = True`.
-- Generated angle maps (`HA`, `IA`) and `FA` outputs.
-
-See:
+See also:
 
 - [Configuration file](../reference/configuration.md)
 - [CLI commands](../reference/cli.md)
 - [Example workflow](../getting-started/examples.md)
-
-## Advanced Topics
-
-- [Cardio Analysis](./cardio-analysis.md): in-depth usage of the transmural profile GUI and reproducible measurement strategy.
-- [Streamlines](./streamlines.md): robust streamline generation, filtering, and interpretation in 3D.
-
-## Suggested Order
-
-1. Validate orientation and angle outputs on representative slices.
-2. Extract transmural profiles in key anatomical regions.
-3. Build 3D streamline visualizations and compare with 2D transmural trends.
