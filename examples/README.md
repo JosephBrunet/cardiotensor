@@ -83,7 +83,7 @@ To process the entire volume:
 After processing the whole volume, you can plot a transmural profile by running:
 
 ```bash
-cardio-analysis ./parameters_example.conf 150
+cardio-analysis ./parameters_example.conf --N-slice 150
 ```
 
 Here, `150` refers to the slice number. The GUI will appear as follows:
