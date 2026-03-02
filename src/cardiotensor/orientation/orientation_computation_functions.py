@@ -12,6 +12,10 @@ from scipy.ndimage import uniform_filter
 
 from cardiotensor.utils.utils import convert_to_8bit
 
+from concurrent.futures import ProcessPoolExecutor
+
+from .multiprocessing_MDI import parallel_mdi_analysis
+
 
 def interpolate_points(
     points: list[tuple[float, float, float]], N_img: int
@@ -276,6 +280,86 @@ def remove_padding(
     return volume, val, vec
 
 
+def calculate_MDI_parallel(
+    volume: np.ndarray,
+    window_size: float = 9,
+    devices: list[str] | None = None,
+    block_size: int = 200,
+    use_gpu: bool = False
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculates the structure tensor of a volume.
+
+    Args:
+        volume (np.ndarray): The tertiary eigenvector field, shape (3, z, y, x).
+        window size (int, odd value): neighbourhood to consider in MDI calculation.
+        devices (Optional[list[str]]): List of devices for parallel processing (e.g., ['cpu', 'cuda:0']).
+        block_size (int): Size of the blocks for processing. Default is 200.
+        use_gpu (bool): Whether to use GPU for calculation.
+
+    Returns:
+        np.ndarray: MDI field shape (z, y, x).
+    """
+    # Filter or ignore specific warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+    num_cpus = max(
+        os.cpu_count() or 4, 4
+    )  # Default to 4 if os.cpu_count() returns None
+
+    devices = devices or []
+    num_gpus = 0
+
+    if use_gpu:
+        print("🔍 Checking for GPU support...")
+        try:
+            num_gpus = get_gpu_count()
+            print(f"Detected {num_gpus} GPU(s)")
+        except Exception as e:
+            use_gpu = False
+            print(
+                f"⚠️ GPU not available or failed to initialize. Using CPU. Reason: {e}"
+            )
+
+    if not devices:
+        if use_gpu and num_gpus > 0:
+            print(f"Using {num_gpus} GPUs for computation")
+            devices = []
+            for i in range(num_gpus):
+                devices.extend([f"cuda:{i}"] * 16)
+        else:
+            print(f"Using {num_cpus} CPU for computation")
+            devices = ["cpu"] * num_cpus
+
+    print("\nStarting MDI computation...")
+    print(f"---  Volume shape: {volume.shape}")
+    print(f"---  Window Size: {window_size}, Block size: {block_size}")
+
+    if use_gpu and num_gpus > 0:
+        device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
+    else:
+        device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
+    print(f"---  Devices: {device_str}")
+
+    class TqdmTotal(tqdm):
+        def update_with_total(self, n=1, total=None):
+            if total is not None:
+                self.total = total
+            return self.update(1)
+
+    with TqdmTotal(desc="Computing MDI", unit="block") as t:
+        MDI = parallel_mdi_analysis(
+            volume,
+            window_size=window_size,
+            devices=devices,
+            block_size=block_size,
+            progress_callback_fn=t.update_with_total,
+        )
+
+    print("MDI computation completed\n")
+
+    return MDI
+
 
 def compute_MDI_from_v(v3: np.ndarray, window_size: int = 9) -> np.ndarray:
     """
@@ -334,7 +418,6 @@ def compute_MDI_from_v(v3: np.ndarray, window_size: int = 9) -> np.ndarray:
     mdi[lambda0 == 0] = 0
 
     return mdi
-
 
 
 def compute_fraction_anisotropy(eigenvalues_2d: np.ndarray) -> np.ndarray:

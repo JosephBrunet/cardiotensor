@@ -17,6 +17,7 @@ from cardiotensor.orientation.orientation_computation_functions import (
     compute_fraction_anisotropy,
     compute_helix_and_transverse_angles,
     compute_MDI_from_v,
+    calculate_MDI_parallel,
     interpolate_points,
     plot_images,
     remove_padding,
@@ -36,6 +37,7 @@ def check_already_processed(
     end_index: int,
     write_vectors: bool,
     write_angles: bool,
+    write_MDI: bool,
     output_format: str,
     angle_names: tuple[str, str] = ("HA", "IA"),
     fa_name: str = "FA",
@@ -56,6 +58,8 @@ def check_already_processed(
         If True, expect eigenvector .npy files (e.g., eigen_vec_{idx:06d}.npy).
     write_angles : bool
         If True, expect angle images for angle_names[0], angle_names[1], and FA.
+    write_MDI : bool
+        If True, expect images for MDI.
     output_format : str
         Image format/extension for angles, for example "jp2" or "tif".
     angle_names : tuple[str, str], optional
@@ -101,6 +105,11 @@ def check_already_processed(
         if write_vectors:
             expected_files.append(
                 os.path.join(output_dir, "eigen_vec", f"eigen_vec_{idx:06d}.npy")
+            )
+        
+        if write_MDI:
+            expected_files.append(
+                os.path.join(output_dir, "MDI", f"MDI_{idx:06d}.{ext}")
             )
 
         # User-specified extras, if any
@@ -212,6 +221,7 @@ Parameters:
             end_index,
             write_vectors,
             write_angles,
+            write_MDI,
             output_format,
             angle_names=angle_names,
         )
@@ -306,7 +316,13 @@ Parameters:
         print("MDI")
         print("-" * 40 + "\n")
         print("Calculating myocardial disarray index...")
-        MDI_vol = compute_MDI_from_v(vec, window_size = int(rho*4 + 1))
+        #MDI_vol = compute_MDI_from_v(vec, window_size = int(rho*4 + 1))
+        MDI_vol = calculate_MDI_parallel(vec, window_size = int(rho*2 + 1))
+        if sys.platform.startswith("win"):
+            num_procs = min(mp.cpu_count(), 59)
+        else:
+            num_procs = mp.cpu_count()
+        #MDI_vol = compute_MDI_parallel(vec, window_size = int(rho*4 + 1), block_size= int(rho*4),num_workers = num_procs)
         print("MDI computation complete")
         MDI_vol, _, _ = remove_padding(MDI_vol, val, vec, padding_start, padding_end)
         print(f"MDI shape after removing padding: {MDI_vol.shape}")
