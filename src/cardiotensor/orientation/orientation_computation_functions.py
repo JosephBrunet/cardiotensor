@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 from cardiotensor.utils.utils import convert_to_8bit
 
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+
 
 def interpolate_points(
     points: list[tuple[float, float, float]], N_img: int
@@ -426,79 +428,6 @@ def compute_azimuth_and_elevation(
     return az, el
 
 
-# def plot_images(
-#     img: np.ndarray,
-#     img_angle1: np.ndarray,
-#     img_angle2: np.ndarray,
-#     img_FA: np.ndarray,
-#     center_point: tuple[int, int, int],
-#     colormap_angle=None,
-#     colormap_FA=None,
-#     angle1_title: str = "Helix Angle",
-#     angle2_title: str = "Intrusion Angle",
-# ):
-#     """
-#     Plots images of the heart with helix, intrusion, and FA annotations.
-
-#     Args:
-#         img (np.ndarray): Grayscale image of the heart.
-#         img_helix (np.ndarray): Helix angle image.
-#         img_intrusion (np.ndarray): Intrusion angle image.
-#         img_FA (np.ndarray): Fractional Anisotropy (FA) image.
-#         center_point (Tuple[int, int, int]): Coordinates of the center point.
-#         colormap_angle: Colormap for helix and intrusion angles (default: helix_angle_cmap).
-#         colormap_FA: Colormap for FA image (default: 'inferno').
-
-#     Returns:
-#         None
-#     """
-
-
-#     # Default colormaps
-#     if colormap_angle is None:
-#         colormap_angle = helix_angle_cmap
-#     if colormap_FA is None:
-#         colormap_FA = plt.get_cmap("inferno")
-
-#     # Determine display range for original image
-#     img_vmin, img_vmax = np.nanpercentile(img, (5, 95))
-
-#     # Create a figure and axes
-#     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-#     ax = axes
-
-#     # Original Image with Red Point
-#     ax[0, 0].imshow(img, vmin=img_vmin, vmax=img_vmax, cmap="gray")
-#     x, y = center_point[0:2]
-#     ax[0, 0].scatter(x, y, c="red", s=50, marker="o", label="Axis Point")
-#     ax[0, 0].set_title("Original Image")
-#     ax[0, 0].legend(loc="upper right")
-
-#     # Helix Image
-#     tmp = ax[0, 1].imshow(img_angle1, cmap=colormap_angle, vmin=-90, vmax=90)
-#     ax[0, 1].set_title(angle1_title)
-
-#     # Intrusion Image
-#     ax[1, 0].imshow(img_angle2, cmap=colormap_angle, vmin=-90, vmax=90)
-#     ax[1, 0].set_title(angle2_title)
-
-#     # FA Image
-#     fa_plot = ax[1, 1].imshow(img_FA, cmap=colormap_FA, vmin=0, vmax=1)
-#     ax[1, 1].set_title("Fractional Anisotropy")
-
-#     # Add colorbars for relevant subplots
-#     cbar1 = fig.colorbar(tmp, ax=ax[0, 1], orientation="vertical")
-#     cbar1.set_label(angle1_title)
-#     cbar2 = fig.colorbar(fa_plot, ax=ax[1, 1], orientation="vertical")
-#     cbar2.set_label("Fractional Anisotropy")
-
-#     # Hide axes for a cleaner view
-#     for axis in ax.flat:
-#         axis.axis("off")
-
-#     # Adjust layout to prevent overlap
-#     fig.tight_layout()
-#     plt.show()
 
 
 def plot_images(
@@ -529,7 +458,7 @@ def plot_images(
         Integer voxel coordinates (z, y, x) of the centerline point on this slice.
         Only (y, x) is used here for the marker.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles. Defaults to plt.cm.hsv if None.
+        Colormap for angles. Defaults to helix_angle_cmap if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA. Defaults to plt.cm.magma if None.
     angle1_title : str
@@ -542,7 +471,7 @@ def plot_images(
     This function shows the centerline marker on the source panel.
     """
     if colormap_angle is None:
-        colormap_angle = plt.cm.hsv
+        colormap_angle = helix_angle_cmap
     if colormap_FA is None:
         colormap_FA = plt.cm.magma
 
@@ -573,140 +502,6 @@ def plot_images(
     plt.show()
 
 
-# def write_images(
-#     img_angle1: np.ndarray,
-#     img_angle2: np.ndarray,
-#     img_FA: np.ndarray,
-#     start_index: int,
-#     output_dir: str,
-#     output_format: str,
-#     output_type: str,
-#     z: int,
-#     colormap_angle=None,
-#     colormap_FA=None,
-#     angle_names: tuple[str, str] = ("HA", "IA"),
-#     angle_ranges: tuple[tuple[float, float], tuple[float, float]] = ((-90, 90), (-90, 90)),
-# ) -> None:
-
-#     # angle_names drives subfolders, angle_ranges drives normalization
-#     name1, name2 = angle_names
-#     (a1_min, a1_max), (a2_min, a2_max) = angle_ranges
-
-#     os.makedirs(f"{output_dir}/{name1}", exist_ok=True)
-#     os.makedirs(f"{output_dir}/{name2}", exist_ok=True)
-#     os.makedirs(f"{output_dir}/FA", exist_ok=True)
-
-#     if "8bit" in output_type:
-#         img1_8 = convert_to_8bit(img_angle1, min_value=a1_min, max_value=a1_max)
-#         img2_8 = convert_to_8bit(img_angle2, min_value=a2_min, max_value=a2_max)
-#         imgFA_8 = convert_to_8bit(img_FA, min_value=0, max_value=1)
-
-#         if output_format == "jp2":
-#             # same glymur writes, just using name1/name2
-#             glymur.Jp2k(f"{output_dir}/{name1}/{name1}_{(start_index+z):06d}.jp2",
-#                         data=img1_8, cratios=[10], numres=8, irreversible=True)
-#             glymur.Jp2k(f"{output_dir}/{name2}/{name2}_{(start_index+z):06d}.jp2",
-#                         data=img2_8, cratios=[10], numres=8, irreversible=True)
-#             glymur.Jp2k(f"{output_dir}/FA/FA_{(start_index+z):06d}.jp2",
-#                         data=imgFA_8, cratios=[10], numres=8, irreversible=True)
-#         elif output_format == "tif":
-#             tifffile.imwrite(f"{output_dir}/{name1}/{name1}_{(start_index+z):06d}.tif", img1_8)
-#             tifffile.imwrite(f"{output_dir}/{name2}/{name2}_{(start_index+z):06d}.tif", img2_8)
-#             tifffile.imwrite(f"{output_dir}/FA/FA_{(start_index+z):06d}.tif", imgFA_8)
-#         else:
-#             sys.exit(f"I don't recognise the output_format ({output_format})")
-
-
-#     # ---- RGB output ----
-#     elif "rgb" in output_type:
-
-#         def write_img_rgb(
-#             img: np.ndarray,
-#             output_path: str,
-#             cmap: plt.Colormap,
-#             vmin: float,
-#             vmax: float,
-#         ) -> None:
-#             """
-#             Writes a single 2D RGB image using a fixed colormap range.
-
-#             Args:
-#                 img (np.ndarray): Input scalar image.
-#                 output_path (str): Path to save the RGB image.
-#                 cmap (plt.Colormap): Matplotlib colormap (e.g., inferno, custom HA cmap).
-#                 vmin (float): Minimum value for normalization.
-#                 vmax (float): Maximum value for normalization.
-#             """
-#             img_clipped = np.clip(img, vmin, vmax)
-#             img_norm = (img_clipped - vmin) / (vmax - vmin + 1e-8)
-
-#             img_rgb = cmap(img_norm)[..., :3]  # Drop alpha channel
-#             img_rgb = (img_rgb * 255).astype(np.uint8)
-
-#             print(img_rgb.shape, img_rgb.dtype)
-
-#             if output_path.endswith(".jp2"):
-#                 ratio_compression = 10
-#                 glymur.Jp2k(
-#                     output_path,
-#                     data=img_rgb,
-#                     cratios=[ratio_compression],
-#                     numres=8,
-#                     irreversible=True,
-#                 )
-#             elif output_path.endswith(".tif"):
-#                 tifffile.imwrite(output_path, img_rgb)
-#             else:
-#                 sys.exit(f"I don't recognise the output path format: {output_path}")
-
-#         if output_format == "jp2":
-#             write_img_rgb(
-#                 img_helix,
-#                 f"{output_dir}/HA/HA_{(start_index + z):06d}.jp2",
-#                 cmap=colormap_angle,
-#                 vmin=-90,
-#                 vmax=90,
-#             )
-#             write_img_rgb(
-#                 img_intrusion,
-#                 f"{output_dir}/IA/IA_{(start_index + z):06d}.jp2",
-#                 cmap=colormap_angle,
-#                 vmin=-90,
-#                 vmax=90,
-#             )
-#             write_img_rgb(
-#                 img_FA,
-#                 f"{output_dir}/FA/FA_{(start_index + z):06d}.jp2",
-#                 cmap=colormap_FA,
-#                 vmin=0,
-#                 vmax=1,
-#             )
-
-#         elif output_format == "tif":
-#             write_img_rgb(
-#                 img_helix,
-#                 f"{output_dir}/HA/HA_{(start_index + z):06d}.tif",
-#                 cmap=colormap_angle,
-#                 vmin=-90,
-#                 vmax=90,
-#             )
-#             write_img_rgb(
-#                 img_intrusion,
-#                 f"{output_dir}/IA/IA_{(start_index + z):06d}.tif",
-#                 cmap=colormap_angle,
-#                 vmin=-90,
-#                 vmax=90,
-#             )
-#             write_img_rgb(
-#                 img_FA,
-#                 f"{output_dir}/FA/FA_{(start_index + z):06d}.tif",
-#                 cmap=colormap_FA,
-#                 vmin=0,
-#                 vmax=1,
-#             )
-
-#         else:
-#             sys.exit(f"I don't recognise the output_format ({output_format})")
 
 
 def write_img_rgb(
@@ -731,7 +526,7 @@ def write_img_rgb(
     vmax : float
         Maximum for normalization.
     colormap : matplotlib colormap, optional
-        Colormap to apply, for example plt.cm.hsv. If None, use plt.cm.hsv.
+        Colormap to apply. If None, use helix_angle_cmap.
     output_format : {"jp2", "tif"}
         Output format. Uses glymur for jp2 and tifffile for tif.
 
@@ -740,7 +535,7 @@ def write_img_rgb(
     The function normalizes to [0, 1], applies the colormap, then writes uint8 RGB.
     """
     if colormap is None:
-        colormap = plt.cm.hsv
+        colormap = helix_angle_cmap
 
     denom = (vmax - vmin) if (vmax - vmin) != 0 else 1.0
     x = (img.astype(np.float32) - vmin) / denom
@@ -798,7 +593,7 @@ def write_images(
     z : int
         Current z offset used to compute the running index in filenames.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles in "rgb" mode. Defaults to plt.cm.hsv if None.
+        Colormap for angles in "rgb" mode. Defaults to helix_angle_cmap if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA in "rgb" mode. Defaults to plt.cm.magma if None.
     angle_names : tuple[str, str]
@@ -853,7 +648,7 @@ def write_images(
 
     elif output_type == "rgb":
         if colormap_angle is None:
-            colormap_angle = plt.cm.hsv
+            colormap_angle = helix_angle_cmap
         if colormap_FA is None:
             colormap_FA = plt.cm.magma
 

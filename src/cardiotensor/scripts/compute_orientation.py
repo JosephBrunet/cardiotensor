@@ -44,12 +44,20 @@ def script() -> None:
         action="store_true",
         help="Process slices in reverse order starting from the end.",
     )
+    
+    parser.add_argument(
+        "--colormap",
+        type=str,
+        default=None,
+        help="Colormap to apply, for example 'hsv'. If None, use helix_angle_cmap.",
+    )
 
     args = parser.parse_args()
     conf_file_path = args.conf_file_path
     start_index = args.start_index
     end_index = args.end_index
     reverse = args.reverse
+    colormap = args.colormap
 
     # --- Read configuration ---
     try:
@@ -112,6 +120,7 @@ def script() -> None:
             n_slice_test=n_slice_test,
             start_index=start_index,
             end_index=end_index,
+            colormap=colormap,
         )
         print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
         return
@@ -155,6 +164,7 @@ def script() -> None:
             n_slice_test=n_slice_test,
             start_index=s,
             end_index=e,
+            colormap=colormap,
         )
 
         elapsed = time.time() - t0
