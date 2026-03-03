@@ -13,7 +13,7 @@ The `./examples/` directory contains:
 
 1. **Heart Volume**:
     - Path: `./data/635.2um_LADAF-2021-17_heart_overview_/`
-    - Description: A downsampled 3D heart image volume designed for testing. The full-resolution dataset is available at the [Human Organ Atlas](https://human-organ-atlas.esrf.fr/datasets/1659197537).
+    - Description: A 3D heart image volume, downsampled 32 times from the original 19.85 µm/voxel dataset, resulting in an effective voxel size of 635.2 µm. The full-resolution dataset is available at the [Human Organ Atlas](https://human-organ-atlas.esrf.fr/datasets/1659197537).
 
 2. **Binary Mask**:
     - Path: `./data/mask/`
