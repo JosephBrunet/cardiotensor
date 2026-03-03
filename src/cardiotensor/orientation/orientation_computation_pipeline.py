@@ -7,8 +7,10 @@ from collections.abc import Sequence
 
 import numpy as np
 from alive_progress import alive_bar
+from matplotlib import pyplot as plt
 
 # from memory_profiler import profile
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.orientation.orientation_computation_functions import (
     adjust_start_end_index,
     calculate_center_vector,
@@ -28,6 +30,24 @@ from cardiotensor.utils.utils import remove_corrupted_files
 
 
 # --- small helpers ---
+def _resolve_colormap(colormap: str | None):
+    """Resolve colormap names, including the project-specific helix angle map."""
+    if colormap is None:
+        return None
+    cmap_name = colormap.strip()
+    if not cmap_name:
+        return None
+    if cmap_name.lower() in {"helix_angle", "helix_angle_cmap"}:
+        return helix_angle_cmap
+    try:
+        return plt.get_cmap(cmap_name)
+    except ValueError as err:
+        raise ValueError(
+            f"Unknown colormap '{colormap}'. Use a valid matplotlib colormap name "
+            "or 'helix_angle'."
+        ) from err
+
+
 def check_already_processed(
     output_dir: str,
     start_index: int,
@@ -136,6 +156,7 @@ def compute_orientation(
     n_slice_test: int | None = None,
     start_index: int = 0,
     end_index: int | None = None,
+    colormap: str | None = None,
 ) -> None:
     """
     Compute the orientation for a volume dataset.
@@ -158,6 +179,7 @@ def compute_orientation(
         n_slice_test: Number of slices to process in test mode.
         start_index: Start slice index.
         end_index: End slice index (None = last slice).
+        colormap: Colormap name for RGB angle outputs. Defaults to helix-angle map.
     """
 
     # --- Sanity checks ---
@@ -185,6 +207,7 @@ Parameters:
     - Write vectors:  {write_vectors}
     - Use GPU:        {use_gpu}
     - Test mode:      {is_test}
+    - Colormap:       {colormap or "[default]"}
     """)
 
     print("\n" + "-" * 40)
@@ -355,6 +378,7 @@ Parameters:
                             write_angles,
                             is_test,
                             angle_mode,
+                            colormap,
                         ),
                         callback=update_bar,
                     )
@@ -384,6 +408,7 @@ Parameters:
                     write_angles,
                     is_test,
                     angle_mode,
+                    colormap,
                 )
                 bar()
 
@@ -408,6 +433,7 @@ def compute_slice_angles_and_anisotropy(
     write_angles: bool = True,
     is_test: bool = False,
     angle_mode: str = "ha_ia",
+    colormap: str | None = None,
 ) -> None:
     """
     Compute either HA/IA or Azimuth/Elevation plus FA for a single slice,
@@ -426,6 +452,7 @@ def compute_slice_angles_and_anisotropy(
 
     ext = output_format.lstrip(".")
     idx = start_index + z
+    colormap_angle = _resolve_colormap(colormap)
 
     # Expected outputs for skip logic
     expected_paths = []
@@ -489,6 +516,7 @@ def compute_slice_angles_and_anisotropy(
             img_angle2,
             img_FA,
             center_point,
+            colormap_angle=colormap_angle,
             angle1_title=titles[0],
             angle2_title=titles[1],
         )
@@ -501,6 +529,7 @@ def compute_slice_angles_and_anisotropy(
             ext,
             output_type,
             z,
+            colormap_angle=colormap_angle,
             angle_names=angle_names,
             angle_ranges=angle_ranges,
         )
@@ -517,6 +546,7 @@ def compute_slice_angles_and_anisotropy(
             ext,
             output_type,
             z,
+            colormap_angle=colormap_angle,
             angle_names=angle_names,
             angle_ranges=angle_ranges,
         )
