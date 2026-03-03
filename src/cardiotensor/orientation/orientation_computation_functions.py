@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 from cardiotensor.utils.utils import convert_to_8bit
 
+from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+
 
 def interpolate_points(
     points: list[tuple[float, float, float]], N_img: int
@@ -426,79 +428,6 @@ def compute_azimuth_and_elevation(
     return az, el
 
 
-# def plot_images(
-#     img: np.ndarray,
-#     img_angle1: np.ndarray,
-#     img_angle2: np.ndarray,
-#     img_FA: np.ndarray,
-#     center_point: tuple[int, int, int],
-#     colormap_angle=None,
-#     colormap_FA=None,
-#     angle1_title: str = "Helix Angle",
-#     angle2_title: str = "Intrusion Angle",
-# ):
-#     """
-#     Plots images of the heart with helix, intrusion, and FA annotations.
-
-#     Args:
-#         img (np.ndarray): Grayscale image of the heart.
-#         img_helix (np.ndarray): Helix angle image.
-#         img_intrusion (np.ndarray): Intrusion angle image.
-#         img_FA (np.ndarray): Fractional Anisotropy (FA) image.
-#         center_point (Tuple[int, int, int]): Coordinates of the center point.
-#         colormap_angle: Colormap for helix and intrusion angles (default: helix_angle_cmap).
-#         colormap_FA: Colormap for FA image (default: 'inferno').
-
-#     Returns:
-#         None
-#     """
-
-
-#     # Default colormaps
-#     if colormap_angle is None:
-#         colormap_angle = helix_angle_cmap
-#     if colormap_FA is None:
-#         colormap_FA = plt.get_cmap("inferno")
-
-#     # Determine display range for original image
-#     img_vmin, img_vmax = np.nanpercentile(img, (5, 95))
-
-#     # Create a figure and axes
-#     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-#     ax = axes
-
-#     # Original Image with Red Point
-#     ax[0, 0].imshow(img, vmin=img_vmin, vmax=img_vmax, cmap="gray")
-#     x, y = center_point[0:2]
-#     ax[0, 0].scatter(x, y, c="red", s=50, marker="o", label="Axis Point")
-#     ax[0, 0].set_title("Original Image")
-#     ax[0, 0].legend(loc="upper right")
-
-#     # Helix Image
-#     tmp = ax[0, 1].imshow(img_angle1, cmap=colormap_angle, vmin=-90, vmax=90)
-#     ax[0, 1].set_title(angle1_title)
-
-#     # Intrusion Image
-#     ax[1, 0].imshow(img_angle2, cmap=colormap_angle, vmin=-90, vmax=90)
-#     ax[1, 0].set_title(angle2_title)
-
-#     # FA Image
-#     fa_plot = ax[1, 1].imshow(img_FA, cmap=colormap_FA, vmin=0, vmax=1)
-#     ax[1, 1].set_title("Fractional Anisotropy")
-
-#     # Add colorbars for relevant subplots
-#     cbar1 = fig.colorbar(tmp, ax=ax[0, 1], orientation="vertical")
-#     cbar1.set_label(angle1_title)
-#     cbar2 = fig.colorbar(fa_plot, ax=ax[1, 1], orientation="vertical")
-#     cbar2.set_label("Fractional Anisotropy")
-
-#     # Hide axes for a cleaner view
-#     for axis in ax.flat:
-#         axis.axis("off")
-
-#     # Adjust layout to prevent overlap
-#     fig.tight_layout()
-#     plt.show()
 
 
 def plot_images(
@@ -529,7 +458,7 @@ def plot_images(
         Integer voxel coordinates (z, y, x) of the centerline point on this slice.
         Only (y, x) is used here for the marker.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles. Defaults to plt.cm.hsv if None.
+        Colormap for angles. Defaults to helix_angle_cmap if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA. Defaults to plt.cm.magma if None.
     angle1_title : str
@@ -542,7 +471,7 @@ def plot_images(
     This function shows the centerline marker on the source panel.
     """
     if colormap_angle is None:
-        colormap_angle = plt.cm.hsv
+        colormap_angle = helix_angle_cmap
     if colormap_FA is None:
         colormap_FA = plt.cm.magma
 
@@ -731,7 +660,7 @@ def write_img_rgb(
     vmax : float
         Maximum for normalization.
     colormap : matplotlib colormap, optional
-        Colormap to apply, for example plt.cm.hsv. If None, use plt.cm.hsv.
+        Colormap to apply. If None, use helix_angle_cmap.
     output_format : {"jp2", "tif"}
         Output format. Uses glymur for jp2 and tifffile for tif.
 
@@ -740,7 +669,7 @@ def write_img_rgb(
     The function normalizes to [0, 1], applies the colormap, then writes uint8 RGB.
     """
     if colormap is None:
-        colormap = plt.cm.hsv
+        colormap = helix_angle_cmap
 
     denom = (vmax - vmin) if (vmax - vmin) != 0 else 1.0
     x = (img.astype(np.float32) - vmin) / denom
@@ -798,7 +727,7 @@ def write_images(
     z : int
         Current z offset used to compute the running index in filenames.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles in "rgb" mode. Defaults to plt.cm.hsv if None.
+        Colormap for angles in "rgb" mode. Defaults to helix_angle_cmap if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA in "rgb" mode. Defaults to plt.cm.magma if None.
     angle_names : tuple[str, str]
@@ -853,7 +782,7 @@ def write_images(
 
     elif output_type == "rgb":
         if colormap_angle is None:
-            colormap_angle = plt.cm.hsv
+            colormap_angle = helix_angle_cmap
         if colormap_FA is None:
             colormap_FA = plt.cm.magma
 
