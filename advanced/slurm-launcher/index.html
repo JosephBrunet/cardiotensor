@@ -12,13 +12,13 @@
         <meta name="author" content="Joseph Brunet">
       
       
-        <link rel="canonical" href="https://josephbrunet.github.io/cardiotensor/advanced/streamlines/">
+        <link rel="canonical" href="https://josephbrunet.github.io/cardiotensor/advanced/slurm-launcher/">
       
       
-        <link rel="prev" href="../cardio-analysis/">
+        <link rel="prev" href="../streamlines/">
       
       
-        <link rel="next" href="../slurm-launcher/">
+        <link rel="next" href="../../reference/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Streamlines - Cardiotensor</title>
+        <title>SLURM Launcher - Cardiotensor</title>
       
     
     
@@ -100,7 +100,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#streamlines" class="md-skip">
+        <a href="#slurm-launcher" class="md-skip">
           Skip to content
         </a>
       
@@ -135,7 +135,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Streamlines
+              SLURM Launcher
             
           </span>
         </div>
@@ -787,6 +787,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../streamlines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streamlines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -806,7 +834,7 @@
   <span class="md-ellipsis">
     
   
-    Streamlines
+    SLURM Launcher
   
 
     
@@ -824,7 +852,7 @@
   <span class="md-ellipsis">
     
   
-    Streamlines
+    SLURM Launcher
   
 
     
@@ -850,10 +878,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
+  <a href="#what-it-does" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Before You Start
+        What It Does
       
     </span>
   </a>
@@ -861,10 +889,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generate-streamlines" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generate Streamlines
+        Basic Usage
       
     </span>
   </a>
@@ -872,10 +900,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#visualize-streamlines" class="md-nav__link">
+  <a href="#useful-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualize Streamlines
+        Useful Options
       
     </span>
   </a>
@@ -883,21 +911,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keybindings" class="md-nav__link">
+  <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keybindings
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-tuning-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Tuning Workflow
+        Troubleshooting
       
     </span>
   </a>
@@ -908,34 +925,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../slurm-launcher/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SLURM Launcher
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1187,10 +1176,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
+  <a href="#what-it-does" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Before You Start
+        What It Does
       
     </span>
   </a>
@@ -1198,10 +1187,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generate-streamlines" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generate Streamlines
+        Basic Usage
       
     </span>
   </a>
@@ -1209,10 +1198,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#visualize-streamlines" class="md-nav__link">
+  <a href="#useful-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualize Streamlines
+        Useful Options
       
     </span>
   </a>
@@ -1220,21 +1209,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keybindings" class="md-nav__link">
+  <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keybindings
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-tuning-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Tuning Workflow
+        Troubleshooting
       
     </span>
   </a>
@@ -1309,106 +1287,61 @@
   
 
 
-<h1 id="streamlines"><a class="toclink" href="#streamlines">Streamlines</a><a class="headerlink" href="#streamlines" title="Permanent link">&para;</a></h1>
-<p>Use this page to generate and inspect 3D streamlines with:</p>
+<h1 id="slurm-launcher"><a class="toclink" href="#slurm-launcher">SLURM Launcher</a><a class="headerlink" href="#slurm-launcher" title="Permanent link">&para;</a></h1>
+<p>Use <code>cardio-tensor-slurm</code> to submit chunked orientation jobs as SLURM array tasks.</p>
+<h2 id="what-it-does"><a class="toclink" href="#what-it-does">What It Does</a><a class="headerlink" href="#what-it-does" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>cardio-generate-streamlines</code></li>
-<li><code>cardio-visualize-streamlines</code></li>
+<li>Splits a dataset into chunks.</li>
+<li>Generates a <code>.slurm</code> script.</li>
+<li>Submits one or more SLURM arrays with <code>sbatch</code>.</li>
+<li>Monitors output progress.</li>
 </ul>
-<h2 id="before-you-start"><a class="toclink" href="#before-you-start">Before You Start</a><a class="headerlink" href="#before-you-start" title="Permanent link">&para;</a></h2>
+<p>The launcher calls <code>cardio-tensor</code> on each task with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cardio-tensor<span class="w"> </span>&lt;conf_file&gt;<span class="w"> </span>--start_index<span class="w"> </span>&lt;start&gt;<span class="w"> </span>--end_index<span class="w"> </span>&lt;end&gt;
+</code></pre></div>
+<h2 id="basic-usage"><a class="toclink" href="#basic-usage">Basic Usage</a><a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cardio-tensor-slurm<span class="w"> </span>path/to/parameters.conf
+</code></pre></div>
+<h2 id="useful-options"><a class="toclink" href="#useful-options">Useful Options</a><a class="headerlink" href="#useful-options" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cardio-tensor-slurm<span class="w"> </span>path/to/parameters.conf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--start_index<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="se">\ </span><span class="w">                    </span><span class="c1"># First slice index (inclusive)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--end_index<span class="w"> </span><span class="m">5000</span><span class="w"> </span><span class="se">\ </span><span class="w">                   </span><span class="c1"># Last slice index (exclusive)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--chunk_size<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\ </span><span class="w">                   </span><span class="c1"># Slices processed per SLURM task</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--time_limit<span class="w"> </span><span class="m">4</span>:00:00<span class="w"> </span><span class="se">\ </span><span class="w">               </span><span class="c1"># Wall-time limit for each task</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--cpus_per_task<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\ </span><span class="w">                  </span><span class="c1"># CPU cores requested per task</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>--mem_gb<span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="se">\ </span><span class="w">                        </span><span class="c1"># Memory requested per task (GB)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>--array_parallel<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\ </span><span class="w">                </span><span class="c1"># Max concurrent tasks in the SLURM array</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>--partition<span class="w"> </span>nice<span class="w"> </span><span class="se">\ </span><span class="w">                   </span><span class="c1"># Optional partition/queue name</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span>--log_dir<span class="w"> </span>/path/to/logs<span class="w"> </span><span class="se">\ </span><span class="w">            </span><span class="c1"># Where SLURM stdout/stderr logs are written</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span>--submit_dir<span class="w"> </span>/path/to/slurm_scripts<span class="w">   </span><span class="c1"># Where generated .slurm scripts are saved</span>
+</code></pre></div>
+<p>Other useful flags:</p>
 <ul>
-<li>In the config file, set <code>WRITE_VECTORS = True</code> and <code>TEST = False</code>.</li>
-<li>Run <code>cardio-tensor</code> on your full dataset.</li>
-<li>Make sure these outputs exist in <code>OUTPUT_PATH</code>:<ul>
-<li><code>eigen_vec/</code></li>
-<li><code>FA/</code></li>
-<li>angle folders (<code>HA</code>/<code>IA</code> or <code>AZ</code>/<code>EL</code>, depending on <code>ANGLE_MODE</code>)</li>
+<li><code>--no_monitor</code>: submit jobs and return immediately (do not watch output progress).</li>
+<li><code>--dry_run</code>: generate the <code>.slurm</code> script and print <code>sbatch</code> command without submitting.</li>
 </ul>
+<p>Run help for the full list:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cardio-tensor-slurm<span class="w"> </span>-h
+</code></pre></div>
+<h2 id="troubleshooting"><a class="toclink" href="#troubleshooting">Troubleshooting</a><a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong><code>sbatch</code> fails</strong><br />
+  Verify partition/account/time/memory policy on your cluster.</p>
+</li>
+<li>
+<p><strong>Job fails before running <code>cardio-tensor</code></strong><br />
+  Check logs in <code>OUTPUT_PATH/slurm/log/</code>.</p>
+</li>
+<li>
+<p><strong>No progress in monitor</strong><br />
+  Confirm output folder permissions and that tasks can write outputs.</p>
+</li>
+<li>
+<p><strong>Want to debug without submitting jobs</strong><br />
+  Use <code>--dry_run</code>.</p>
 </li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>It is usefull to provide a <code>MASK_PATH</code> to avoid placing seeds and tracing streamline outside the sample, even though the FA threshold should avoid this.</p>
-</div>
-<h2 id="generate-streamlines"><a class="toclink" href="#generate-streamlines">Generate Streamlines</a><a class="headerlink" href="#generate-streamlines" title="Permanent link">&para;</a></h2>
-<p>Basic example:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>cardio-generate-streamlines<span class="w"> </span>./parameters_example.conf<span class="w"> </span>
-</code></pre></div>
-<p>Useful options:</p>
-<ul>
-<li><code>--seeds</code>: number of seeds (default: 20000).</li>
-<li><code>--fa-seed-min</code>: minimum FA to place seeds (default: 0.2).</li>
-<li><code>--fa-threshold</code>: minimum FA to continue tracking (default: 0.1).</li>
-<li><code>--angle</code>: maximum turning angle (degrees - default: 60.0).</li>
-<li><code>--step</code>: integration step length (voxels - default: 0.5).</li>
-<li><code>--min-len</code>: minimum streamline length (points - default: 10).</li>
-<li><code>--bin</code>: downsampling factor for faster processing.</li>
-<li><code>--start-z/--end-z</code> (and <code>x</code>, <code>y</code> variants): process only a sub-volume.</li>
-</ul>
-<p>Generated files:</p>
-<ul>
-<li><code>OUTPUT_PATH/streamlines.trk</code></li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Use <code>--bin</code> if the dataset is too big to fit in RAM. This will bin the eigenvectors and the maps.</p>
-</div>
-<h2 id="visualize-streamlines"><a class="toclink" href="#visualize-streamlines">Visualize Streamlines</a><a class="headerlink" href="#visualize-streamlines" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>./parameters_example.conf<span class="w"> </span>--downsample<span class="w"> </span><span class="m">5</span>
-</code></pre></div>
-<p>Useful options:</p>
-<ul>
-<li><code>--color-by</code>: <code>auto</code>, <code>elevation</code>, or stored fields like <code>HA</code>, <code>IA</code>, <code>AZ</code>, <code>EL</code>.</li>
-<li><code>--list-color-by</code>: list available fields in the <code>.trk</code>.</li>
-<li><code>--line-width</code>: tube width.</li>
-<li><code>--subsample</code>: keep every Nth streamline.</li>
-<li><code>--min-length</code>: filter short streamlines.</li>
-<li><code>--crop-x</code>, <code>--crop-y</code>, <code>--crop-z</code>: spatial crop ranges.</li>
-<li><code>--screenshot</code>: save a PNG snapshot.</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Use <code>--downsample</code> to keep fewer points per streamline and improve rendering performance on large datasets.</p>
-</div>
-<figure>
-<img alt="Streamline visualization" src="../../assets/images/streamline_all_advanced.png" width="75%" />
-
-<figcaption>Example 3D streamline rendering in a human heart.</figcaption>
-</figure>
-<p>The dataset used as an example here can be find at <a href="https://doi.org/10.15151/esrf-dc-1634390196">DOI</a></p>
-<h2 id="keybindings"><a class="toclink" href="#keybindings">Keybindings</a><a class="headerlink" href="#keybindings" title="Permanent link">&para;</a></h2>
-<p>In the interactive viewer:</p>
-<ul>
-<li><code>O</code>: toggle clipping plane on/off.</li>
-<li><code>H</code>: show/hide clipping plane gizmo.</li>
-<li><code>I</code>: flip clipping plane normal.</li>
-<li><code>R</code>: reset clipping plane to center.</li>
-<li><code>+</code> / <code>-</code>: increase/decrease streamline thickness.</li>
-<li><code>B</code>: toggle background color (black/white).</li>
-<li><code>S</code>: show/hide scale bar.</li>
-<li><code>P</code>: save a high-resolution PNG snapshot.</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>During interaction (rotate/pan/zoom), the viewer switches to a low-resolution for better responsiveness, then automatically returns to full resolution when interaction ends.</p>
-</div>
-<figure>
-<img alt="Streamline visualization" src="../../assets/images/streamline_crop_advanced.png" width="75%" />
-
-<figcaption>Example 3D streamline rendering in a human heart, cropped using the clipping plane.</figcaption>
-</figure>
-<h2 id="quick-tuning-workflow"><a class="toclink" href="#quick-tuning-workflow">Quick Tuning Workflow</a><a class="headerlink" href="#quick-tuning-workflow" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Start with <code>--seeds 10000</code>.</li>
-<li>Check global coverage and continuity.</li>
-<li>Increase <code>--seeds</code> if regions are undersampled.</li>
-<li>Increase <code>--fa-threshold</code> or decrease <code>--angle</code> to reduce implausible curves.</li>
-<li>Use <code>--subsample</code> and <code>--downsample</code> for faster visual inspection.</li>
-</ol>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Interpretation depends strongly on tracking parameters. Compare conditions only when parameters, such as seeding and thresholds, are similar.</p>
-</div>
 
 
 
@@ -1431,7 +1364,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 27, 2026 09:47:37 UTC"><span class="timeago" datetime="2026-02-27T09:47:37+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 27, 2026 09:47:37 UTC">2026-02-27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 7, 2026 19:23:22 UTC"><span class="timeago" datetime="2026-03-07T19:23:22+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 7, 2026 19:23:22 UTC">2026-03-07</span>
   </span>
 
     
@@ -1441,7 +1374,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 25, 2026 15:33:13 UTC"><span class="timeago" datetime="2026-02-25T15:33:13+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 25, 2026 15:33:13 UTC">2026-02-25</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 7, 2026 19:23:22 UTC"><span class="timeago" datetime="2026-03-07T19:23:22+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 7, 2026 19:23:22 UTC">2026-03-07</span>
   </span>
 
     
@@ -1480,7 +1413,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../cardio-analysis/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Transmural Analysis">
+          <a href="../streamlines/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Streamlines">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1490,20 +1423,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Transmural Analysis
+                Streamlines
               </div>
             </div>
           </a>
         
         
           
-          <a href="../slurm-launcher/" class="md-footer__link md-footer__link--next" aria-label="Next: SLURM Launcher">
+          <a href="../../reference/" class="md-footer__link md-footer__link--next" aria-label="Next: Reference">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                SLURM Launcher
+                Reference
               </div>
             </div>
             <div class="md-footer__button md-icon">
