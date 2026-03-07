@@ -6,6 +6,7 @@ Pages:
 
 - [Transmural Analysis](./cardio-analysis.md): Extract transmural profiles from angle and FA maps with `cardio-analysis`.
 - [Streamlines](./streamlines.md): Generate and visualize 3D streamlines with `cardio-generate-streamlines` and `cardio-visualize-streamlines`.
+- [SLURM Launcher](./slurm-launcher.md): Submit chunked `cardio-tensor` jobs on HPC clusters.
 
 See also:
 

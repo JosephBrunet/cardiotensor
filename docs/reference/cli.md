@@ -9,6 +9,10 @@ Compute myocyte orientation from a 3D volume using a configuration file.
 - `cardio-tensor`
   Computes structure tensor, helix/transverse angle, FA, and eigenvectors.
 
+- `cardio-tensor-slurm`
+  Submits chunked `cardio-tensor` runs as SLURM array jobs.
+  See [SLURM Launcher](../advanced/slurm-launcher.md).
+
 See the [example](../getting-started/examples.md) to get started.
 
 ---
