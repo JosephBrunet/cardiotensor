@@ -1,4 +1,4 @@
-<h1 align="center">Cardiotensor</h1>
+<h1 align="center">CardioTensor</h1>
 
 <p align="center">
   <picture>
