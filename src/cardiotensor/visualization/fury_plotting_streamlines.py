@@ -99,6 +99,7 @@ class StreamlineViewer:
         window_size,
         lut,
         background_color="black",
+        spline_subdiv=16,
     ):
         self.streamlines_xyz = streamlines_xyz
         self.color_values = color_values
@@ -113,6 +114,7 @@ class StreamlineViewer:
 
         # thickness state
         self.linewidth = max(1.0, float(line_width))  # used for both line and tube
+        self.spline_subdiv = spline_subdiv
 
         self.scale_bar = None
         self.scale_bar_on = False
@@ -154,11 +156,12 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
-                spline_subdiv=0,
+                spline_subdiv=self.spline_subdiv,
                 lookup_colormap=self.lut,
-                lod=False,  # <—
-                lod_points=20000,  # optional, tune
-                lod_points_size=2,  # optional, tune
+                tube_sides=20,
+                # lod=False,  # <—
+                # lod_points=20000,  # optional, tune
+                # lod_points_size=2,  # optional, tune
             )
         else:
             self.actor0 = actor.line(
@@ -169,6 +172,8 @@ class StreamlineViewer:
             )
 
         self.scene.add(self.actor0)
+        self._style_streamline_actor()
+
 
         # fast actor for interaction (cheap line rendering)
         self.actor_fast = actor.line(
@@ -176,7 +181,7 @@ class StreamlineViewer:
             colors=self.flat_vals,  # pass scalars
             linewidth=1.0,  # very light
             lookup_colormap=self.lut,
-            lod=False,  # make it deterministic
+            # lod=False,  # make it deterministic
             fake_tube=True,  # a bit of shading to hint tubes
         )
         self.actor_fast.SetVisibility(False)
@@ -199,6 +204,14 @@ class StreamlineViewer:
 
         self.mapper0 = self.actor0.GetMapper()
         self.mapper0.RemoveAllClippingPlanes()  # start with clipping off
+
+    def _style_streamline_actor(self):
+        prop = self.actor0.GetProperty()
+        prop.SetInterpolationToPhong()
+        prop.SetAmbient(0.1)
+        prop.SetDiffuse(0.95)
+        prop.SetSpecular(0.25)
+        prop.SetSpecularPower(12)
 
     def _add_scalar_bar(self):
         self.scene.add(
@@ -270,11 +283,12 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
-                spline_subdiv=0,
+                spline_subdiv=self.spline_subdiv,
+                tube_sides=20,
                 lookup_colormap=self.lut,
-                lod=False,  # <—
-                lod_points=20000,  # optional, tune
-                lod_points_size=2,  # optional, tune
+                # lod=False,  # <—
+                # lod_points=20000,  # optional, tune
+                # lod_points_size=2,  # optional, tune
             )
         else:
             self.actor0 = actor.line(
@@ -285,6 +299,9 @@ class StreamlineViewer:
             )
 
         self.scene.add(self.actor0)
+        self._style_streamline_actor()
+
+        
         self.mapper0 = self.actor0.GetMapper()
         if clipping_on:
             self.mapper0.RemoveAllClippingPlanes()
@@ -462,6 +479,12 @@ class StreamlineViewer:
             self.showm.iren.AddObserver("KeyPressEvent", self._on_keypress)
 
             self.scene.reset_camera()
+            
+            self.scene.azimuth(15)
+            self.scene.elevation(10)
+            self.scene.zoom(1.1)
+
+            
             print(
                 "Keys: O toggle plane, H hide gizmo, I flip side, R reset plane, +/- thickness, B background, S scale bar, P save PNG"
             )
@@ -494,6 +517,7 @@ def show_streamlines(
     | None = None,
     colormap=None,
     background_color: str | tuple[float, float, float] = "black",
+    spline_subdiv: int = 16,
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
 
@@ -547,6 +571,17 @@ def show_streamlines(
         color_values = [color_values[i] for i in keep_idx]
 
     print(f"Final number of streamlines to render: {len(streamlines_xyz)}")
+    points_per_streamline = np.array(
+        [len(streamline) for streamline in streamlines_xyz], dtype=float
+    )
+    avg_points_per_streamline = float(np.mean(points_per_streamline))
+    std_points_per_streamline = float(np.std(points_per_streamline))
+    print(
+        f"Average points per streamline: {avg_points_per_streamline:.1f} +/- "
+        f"{std_points_per_streamline:.1f} "
+        "(more points usually means more detail, but heavier rendering)."
+    )
+    
     if not color_values:
         raise ValueError("No color arrays after filtering.")
 
@@ -578,6 +613,7 @@ def show_streamlines(
         window_size,
         lut,
         background_color=background_color,
+        spline_subdiv=spline_subdiv,
     )
     viewer.run(interactive=interactive, screenshot_path=screenshot_path)
 

@@ -99,6 +99,7 @@ def visualize_streamlines(
     screenshot_path: str | None = None,
     window_size: tuple[int, int] = (800, 800),
     colormap=None,
+    spline_subdiv: int = 16,
 ):
     """
     Visualize .trk streamlines with per-point angle-based coloring.
@@ -173,4 +174,5 @@ def visualize_streamlines(
         subsample_factor=subsample_factor,
         crop_bounds=crop_bounds,
         colormap=colormap,
+        spline_subdiv=spline_subdiv,
     )

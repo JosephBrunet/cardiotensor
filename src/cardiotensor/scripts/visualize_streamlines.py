@@ -139,6 +139,12 @@ def script() -> None:
         default=None,
         help="Path to save a PNG screenshot, no file is saved if omitted",
     )
+    parser.add_argument(
+        "--spline-subdiv",
+        type=int,
+        default=16,
+        help="Spline subdivisions for tube rendering (higher = smoother, heavier)",
+    )
     parser.add_argument("--width", type=int, default=800, help="Window width in pixels")
     parser.add_argument(
         "--height", type=int, default=800, help="Window height in pixels"
@@ -221,6 +227,7 @@ def script() -> None:
         screenshot_path=args.screenshot,
         window_size=(args.width, args.height),
         colormap=chosen_cmap,
+        spline_subdiv=args.spline_subdiv,
     )
 
 
