@@ -44,7 +44,11 @@ def script() -> None:
         action="store_true",
         help="Process slices in reverse order starting from the end.",
     )
-    
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="Force single-slice test mode even if TEST is False in the config.",
+    )
     parser.add_argument(
         "--colormap",
         type=str,
@@ -57,6 +61,7 @@ def script() -> None:
     start_index = args.start_index
     end_index = args.end_index
     reverse = args.reverse
+    force_test = args.test
     colormap = args.colormap
 
     # --- Read configuration ---
@@ -84,8 +89,9 @@ def script() -> None:
     write_angles = params.get("WRITE_ANGLES", True)
     angle_mode = params.get("ANGLE_MODE", "ha_ia")
     use_gpu = params.get("USE_GPU", True)
-    is_test = params.get("TEST", False)
+    is_test = force_test or params.get("TEST", False)
     n_slice_test = params.get("N_SLICE_TEST", None)
+    show_quiver = params.get("SHOW_QUIVER", True)
     n_chunk = params.get("N_CHUNK", 100)
 
     if not reverse:  # CLI --reverse overrides config
@@ -99,7 +105,14 @@ def script() -> None:
 
     # --- Test Mode ---
     if is_test:
-        print(f"⚙️  TEST mode: processing slices {start_index}–{end_index - 1}")
+        if n_slice_test is None:
+            print(
+                "❌ Test mode requires N_SLICE_TEST in the configuration file."
+            )
+            sys.exit(1)
+        if force_test and not params.get("TEST", False):
+            print("⚙️  TEST mode forced from CLI (--test)")
+        print(f"⚙️  TEST mode: processing slice {n_slice_test}")
         t0 = time.time()
         compute_orientation(
             volume_path=volume_path,
@@ -118,6 +131,7 @@ def script() -> None:
             use_gpu=use_gpu,
             is_test=is_test,
             n_slice_test=n_slice_test,
+            show_quiver=show_quiver,
             start_index=start_index,
             end_index=end_index,
             colormap=colormap,
@@ -162,6 +176,7 @@ def script() -> None:
             use_gpu=use_gpu,
             is_test=is_test,
             n_slice_test=n_slice_test,
+            show_quiver=show_quiver,
             start_index=s,
             end_index=e,
             colormap=colormap,
