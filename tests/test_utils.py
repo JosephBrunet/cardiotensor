@@ -39,7 +39,8 @@ def test_read_conf_file(tmp_path):
         "AXIS_POINTS = (0,0,0), (1,1,1)\n\n"
         "[TEST]\n"
         "TEST = True\n"
-        "N_SLICE_TEST = 5\n\n"
+        "N_SLICE_TEST = 5\n"
+        "SHOW_QUIVER = True\n\n"
         "[OUTPUT]\n"
         "OUTPUT_PATH = ./output\n"
         "OUTPUT_FORMAT = tif\n"
@@ -70,6 +71,7 @@ def test_read_conf_file(tmp_path):
     # Test
     assert config["TEST"] is True
     assert config["N_SLICE_TEST"] == 5
+    assert config["SHOW_QUIVER"] is True
 
     # Output
     assert config["OUTPUT_PATH"] == "./output"

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from cardiotensor.orientation.orientation_computation_functions import (
@@ -7,6 +8,7 @@ from cardiotensor.orientation.orientation_computation_functions import (
     calculate_structure_tensor,
     compute_fraction_anisotropy,
     interpolate_points,
+    plot_images,
     rotate_vectors_to_new_axis,
     write_images,
     write_vector_field,
@@ -137,3 +139,32 @@ def test_write_images_and_vectors(tmp_path: Path):
 
     eigen_vec_files = list((tmp_path / "eigen_vec").glob("*.npy"))
     assert eigen_vec_files, "Vector field .npy file was not created"
+
+
+def test_plot_images_with_vector_overlay(tmp_path: Path):
+    plt.switch_backend("Agg")
+
+    img = np.arange(36, dtype=np.float32).reshape(6, 6)
+    img_angle1 = np.linspace(-90, 90, 36, dtype=np.float32).reshape(6, 6)
+    img_angle2 = np.linspace(90, -90, 36, dtype=np.float32).reshape(6, 6)
+    img_fa = np.linspace(0, 1, 36, dtype=np.float32).reshape(6, 6)
+
+    vector_field_slice = np.zeros((3, 6, 6), dtype=np.float32)
+    vector_field_slice[0, :, :] = 1.0
+    vector_field_slice[1, 2:, :] = 0.5
+
+    out_path = tmp_path / "test_slice" / "result_test_slice.png"
+    plot_images(
+        img,
+        img_angle1,
+        img_angle2,
+        img_fa,
+        center_point=(3, 2, 0),
+        vector_field_slice=vector_field_slice,
+        save_path=str(out_path),
+        show=False,
+        quiver_step=2,
+    )
+
+    assert out_path.is_file(), "Diagnostic test-slice figure was not created"
+    assert out_path.stat().st_size > 0, "Diagnostic test-slice figure is empty"

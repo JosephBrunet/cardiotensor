@@ -428,6 +428,61 @@ def compute_azimuth_and_elevation(
     return az, el
 
 
+def _plot_vector_overlay(
+    ax,
+    vector_field_slice: np.ndarray,
+    quiver_step: int | None = None,
+    quiver_length: float | None = None,
+    quiver_color: str = "cyan",
+) -> None:
+    """
+    Overlay a subsampled in-plane vector field on an existing axes.
+
+    The field is expected in shape ``(3, Y, X)`` where the first two channels
+    encode the in-plane X and Y components.
+    """
+    if vector_field_slice.ndim != 3 or vector_field_slice.shape[0] != 3:
+        raise ValueError("vector_field_slice must have shape (3, Y, X)")
+
+    _, rows, cols = vector_field_slice.shape
+    if quiver_step is None:
+        quiver_step = max(4, min(rows, cols) // 20)
+    quiver_step = max(1, int(quiver_step))
+
+    if quiver_length is None:
+        quiver_length = 0.8 * quiver_step
+
+    ys = np.arange(0, rows, quiver_step, dtype=int)
+    xs = np.arange(0, cols, quiver_step, dtype=int)
+    grid_x, grid_y = np.meshgrid(xs, ys)
+
+    vx = vector_field_slice[0][np.ix_(ys, xs)]
+    vy = vector_field_slice[1][np.ix_(ys, xs)]
+    norms = np.hypot(vx, vy)
+    valid = np.isfinite(vx) & np.isfinite(vy) & (norms > 1e-8)
+    if not np.any(valid):
+        return
+
+    vx_plot = np.zeros_like(vx, dtype=np.float32)
+    vy_plot = np.zeros_like(vy, dtype=np.float32)
+    vx_plot[valid] = quiver_length * vx[valid] / norms[valid]
+    vy_plot[valid] = quiver_length * vy[valid] / norms[valid]
+
+    ax.quiver(
+        grid_x[valid],
+        grid_y[valid],
+        vx_plot[valid],
+        vy_plot[valid],
+        color=quiver_color,
+        angles="xy",
+        scale_units="xy",
+        scale=1.0,
+        width=0.004,
+        headwidth=3.5,
+        headlength=5.0,
+        headaxislength=4.5,
+        pivot="mid",
+    )
 
 
 def plot_images(
@@ -436,10 +491,16 @@ def plot_images(
     img_angle2: np.ndarray,
     img_FA: np.ndarray,
     center_point: tuple[int, int, int],
+    vector_field_slice: np.ndarray | None = None,
     colormap_angle=None,
     colormap_FA=None,
     angle1_title: str = "Helix Angle",
     angle2_title: str = "Intrusion Angle",
+    save_path: str | None = None,
+    show: bool = True,
+    quiver_step: int | None = None,
+    quiver_length: float | None = None,
+    quiver_color: str = "cyan",
 ) -> None:
     """
     Render a 2x2 figure of source, angle1, angle2, FA for a single slice.
@@ -455,8 +516,11 @@ def plot_images(
     img_FA : np.ndarray
         2D float map of fractional anisotropy in [0, 1].
     center_point : tuple[int, int, int]
-        Integer voxel coordinates (z, y, x) of the centerline point on this slice.
-        Only (y, x) is used here for the marker.
+        Voxel coordinates ``(x, y, z)`` of the centerline point on this slice.
+        Only ``(x, y)`` is used here for the marker.
+    vector_field_slice : np.ndarray, optional
+        Slice of the vector field with shape ``(3, Y, X)``. When provided, a
+        subsampled arrow overlay is drawn on the source image.
     colormap_angle : matplotlib colormap, optional
         Colormap for angles. Defaults to helix_angle_cmap if None.
     colormap_FA : matplotlib colormap, optional
@@ -465,22 +529,51 @@ def plot_images(
         Title for the first angle panel.
     angle2_title : str
         Title for the second angle panel.
+    save_path : str, optional
+        If provided, save the figure to this location.
+    show : bool
+        If True, display the figure interactively. Useful to disable in tests.
+    quiver_step : int, optional
+        Spatial subsampling step for the arrow overlay.
+    quiver_length : float, optional
+        Arrow length in pixel units for the overlay.
+    quiver_color : str
+        Arrow color for the vector overlay.
 
     Notes
     -----
-    This function shows the centerline marker on the source panel.
+    This function shows the centerline marker on the source panel and can
+    optionally overlay the in-plane vector direction.
     """
     if colormap_angle is None:
         colormap_angle = helix_angle_cmap
     if colormap_FA is None:
         colormap_FA = plt.cm.magma
 
+    if vector_field_slice is not None and vector_field_slice.shape[1:] != img.shape:
+        raise ValueError(
+            "vector_field_slice shape must match the source image shape"
+        )
+
     x, y = center_point[0:2]
-    
+
     fig, ax = plt.subplots(2, 2, figsize=(10, 9))
-    ax[0, 0].imshow(img, cmap="gray")
+
+    valid = img[np.isfinite(img)]
+    vmin, vmax = np.nanpercentile(valid, (2, 98))
+    ax[0, 0].imshow(img, cmap="gray", vmin=vmin, vmax=vmax)
     ax[0, 0].plot(x, y, "r.", ms=6)
-    ax[0, 0].set_title("Source")
+    if vector_field_slice is not None:
+        _plot_vector_overlay(
+            ax[0, 0],
+            vector_field_slice,
+            quiver_step=quiver_step,
+            quiver_length=quiver_length,
+            quiver_color=quiver_color,
+        )
+    ax[0, 0].set_title(
+        "Source + vectors" if vector_field_slice is not None else "Source"
+    )
     ax[0, 0].axis("off")
 
     im1 = ax[0, 1].imshow(img_angle1, cmap=colormap_angle)
@@ -499,7 +592,14 @@ def plot_images(
     fig.colorbar(im3, ax=ax[1, 1], fraction=0.046, pad=0.04)
 
     fig.tight_layout()
-    plt.show()
+    if save_path is not None:
+        save_dir = os.path.dirname(save_path)
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    if show:
+        plt.show()
+    plt.close(fig)
 
 
 
