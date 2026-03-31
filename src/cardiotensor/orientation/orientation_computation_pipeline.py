@@ -154,6 +154,7 @@ def compute_orientation(
     use_gpu: bool = True,
     is_test: bool = False,
     n_slice_test: int | None = None,
+    show_quiver: bool = True,
     start_index: int = 0,
     end_index: int | None = None,
     colormap: str | None = None,
@@ -177,6 +178,7 @@ def compute_orientation(
         use_gpu: Use GPU acceleration for tensor computation.
         is_test: If True, runs in test mode and outputs plots.
         n_slice_test: Number of slices to process in test mode.
+        show_quiver: If True, overlay the vector field on the test-slice figure.
         start_index: Start slice index.
         end_index: End slice index (None = last slice).
         colormap: Colormap name for RGB angle outputs. Defaults to helix-angle map.
@@ -207,6 +209,7 @@ Parameters:
     - Write vectors:  {write_vectors}
     - Use GPU:        {use_gpu}
     - Test mode:      {is_test}
+    - Show quiver:    {show_quiver}
     - Colormap:       {colormap or "[default]"}
     """)
 
@@ -280,7 +283,6 @@ Parameters:
         "float32"
     )
     print(f"Loaded volume shape {volume.shape}")
-
     if mask_path is not None:
         print("\n---------------------------------")
         print("LOAD MASK\n")
@@ -377,6 +379,7 @@ Parameters:
                             write_vectors,
                             write_angles,
                             is_test,
+                            show_quiver,
                             angle_mode,
                             colormap,
                         ),
@@ -407,6 +410,7 @@ Parameters:
                     write_vectors,
                     write_angles,
                     is_test,
+                    show_quiver,
                     angle_mode,
                     colormap,
                 )
@@ -432,6 +436,7 @@ def compute_slice_angles_and_anisotropy(
     write_vectors: bool = False,
     write_angles: bool = True,
     is_test: bool = False,
+    show_quiver: bool = True,
     angle_mode: str = "ha_ia",
     colormap: str | None = None,
 ) -> None:
@@ -510,22 +515,25 @@ def compute_slice_angles_and_anisotropy(
             if mode == "ha_ia"
             else ("Azimuth", "Elevation")
         )
+        test_output_dir = os.path.join(output_dir, "test_slice")
         plot_images(
             img_slice,
             img_angle1,
             img_angle2,
             img_FA,
             center_point,
+            vector_field_slice=vector_field_slice if show_quiver else None,
             colormap_angle=colormap_angle,
             angle1_title=titles[0],
             angle2_title=titles[1],
+            save_path=os.path.join(test_output_dir, "result_test_slice.png"),
         )
         write_images(
             img_angle1,
             img_angle2,
             img_FA,
             start_index,
-            os.path.join(output_dir, "test_slice"),
+            test_output_dir,
             ext,
             output_type,
             z,
