@@ -41,6 +41,28 @@ def downsample_streamline(streamline: np.ndarray, factor: int = 2) -> np.ndarray
     return streamline if len(streamline) < 3 or factor <= 1 else streamline[::factor]
 
 
+def _compute_streamline_bounds(
+    streamlines_xyz: list[np.ndarray],
+) -> tuple[np.ndarray, np.ndarray]:
+    if not streamlines_xyz:
+        raise ValueError("No streamlines available to compute bounds.")
+
+    mins = np.min([sl.min(axis=0) for sl in streamlines_xyz], axis=0)
+    maxs = np.max([sl.max(axis=0) for sl in streamlines_xyz], axis=0)
+    return mins, maxs
+
+
+def _print_box_shape(label: str, mins: np.ndarray, maxs: np.ndarray) -> None:
+    size = maxs - mins
+    print(
+        f"{label}: \n"
+        f"x=[{mins[0]:.2f}, {maxs[0]:.2f}], \n"
+        f"y=[{mins[1]:.2f}, {maxs[1]:.2f}], \n"
+        f"z=[{mins[2]:.2f}, {maxs[2]:.2f}] \n"
+        f"-> shape=({size[0]:.2f}, {size[1]:.2f}, {size[2]:.2f})\n"
+    )
+
+
 def matplotlib_cmap_to_fury_lut(
     cmap, value_range=(-1, 1), n_colors=256
 ) -> vtk.vtkLookupTable:
@@ -147,6 +169,9 @@ class StreamlineViewer:
         self.bounds = [mins[0], maxs[0], mins[1], maxs[1], mins[2], maxs[2]]
 
         self._build_pipeline()
+        
+        # self._add_origin_marker()
+        
         self._add_scalar_bar()
 
     def _build_pipeline(self):
@@ -212,6 +237,39 @@ class StreamlineViewer:
         prop.SetDiffuse(0.95)
         prop.SetSpecular(0.25)
         prop.SetSpecularPower(12)
+
+    def _add_origin_marker(self):
+        bounds_size = np.array(
+            [
+                self.bounds[1] - self.bounds[0],
+                self.bounds[3] - self.bounds[2],
+                self.bounds[5] - self.bounds[4],
+            ],
+            dtype=float,
+        )
+        diagonal = float(np.linalg.norm(bounds_size))
+        marker_radius = max(1.0, 0.01 * diagonal)
+
+        self.origin_actor = actor.sphere(
+            centers=np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+            colors=np.array([[1.0, 0.0, 0.0]], dtype=np.float32),
+            radii=np.array([marker_radius], dtype=np.float32),
+        )
+        try:
+            self.origin_actor.GetProperty().SetAmbient(1.0)
+            self.origin_actor.GetProperty().SetDiffuse(0.0)
+        except Exception:
+            pass
+        self.scene.add(self.origin_actor)
+        origin_inside = (
+            self.bounds[0] <= 0.0 <= self.bounds[1]
+            and self.bounds[2] <= 0.0 <= self.bounds[3]
+            and self.bounds[4] <= 0.0 <= self.bounds[5]
+        )
+        print(
+            f"Origin marker added at (0, 0, 0) with radius {marker_radius:.2f} "
+            f"(inside current box: {origin_inside})"
+        )
 
     def _add_scalar_bar(self):
         self.scene.add(
@@ -394,7 +452,7 @@ class StreamlineViewer:
             print(f"Thickness up, lw={self.linewidth:.2f}")
 
         elif key in ("minus", "kp_subtract", "underscore"):
-            self.linewidth = max(1.0, self.linewidth * 0.8)
+            self.linewidth = max(0.001, self.linewidth * 0.8)
             if self.mode == "tube":
                 self._rebuild_unclipped_actor()
             else:
@@ -520,10 +578,17 @@ def show_streamlines(
     spline_subdiv: int = 16,
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
+    full_mins, full_maxs = _compute_streamline_bounds(streamlines_xyz)
+    _print_box_shape("Full streamline box", full_mins, full_maxs)
 
     if crop_bounds is not None:
         (x_min, x_max), (y_min, y_max), (z_min, z_max) = crop_bounds
         print(f"Cropping streamlines within bounds: {crop_bounds}")
+        _print_box_shape(
+            "Requested crop box",
+            np.array([x_min, y_min, z_min], dtype=float),
+            np.array([x_max, y_max, z_max], dtype=float),
+        )
         new_streamlines, new_colors = [], []
         for sl, cl in zip(streamlines_xyz, color_values):
             segs, cols = _split_streamline_by_bounds(
@@ -535,6 +600,8 @@ def show_streamlines(
         streamlines_xyz, color_values = new_streamlines, new_colors
         if not streamlines_xyz:
             raise ValueError("No streamlines intersect the crop box.")
+        cropped_mins, cropped_maxs = _compute_streamline_bounds(streamlines_xyz)
+        _print_box_shape("Cropped streamline box", cropped_mins, cropped_maxs)
         print("Cropping applied.")
     else:
         print("No cropping applied.")
