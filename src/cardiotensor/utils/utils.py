@@ -61,7 +61,9 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     # Read the two paths
     images_path = config.get("DATASET", "IMAGES_PATH").strip()
-    mask_path = config.get("DATASET", "MASK_PATH", fallback="").strip()
+    mask_path = config.get("DATASET", "MASK_PATH", fallback=None).strip()
+    if mask_path == "":
+        mask_path = None
 
     # Existence check (file or directory)
     if not os.path.exists(images_path):
@@ -111,6 +113,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         # TEST
         "TEST": config.getboolean("TEST", "TEST", fallback=False),
         "N_SLICE_TEST": config.getint("TEST", "N_SLICE_TEST", fallback=None),
+        "SHOW_QUIVER": config.getboolean("TEST", "SHOW_QUIVER", fallback=True),
         # OUTPUT
         "OUTPUT_PATH": output_dir,
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
