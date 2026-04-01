@@ -391,33 +391,36 @@ Parameters:
                 for r in results:
                     r.wait()
     else:
-        # Single threaded path with a progress bar
-        with alive_bar(
-            vec.shape[1], title="Processing slices (Single-thread)", bar="smooth"
-        ) as bar:
-            for z in range(vec.shape[1]):
-                compute_slice_angles_and_anisotropy(
-                    z,
-                    vec[:, z, :, :],
-                    volume[z, :, :],
-                    np.around(center_line[z]),
-                    val[:, z, :, :],
-                    center_line,
-                    output_dir,
-                    output_format,
-                    output_type,
-                    start_index,
-                    write_vectors,
-                    write_angles,
-                    is_test,
-                    show_quiver,
-                    angle_mode,
-                    colormap,
-                )
-                bar()
+        if vec.shape[1] != 1:
+            raise ValueError(
+                f"Test mode expected exactly 1 slice after padding removal, got {vec.shape[1]}"
+            )
 
-    end_index_local = start_index + vec.shape[1]
-    print(f"\nFinished processing slices {start_index} to {end_index_local}")
+        z = 0
+        compute_slice_angles_and_anisotropy(
+            z,
+            vec[:, z, :, :],
+            volume[z, :, :],
+            np.around(center_line[z]),
+            val[:, z, :, :],
+            center_line,
+            output_dir,
+            output_format,
+            output_type,
+            start_index,
+            write_vectors,
+            write_angles,
+            is_test,
+            show_quiver,
+            angle_mode,
+            colormap,
+        )
+
+    if is_test:
+        print(f"\nFinished processing test slice {n_slice_test}")
+    else:
+        end_index_local = start_index + vec.shape[1]
+        print(f"\nFinished processing slices {start_index} to {end_index_local}")
     print("---------------------------------\n\n")
     return
 
@@ -458,6 +461,13 @@ def compute_slice_angles_and_anisotropy(
     ext = output_format.lstrip(".")
     idx = start_index + z
     colormap_angle = _resolve_colormap(colormap)
+    rows, cols = img_slice.shape[:2]
+    center_x, center_y = float(center_point[0]), float(center_point[1])
+    if not (0 <= center_x < cols and 0 <= center_y < rows):
+        print(
+            f"⚠️ Warning: center point ({center_x:.1f}, {center_y:.1f}) is outside "
+            f"image bounds for slice {idx}: x=[0, {cols - 1}], y=[0, {rows - 1}]"
+        )
 
     # Expected outputs for skip logic
     expected_paths = []
@@ -527,6 +537,7 @@ def compute_slice_angles_and_anisotropy(
             angle1_title=titles[0],
             angle2_title=titles[1],
             save_path=os.path.join(test_output_dir, "result_test_slice.png"),
+            overlay_scalar_map=img_angle1 if show_quiver else None,
         )
         write_images(
             img_angle1,
