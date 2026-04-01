@@ -88,6 +88,31 @@ def _read_image_file(file_path: Path) -> np.ndarray:
     return img
 
 
+def _normalize_single_tiff_volume(volume: np.ndarray) -> np.ndarray:
+    """
+    Normalize a single TIFF file to a stack-like layout (Z, Y, X).
+
+    Supported inputs:
+    - 2D grayscale image -> (1, Y, X)
+    - 3D grayscale stack -> (Z, Y, X)
+    """
+    if volume.ndim == 2:
+        return volume[None, :, :]
+
+    if volume.ndim == 3:
+        if volume.shape[2] == 1:
+            return volume[:, :, 0][None, :, :]
+        if volume.shape[2] in {3, 4}:
+            raise ValueError(
+                "Single TIFF file appears to be a color image, not a grayscale stack."
+            )
+        return volume
+
+    raise ValueError(
+        f"Unsupported TIFF volume shape {volume.shape}. Expected 2D image or 3D stack."
+    )
+
+
 class DataReader:
     def __init__(self, path: str | Path):
         """
@@ -189,6 +214,13 @@ class DataReader:
             volume_info["shape"] = arr.shape
             volume_info["dtype"] = arr.dtype
 
+        # Case 3: Single TIFF file storing a stack
+        elif self.path.is_file() and self.path.suffix.lower() in {".tif", ".tiff"}:
+            volume_info["type"] = "tiff"
+            arr = _normalize_single_tiff_volume(self._custom_image_reader(self.path))
+            volume_info["shape"] = arr.shape
+            volume_info["dtype"] = arr.dtype
+
         else:
             raise ValueError(f"Unsupported volume type for path: {self.path}")
 
@@ -246,6 +278,11 @@ class DataReader:
         if not self.volume_info["stack"]:
             if self.volume_info["type"] == "mhd":
                 volume, _ = _load_raw_data_with_mhd(self.path)
+                volume = volume[start_index:end_index, :, :]
+            elif self.volume_info["type"] == "tiff":
+                volume = _normalize_single_tiff_volume(
+                    self._custom_image_reader(self.path)
+                )
                 volume = volume[start_index:end_index, :, :]
             else:
                 raise ValueError(f"Unsupported volume type for path: {self.path}")
