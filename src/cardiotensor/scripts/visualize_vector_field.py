@@ -86,13 +86,21 @@ def script():
     output_dir = Path(params.get("OUTPUT_PATH", "./output"))
     voxel_size = params.get("VOXEL_SIZE", 1)
     mask_path = params.get("MASK_PATH", None)
+    angle_mode = params.get("ANGLE_MODE", "ha_ia").strip().lower()
+
+    if angle_mode == "ha_ia":
+        color_volume_dir = "HA"
+    elif angle_mode == "az_el":
+        color_volume_dir = "AZ"
+    else:
+        sys.exit(f"⚠️ Unknown ANGLE_MODE '{angle_mode}' in configuration")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Call visualization function (handles both plotting and VTK export)
     visualize_vector_field(
         vector_field_path=output_dir / "eigen_vec",
-        color_volume_path=output_dir / "HA",
+        color_volume_path=output_dir / color_volume_dir,
         mask_path=mask_path,
         stride=args.stride,
         bin_factor=args.bin,
