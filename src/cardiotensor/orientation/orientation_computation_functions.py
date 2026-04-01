@@ -434,6 +434,8 @@ def _plot_vector_overlay(
     quiver_step: int | None = None,
     quiver_length: float | None = None,
     quiver_color: str = "cyan",
+    scalar_map: np.ndarray | None = None,
+    colormap=None,
 ) -> None:
     """
     Overlay a subsampled in-plane vector field on an existing axes.
@@ -445,6 +447,9 @@ def _plot_vector_overlay(
         raise ValueError("vector_field_slice must have shape (3, Y, X)")
 
     _, rows, cols = vector_field_slice.shape
+    if scalar_map is not None and scalar_map.shape != (rows, cols):
+        raise ValueError("scalar_map shape must match the vector field slice shape")
+
     if quiver_step is None:
         quiver_step = max(4, min(rows, cols) // 20)
     quiver_step = max(1, int(quiver_step))
@@ -460,6 +465,10 @@ def _plot_vector_overlay(
     vy = vector_field_slice[1][np.ix_(ys, xs)]
     norms = np.hypot(vx, vy)
     valid = np.isfinite(vx) & np.isfinite(vy) & (norms > 1e-8)
+    scalar_values = None
+    if scalar_map is not None:
+        scalar_values = scalar_map[np.ix_(ys, xs)]
+        valid &= np.isfinite(scalar_values)
     if not np.any(valid):
         return
 
@@ -468,12 +477,23 @@ def _plot_vector_overlay(
     vx_plot[valid] = quiver_length * vx[valid] / norms[valid]
     vy_plot[valid] = quiver_length * vy[valid] / norms[valid]
 
+    if scalar_values is not None:
+        vmin = float(np.nanmin(scalar_values[valid]))
+        vmax = float(np.nanmax(scalar_values[valid]))
+        denom = (vmax - vmin) if vmax != vmin else 1.0
+        normalized = np.clip((scalar_values[valid] - vmin) / denom, 0.0, 1.0)
+        quiver_colors = (
+            colormap(normalized)[:, :3] if colormap is not None else quiver_color
+        )
+    else:
+        quiver_colors = quiver_color
+
     ax.quiver(
         grid_x[valid],
         grid_y[valid],
         vx_plot[valid],
         vy_plot[valid],
-        color=quiver_color,
+        color=quiver_colors,
         angles="xy",
         scale_units="xy",
         scale=1.0,
@@ -501,6 +521,7 @@ def plot_images(
     quiver_step: int | None = None,
     quiver_length: float | None = None,
     quiver_color: str = "cyan",
+    overlay_scalar_map: np.ndarray | None = None,
 ) -> None:
     """
     Render a 2x2 figure of source, angle1, angle2, FA for a single slice.
@@ -539,6 +560,9 @@ def plot_images(
         Arrow length in pixel units for the overlay.
     quiver_color : str
         Arrow color for the vector overlay.
+    overlay_scalar_map : np.ndarray, optional
+        Optional scalar map used to color the quiver arrows, typically the
+        first angle image (HA or AZ).
 
     Notes
     -----
@@ -554,6 +578,8 @@ def plot_images(
         raise ValueError(
             "vector_field_slice shape must match the source image shape"
         )
+    if overlay_scalar_map is not None and overlay_scalar_map.shape != img.shape:
+        raise ValueError("overlay_scalar_map shape must match the source image shape")
 
     x, y = center_point[0:2]
 
@@ -570,9 +596,13 @@ def plot_images(
             quiver_step=quiver_step,
             quiver_length=quiver_length,
             quiver_color=quiver_color,
+            scalar_map=overlay_scalar_map,
+            colormap=colormap_angle,
         )
     ax[0, 0].set_title(
-        "Source + vectors" if vector_field_slice is not None else "Source"
+        f"Source + vectors ({angle1_title})"
+        if vector_field_slice is not None
+        else "Source"
     )
     ax[0, 0].axis("off")
 
