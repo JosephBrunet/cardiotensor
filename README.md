@@ -26,7 +26,7 @@
 
 ## Installation
 
-cardiotensor is published as a [Python package](https://pypi.org/project/cardiotensor/) and can be installed with
+**Cardiotensor** is published as a [Python package](https://pypi.org/project/cardiotensor/) and can be installed with
 `pip`, ideally by using a [virtual environment](https://realpython.com/what-is-pip/). Open up a terminal and install
 cardiotensor with:
 
@@ -39,7 +39,7 @@ pip install cardiotensor
 
 ## Documentation
 
-cardiotensor's documentation is available at [josephbrunet.fr/cardiotensor/](https://www.josephbrunet.fr/cardiotensor/)
+**Cardiotensor**'s documentation is available at [josephbrunet.fr/cardiotensor/](https://www.josephbrunet.fr/cardiotensor/)
 
 ## Getting Started
 
