@@ -121,11 +121,15 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     }
 
 
-# Function to remove files smaller than 1KB
 def remove_corrupted_files(file_paths, size_threshold=200):
+    import warnings
     for file_path in file_paths:
         if os.path.exists(file_path) and os.path.getsize(file_path) < size_threshold:
-            print("Corrupted file removed:", file_path)
+            warnings.warn(
+                f"Removing potentially corrupted file (size < {size_threshold} bytes): {file_path}",
+                UserWarning,
+                stacklevel=2,
+            )
             os.remove(file_path)
 
 
