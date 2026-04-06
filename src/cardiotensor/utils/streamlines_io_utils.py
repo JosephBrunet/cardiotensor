@@ -66,6 +66,7 @@ def load_trk_streamlines(
         try:
             tg = tg.to_world()
         except Exception:
+            # Neither to_rasmm() nor to_world() is available; use coordinates as-is
             pass
 
     streamlines_xyz = [np.asarray(sl, dtype=np.float32) for sl in tg.streamlines]
