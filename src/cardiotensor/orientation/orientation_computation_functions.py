@@ -140,17 +140,20 @@ def get_gpu_count() -> int:
 
     # Try nvidia-smi
     try:
-        smi_command = "nvidia-smi"
         if platform.system() == "Windows":
-            # Use full path if needed
-            smi_command = r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe"
-
-        result = subprocess.run(
-            [smi_command, "-L"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+            result = subprocess.run(
+                [r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe", "-L"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        else:
+            result = subprocess.run(
+                ["nvidia-smi", "-L"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
         return len(
             [line for line in result.stdout.strip().splitlines() if "GPU" in line]
         )
