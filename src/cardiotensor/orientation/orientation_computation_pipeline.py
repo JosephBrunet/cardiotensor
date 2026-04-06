@@ -3,6 +3,7 @@ import multiprocessing as mp
 import os
 import sys
 import time
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -173,7 +174,7 @@ def compute_orientation(
         truncate: Gaussian kernel truncation.
         axis_points: 3D points defining LV axis for cylindrical coordinates.
         vertical_padding: Padding slices for tensor computation.
-        write_vectors: Whether to save eigenvectors.
+        write_vectors: Whether to save eigenvectors. Ignored in test mode.
         write_angles: Whether to save HA/IA/FA maps.
         use_gpu: Use GPU acceleration for tensor computation.
         is_test: If True, runs in test mode and outputs plots.
@@ -194,6 +195,16 @@ def compute_orientation(
         angle_names = ("AZ", "EL")
     else:
         raise ValueError("ANGLE_MODE must be 'ha_ia' or 'az_el'")
+
+    if is_test and write_vectors:
+        warnings.warn(
+            "WRITE_VECTORS=True has no effect when is_test=True; "
+            "vector fields are not written in test mode. "
+            "Proceeding with write_vectors=False.",
+            UserWarning,
+            stacklevel=2,
+        )
+        write_vectors = False
 
     print(f"""
 Parameters:
