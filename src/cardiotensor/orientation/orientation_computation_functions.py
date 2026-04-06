@@ -9,9 +9,8 @@ from scipy.interpolate import CubicSpline
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from tqdm import tqdm
 
-from cardiotensor.utils.utils import convert_to_8bit
-
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+from cardiotensor.utils.utils import convert_to_8bit
 
 
 def interpolate_points(
@@ -578,9 +577,7 @@ def plot_images(
         colormap_FA = plt.cm.magma
 
     if vector_field_slice is not None and vector_field_slice.shape[1:] != img.shape:
-        raise ValueError(
-            "vector_field_slice shape must match the source image shape"
-        )
+        raise ValueError("vector_field_slice shape must match the source image shape")
     if overlay_scalar_map is not None and overlay_scalar_map.shape != img.shape:
         raise ValueError("overlay_scalar_map shape must match the source image shape")
 
@@ -633,8 +630,6 @@ def plot_images(
     if show:
         plt.show()
     plt.close(fig)
-
-
 
 
 def write_img_rgb(

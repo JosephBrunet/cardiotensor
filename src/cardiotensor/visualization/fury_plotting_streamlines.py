@@ -169,9 +169,9 @@ class StreamlineViewer:
         self.bounds = [mins[0], maxs[0], mins[1], maxs[1], mins[2], maxs[2]]
 
         self._build_pipeline()
-        
+
         # self._add_origin_marker()
-        
+
         self._add_scalar_bar()
 
     def _build_pipeline(self):
@@ -198,7 +198,6 @@ class StreamlineViewer:
 
         self.scene.add(self.actor0)
         self._style_streamline_actor()
-
 
         # fast actor for interaction (cheap line rendering)
         self.actor_fast = actor.line(
@@ -359,7 +358,6 @@ class StreamlineViewer:
         self.scene.add(self.actor0)
         self._style_streamline_actor()
 
-        
         self.mapper0 = self.actor0.GetMapper()
         if clipping_on:
             self.mapper0.RemoveAllClippingPlanes()
@@ -537,12 +535,11 @@ class StreamlineViewer:
             self.showm.iren.AddObserver("KeyPressEvent", self._on_keypress)
 
             self.scene.reset_camera()
-            
+
             self.scene.azimuth(15)
             self.scene.elevation(10)
             self.scene.zoom(1.1)
 
-            
             print(
                 "Keys: O toggle plane, H hide gizmo, I flip side, R reset plane, +/- thickness, B background, S scale bar, P save PNG"
             )
@@ -648,7 +645,7 @@ def show_streamlines(
         f"{std_points_per_streamline:.1f} "
         "(more points usually means more detail, but heavier rendering)."
     )
-    
+
     if not color_values:
         raise ValueError("No color arrays after filtering.")
 

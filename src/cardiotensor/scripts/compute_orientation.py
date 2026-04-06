@@ -106,9 +106,7 @@ def script() -> None:
     # --- Test Mode ---
     if is_test:
         if n_slice_test is None:
-            print(
-                "❌ Test mode requires N_SLICE_TEST in the configuration file."
-            )
+            print("❌ Test mode requires N_SLICE_TEST in the configuration file.")
             sys.exit(1)
         if force_test and not params.get("TEST", False):
             print("⚙️  TEST mode forced from CLI (--test)")

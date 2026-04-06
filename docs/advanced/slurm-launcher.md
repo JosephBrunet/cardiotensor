@@ -50,14 +50,14 @@ cardio-tensor-slurm -h
 
 ## Troubleshooting
 
-- **`sbatch` fails**  
+- **`sbatch` fails**
   Verify partition/account/time/memory policy on your cluster.
 
-- **Job fails before running `cardio-tensor`**  
+- **Job fails before running `cardio-tensor`**
   Check logs in `OUTPUT_PATH/slurm/log/`.
 
-- **No progress in monitor**  
+- **No progress in monitor**
   Confirm output folder permissions and that tasks can write outputs.
 
-- **Want to debug without submitting jobs**  
+- **Want to debug without submitting jobs**
   Use `--dry_run`.

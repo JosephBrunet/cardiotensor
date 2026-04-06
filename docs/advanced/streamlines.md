@@ -16,7 +16,7 @@ Use this page to generate and inspect 3D streamlines with:
 
 !!! note
 
-    It is usefull to provide a `MASK_PATH` to avoid placing seeds and tracing streamline outside the sample, even though the FA threshold should avoid this.
+    It is useful to provide a `MASK_PATH` to avoid placing seeds and tracing streamline outside the sample, even though the FA threshold should avoid this.
 
 
 ## Generate Streamlines
@@ -24,7 +24,7 @@ Use this page to generate and inspect 3D streamlines with:
 Basic example:
 
 ```console
-$ cardio-generate-streamlines ./parameters_example.conf 
+$ cardio-generate-streamlines ./parameters_example.conf
 ```
 
 Useful options:

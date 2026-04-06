@@ -341,10 +341,10 @@ def downsample_volume(
     if not tasks:
         print(f"✔️ All downsampled blocks already exist for '{subfolder}'. Skipping.")
         return
-    
+
     if sys.platform.startswith("win"):
         cpu_count = min(mp.cpu_count(), 59)
-    else: 
+    else:
         cpu_count = mp.cpu_count()
 
     with mp.Pool(processes=cpu_count) as pool:

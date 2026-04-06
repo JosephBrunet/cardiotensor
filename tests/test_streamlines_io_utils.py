@@ -11,10 +11,10 @@ from cardiotensor.utils.streamlines_io_utils import (
     reduce_per_edge,
 )
 
-
 # ---------------------------------------------------------------------------
 # load_npz_streamlines
 # ---------------------------------------------------------------------------
+
 
 def _make_npz(tmp_path, streamlines_zyx, extras=None):
     """Save a .npz with streamlines stored as object array (z, y, x)."""
@@ -75,6 +75,7 @@ def test_load_npz_values_length_mismatch(tmp_path):
 # ha_to_degrees_per_streamline
 # ---------------------------------------------------------------------------
 
+
 def test_ha_to_degrees_already_degrees():
     ha = [np.array([-90.0, 0.0, 90.0], dtype=np.float32)]
     result = ha_to_degrees_per_streamline(ha)
@@ -100,6 +101,7 @@ def test_ha_to_degrees_empty():
 # ---------------------------------------------------------------------------
 # normalize_attrs_to_degrees
 # ---------------------------------------------------------------------------
+
 
 def test_normalize_attrs_empty():
     assert normalize_attrs_to_degrees(None) == {}
@@ -133,6 +135,7 @@ def test_normalize_attrs_already_degrees():
 # compute_elevation_angles
 # ---------------------------------------------------------------------------
 
+
 def test_elevation_angles_horizontal():
     # Streamline going purely in X — z-component of tangent = 0 → elevation = 0
     pts = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=np.float32)
@@ -163,6 +166,7 @@ def test_elevation_angles_length_preserved():
 # ---------------------------------------------------------------------------
 # reduce_per_edge
 # ---------------------------------------------------------------------------
+
 
 def test_reduce_per_edge_mean():
     values = [np.array([1.0, 3.0]), np.array([2.0, 4.0])]

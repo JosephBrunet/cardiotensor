@@ -4,8 +4,8 @@ from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtCore import Qt
 from matplotlib.colors import Colormap
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
     QBrush,
     QColor,

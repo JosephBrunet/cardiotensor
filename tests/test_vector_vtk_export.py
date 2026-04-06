@@ -11,10 +11,10 @@ from cardiotensor.utils.vector_vtk_export import (
     writeStructuredVTK,
 )
 
-
 # ---------------------------------------------------------------------------
 # writeStructuredVTK
 # ---------------------------------------------------------------------------
+
 
 def test_writeStructuredVTK_scalar(tmp_path: Path):
     out = str(tmp_path / "out.vtk")
@@ -62,6 +62,7 @@ def test_writeStructuredVTK_dimensions(tmp_path: Path):
 # _writeFieldInVtk
 # ---------------------------------------------------------------------------
 
+
 def test_writeFieldInVtk_scalar(tmp_path: Path):
     out = tmp_path / "field.txt"
     with open(out, "w") as f:
@@ -98,6 +99,7 @@ def test_writeFieldInVtk_flat_raises(tmp_path: Path):
 # export_vector_field_to_vtk
 # ---------------------------------------------------------------------------
 
+
 def test_export_vector_field_to_vtk_basic(tmp_path: Path):
     vf = np.random.rand(4, 4, 4, 3).astype(np.float32)
     color = np.random.rand(4, 4, 4).astype(np.float32)
@@ -112,6 +114,7 @@ def test_export_vector_field_to_vtk_basic(tmp_path: Path):
 
 def test_export_vector_field_default_path(tmp_path: Path):
     import os
+
     old_cwd = os.getcwd()
     try:
         os.chdir(tmp_path)

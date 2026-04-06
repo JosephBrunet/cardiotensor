@@ -16,6 +16,7 @@ from cardiotensor.utils.am_utils import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _two_streamlines():
     sl0 = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], dtype=float)
     sl1 = np.array([[0, 1, 0], [0, 2, 0]], dtype=float)
@@ -25,6 +26,7 @@ def _two_streamlines():
 # ---------------------------------------------------------------------------
 # _sanitize_field_name
 # ---------------------------------------------------------------------------
+
 
 def test_sanitize_field_name_simple():
     assert _sanitize_field_name("HA", "p") == "HA"
@@ -55,6 +57,7 @@ def test_sanitize_field_name_non_string_raises():
 # _normalize_edge_attribute
 # ---------------------------------------------------------------------------
 
+
 def test_normalize_edge_attribute_list():
     arr = _normalize_edge_attribute([1.0, 2.0, 3.0], n_edges=3, name="x")
     assert arr.shape == (3,)
@@ -74,6 +77,7 @@ def test_normalize_edge_attribute_wrong_length():
 # ---------------------------------------------------------------------------
 # _normalize_point_attribute
 # ---------------------------------------------------------------------------
+
 
 def test_normalize_point_attribute_flat_array():
     num_pts = [3, 2]
@@ -101,12 +105,15 @@ def test_normalize_point_attribute_list_wrong_count():
 
 def test_normalize_point_attribute_list_wrong_lengths():
     with pytest.raises(ValueError, match="streamline length"):
-        _normalize_point_attribute([np.ones(2), np.ones(2)], [3, 2], n_points_total=5, name="t")
+        _normalize_point_attribute(
+            [np.ones(2), np.ones(2)], [3, 2], n_points_total=5, name="t"
+        )
 
 
 # ---------------------------------------------------------------------------
 # write_spatialgraph_am
 # ---------------------------------------------------------------------------
+
 
 def test_write_basic(tmp_path: Path):
     out = tmp_path / "out.am"
@@ -155,9 +162,7 @@ def test_write_with_thickness_list(tmp_path: Path):
 def test_write_with_single_edge_scalar(tmp_path: Path):
     sls = _two_streamlines()
     out = tmp_path / "out.am"
-    write_spatialgraph_am(
-        out, sls, edge_scalar=[0.1, 0.2], edge_scalar_name="HA"
-    )
+    write_spatialgraph_am(out, sls, edge_scalar=[0.1, 0.2], edge_scalar_name="HA")
     content = out.read_text()
     assert "HA" in content
     assert "@6" in content

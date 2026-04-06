@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Any
 
 import cv2
-from dask import compute, delayed
 import glymur
 import numpy as np
 import psutil
 import SimpleITK as sitk
 import tifffile as tiff
 from alive_progress import alive_bar
+from dask import compute, delayed
 from skimage.measure import block_reduce
 
 
