@@ -85,12 +85,12 @@ helix_angle, intrusion_angle = compute_helix_and_transverse_angles(
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
 
-im0 = axes[0].imshow(helix_angle, cmap="twilight", vmin=-90, vmax=90)
+im0 = axes[0].imshow(helix_angle, cmap="viridis", vmin=-90, vmax=90)
 axes[0].set_title("Helix angle")
 axes[0].axis("off")
 fig.colorbar(im0, ax=axes[0], label="degrees")
 
-im1 = axes[1].imshow(intrusion_angle, cmap="coolwarm", vmin=-90, vmax=90)
+im1 = axes[1].imshow(intrusion_angle, cmap="viridis", vmin=-90, vmax=90)
 axes[1].set_title("Intrusion angle")
 axes[1].axis("off")
 fig.colorbar(im1, ax=axes[1], label="degrees")
@@ -130,19 +130,6 @@ from cardiotensor import (
 )
 ```
 
-You can also use grouped imports:
-
-```python
-from cardiotensor.analysis import calculate_intensities, find_end_points
-from cardiotensor.orientation import (
-    calculate_structure_tensor,
-    compute_orientation,
-    rotate_vectors_to_new_axis,
-)
-from cardiotensor.tractography import generate_streamlines_from_params
-from cardiotensor.utils import DataReader, load_trk_streamlines, read_conf_file
-from cardiotensor.visualization import visualize_streamlines, visualize_vector_field
-```
 
 
 !!! note
