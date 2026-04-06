@@ -1,0 +1,54 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+
+title: "Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging"
+
+type: software
+
+authors:
+  - family-names: "Brunet"
+    given-names: "Joseph"
+    orcid: "https://orcid.org/0000-0002-8424-9510"
+    affiliation: "University College London; European Synchrotron Radiation Facility"
+  - family-names: "Chestnutt"
+    given-names: "Lisa"
+    orcid: "https://orcid.org/0009-0008-0783-7299"
+  - family-names: "Chourrout"
+    given-names: "Matthieu"
+    orcid: "https://orcid.org/0000-0002-2282-6976"
+  - family-names: "Dejea"
+    given-names: "Hector"
+    orcid: "https://orcid.org/0000-0003-2584-9812"
+  - family-names: "Sabarigirivasan"
+    given-names: "Vaishnavi"
+    orcid: "https://orcid.org/0000-0003-2550-6262"
+  - family-names: "Lee"
+    given-names: "Peter D."
+    orcid: "https://orcid.org/0000-0002-3898-8881"
+  - family-names: "Cook"
+    given-names: "Andrew C."
+    orcid: "https://orcid.org/0000-0001-5079-7546"
+
+keywords:
+  - Python
+  - cardiac imaging
+  - structure tensor
+  - orientation analysis
+  - tractography
+  - fiber architecture
+  - synchrotron tomography
+
+license: "MIT"
+
+repository-code: "https://github.com/JosephBrunet/cardiotensor"
+url: "https://github.com/JosephBrunet/cardiotensor"
+
+abstract: >
+  Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte
+  orientation in whole- or partial-heart imaging datasets. It provides scalable
+  implementations of structure tensor analysis and tractography for teravoxel-scale
+  datasets, enabling extraction of directional metrics such as helical angle (HA),
+  intrusion angle (IA), and fractional anisotropy (FA).
+
+version: "1.1.8"
+date-released: 2026-04-06
