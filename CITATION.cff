@@ -9,25 +9,37 @@ authors:
   - family-names: "Brunet"
     given-names: "Joseph"
     orcid: "https://orcid.org/0000-0002-8424-9510"
-    affiliation: "University College London; European Synchrotron Radiation Facility"
+    affiliation: "Department of Mechanical Engineering, University College London, London, UK; European Synchrotron Radiation Facility, Grenoble, France"
+
   - family-names: "Chestnutt"
     given-names: "Lisa"
     orcid: "https://orcid.org/0009-0008-0783-7299"
+    affiliation: "UCL Institute of Cardiovascular Science, London, UK"
+
   - family-names: "Chourrout"
     given-names: "Matthieu"
     orcid: "https://orcid.org/0000-0002-2282-6976"
+    affiliation: "Department of Mechanical Engineering, University College London, London, UK"
+
   - family-names: "Dejea"
     given-names: "Hector"
     orcid: "https://orcid.org/0000-0003-2584-9812"
+    affiliation: "European Synchrotron Radiation Facility, Grenoble, France"
+
   - family-names: "Sabarigirivasan"
     given-names: "Vaishnavi"
     orcid: "https://orcid.org/0000-0003-2550-6262"
+    affiliation: "UCL Institute of Cardiovascular Science, London, UK; UCL Division of Medicine, University College London, London, UK"
+
   - family-names: "Lee"
     given-names: "Peter D."
     orcid: "https://orcid.org/0000-0002-3898-8881"
+    affiliation: "Department of Mechanical Engineering, University College London, London, UK; Research Complex at Harwell, Didcot, UK"
+
   - family-names: "Cook"
     given-names: "Andrew C."
     orcid: "https://orcid.org/0000-0001-5079-7546"
+    affiliation: "UCL Institute of Cardiovascular Science, London, UK"
 
 keywords:
   - Python
