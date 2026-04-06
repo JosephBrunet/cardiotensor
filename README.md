@@ -12,7 +12,7 @@
 <p align="center">A Python package to quantify and visualize 3D cardiomyocyte orientation in heart imaging datasets</p>
 
 [![CI](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml)
-[![Doc](https://img.shields.io/badge/docs-dev-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
+[![Doc](https://img.shields.io/badge/docs-online-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
 [![Python Version](https://img.shields.io/pypi/pyversions/cardiotensor.svg)](https://pypi.python.org/pypi/cardiotensor)
 [![PyPI version](https://img.shields.io/pypi/v/cardiotensor.svg)](https://pypi.org/project/cardiotensor/)
