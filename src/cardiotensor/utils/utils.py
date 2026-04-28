@@ -61,9 +61,11 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     # Read the two paths
     images_path = config.get("DATASET", "IMAGES_PATH").strip()
-    mask_path = config.get("DATASET", "MASK_PATH", fallback=None).strip()
+    mask_path = config.get("DATASET", "MASK_PATH", fallback=None)
     if mask_path == "":
         mask_path = None
+    if mask_path is not None:
+        mask_path = mask_path.strip()
 
     # Existence check (file or directory)
     if not os.path.exists(images_path):
