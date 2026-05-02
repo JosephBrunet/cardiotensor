@@ -83,7 +83,11 @@ For questions, feedback, or support, please contact the maintainers at [j.brunet
 
 If you use **Cardiotensor** in your research, please cite:
 
-```bibtex
+### Primary Reference
+
+> Brunet, J., Chestnutt, L., Chourrout, M., Dejea, H., Sabarigirivasan, V., Lee, P. D., & Cook, A. C. "Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging." *Journal of Open Source Software* 11(121) (2026): 9720. [🗎](https://doi.org/10.21105/joss.09720)
+
+``` bibtex
 @article{Brunet2026,
   doi={10.21105/joss.09720},
   url={https://doi.org/10.21105/joss.09720},
@@ -98,8 +102,6 @@ If you use **Cardiotensor** in your research, please cite:
 }
 ```
 
-Brunet, J., Chestnutt, L., Chourrout, M., Dejea, H., Sabarigirivasan, V., Lee, P. D., & Cook, A. C. (2026). Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging. *Journal of Open Source Software, 11*(121), 9720. https://doi.org/10.21105/joss.09720
+### Other Papers
 
-For background on the hierarchical phase-contrast tomography datasets and analysis motivating the package, see:
-
-Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O'Leary, E., Bellier, A., et al. (2024). Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography. *Radiology, 312*(1), e232731. https://doi.org/10.1148/radiol.232731. [[PDF](https://pubs.rsna.org/doi/epdf/10.1148/radiol.232731)]
+> Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O'Leary, E., Bellier, A., et al. "Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography." *Radiology* 312(1) (2024): e232731. [🗎](https://doi.org/10.1148/radiol.232731)
