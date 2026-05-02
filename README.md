@@ -14,7 +14,7 @@
 [![CI](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml/badge.svg)](https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml)
 [![Doc](https://img.shields.io/badge/docs-online-blue.svg)](https://JosephBrunet.github.io/cardiotensor/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE)
-[![Python Version](https://img.shields.io/pypi/pyversions/cardiotensor.svg)](https://pypi.python.org/pypi/cardiotensor)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.09720/status.svg)](https://doi.org/10.21105/joss.09720)
 [![PyPI version](https://img.shields.io/pypi/v/cardiotensor.svg)](https://pypi.org/project/cardiotensor/)
 
 
@@ -33,9 +33,6 @@ cardiotensor with:
 ```bash
 pip install cardiotensor
 ```
-
-⚠️ Require python 3.10 or newer
-
 
 ## Documentation
 
