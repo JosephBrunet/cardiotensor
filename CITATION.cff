@@ -1,66 +1,64 @@
-cff-version: 1.2.0
-message: "If you use this software, please cite it using the metadata below."
-
-title: "Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging"
-
-type: software
-
+cff-version: "1.2.0"
 authors:
-  - family-names: "Brunet"
-    given-names: "Joseph"
+- family-names: Brunet
+  given-names: Joseph
+  orcid: "https://orcid.org/0000-0002-8424-9510"
+- family-names: Chestnutt
+  given-names: Lisa
+  orcid: "https://orcid.org/0009-0008-0783-7299"
+- family-names: Chourrout
+  given-names: Matthieu
+  orcid: "https://orcid.org/0000-0002-2282-6976"
+- family-names: Dejea
+  given-names: Hector
+  orcid: "https://orcid.org/0000-0003-2584-9812"
+- family-names: Sabarigirivasan
+  given-names: Vaishnavi
+  orcid: "https://orcid.org/0000-0003-2550-6262"
+- family-names: Lee
+  given-names: Peter D.
+  orcid: "https://orcid.org/0000-0002-3898-8881"
+- family-names: Cook
+  given-names: Andrew C.
+  orcid: "https://orcid.org/0000-0001-5079-7546"
+doi: 10.5281/zenodo.19444615
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Brunet
+    given-names: Joseph
     orcid: "https://orcid.org/0000-0002-8424-9510"
-    affiliation: "Department of Mechanical Engineering, University College London, London, UK; European Synchrotron Radiation Facility, Grenoble, France"
-
-  - family-names: "Chestnutt"
-    given-names: "Lisa"
+  - family-names: Chestnutt
+    given-names: Lisa
     orcid: "https://orcid.org/0009-0008-0783-7299"
-    affiliation: "UCL Institute of Cardiovascular Science, London, UK"
-
-  - family-names: "Chourrout"
-    given-names: "Matthieu"
+  - family-names: Chourrout
+    given-names: Matthieu
     orcid: "https://orcid.org/0000-0002-2282-6976"
-    affiliation: "Department of Mechanical Engineering, University College London, London, UK"
-
-  - family-names: "Dejea"
-    given-names: "Hector"
+  - family-names: Dejea
+    given-names: Hector
     orcid: "https://orcid.org/0000-0003-2584-9812"
-    affiliation: "European Synchrotron Radiation Facility, Grenoble, France"
-
-  - family-names: "Sabarigirivasan"
-    given-names: "Vaishnavi"
+  - family-names: Sabarigirivasan
+    given-names: Vaishnavi
     orcid: "https://orcid.org/0000-0003-2550-6262"
-    affiliation: "UCL Institute of Cardiovascular Science, London, UK; UCL Division of Medicine, University College London, London, UK"
-
-  - family-names: "Lee"
-    given-names: "Peter D."
+  - family-names: Lee
+    given-names: Peter D.
     orcid: "https://orcid.org/0000-0002-3898-8881"
-    affiliation: "Department of Mechanical Engineering, University College London, London, UK; Research Complex at Harwell, Didcot, UK"
-
-  - family-names: "Cook"
-    given-names: "Andrew C."
+  - family-names: Cook
+    given-names: Andrew C.
     orcid: "https://orcid.org/0000-0001-5079-7546"
-    affiliation: "UCL Institute of Cardiovascular Science, London, UK"
-
-keywords:
-  - Python
-  - cardiac imaging
-  - structure tensor
-  - orientation analysis
-  - tractography
-  - fiber architecture
-  - synchrotron tomography
-
-license: "MIT"
-
-repository-code: "https://github.com/JosephBrunet/cardiotensor"
-url: "https://github.com/JosephBrunet/cardiotensor"
-
-abstract: >
-  Cardiotensor is an open-source Python package designed to quantify 3D cardiomyocyte
-  orientation in whole- or partial-heart imaging datasets. It provides scalable
-  implementations of structure tensor analysis and tractography for teravoxel-scale
-  datasets, enabling extraction of directional metrics such as helical angle (HA),
-  intrusion angle (IA), and fractional anisotropy (FA).
-
-version: "1.1.8"
-date-released: 2026-04-06
+  date-published: 2026-05-02
+  doi: 10.21105/joss.09720
+  issn: 2475-9066
+  issue: 121
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 9720
+  title: "Cardiotensor: A Python Library for Orientation Analysis and
+    Tractography in 3D Cardiac Imaging"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.09720"
+  volume: 11
+title: "Cardiotensor: A Python Library for Orientation Analysis and
+  Tractography in 3D Cardiac Imaging"
