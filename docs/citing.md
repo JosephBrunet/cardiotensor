@@ -24,4 +24,3 @@ If you use any of this for academic work, please consider citing our work.
 ## Other Papers
 
 > Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O'Leary, E., Bellier, A., et al. "Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography." *Radiology* 312(1) (2024): e232731. [🗎](https://doi.org/10.1148/radiol.232731)<br>
-[ [PDF](https://pubs.rsna.org/doi/epdf/10.1148/radiol.232731) ]
