@@ -1400,7 +1400,7 @@
 <p><a href="https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JosephBrunet/cardiotensor/actions/workflows/ci.yml/badge.svg" /></a>
 <a href="https://JosephBrunet.github.io/cardiotensor/"><img alt="Doc" src="https://img.shields.io/badge/docs-online-blue.svg" /></a>
 <a href="https://github.com/JosephBrunet/cardiotensor/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
-<a href="https://pypi.python.org/pypi/cardiotensor"><img alt="Python Version" src="https://img.shields.io/pypi/pyversions/cardiotensor.svg" /></a>
+<a href="https://doi.org/10.21105/joss.09720"><img alt="DOI" src="https://joss.theoj.org/papers/10.21105/joss.09720/status.svg" /></a>
 <a href="https://pypi.org/project/cardiotensor/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/cardiotensor.svg" /></a></p>
 <h2 id="introduction"><a class="toclink" href="#introduction">Introduction</a><a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p><strong>Cardiotensor</strong> is a user-friendly and memory-efficient toolkit designed for analyzing the orientation of cardiomyocyte fibers in large heart imaging datasets. It uses advanced image processing techniques to help researchers to accurately quantify 3D cardiomyocyte orientations with high efficiency.</p>
@@ -1410,7 +1410,6 @@
 cardiotensor with:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>cardiotensor
 </code></pre></div>
-<p>⚠️ Require python 3.10 or newer</p>
 <h2 id="documentation"><a class="toclink" href="#documentation">Documentation</a><a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <p><strong>Cardiotensor</strong>'s documentation is available at <a href="https://www.josephbrunet.fr/cardiotensor/">josephbrunet.fr/cardiotensor/</a></p>
 <h2 id="getting-started"><a class="toclink" href="#getting-started">Getting Started</a><a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
@@ -1444,18 +1443,23 @@ cardiotensor with:</p>
 <h2 id="contact"><a class="toclink" href="#contact">Contact</a><a class="headerlink" href="#contact" title="Permanent link">&para;</a></h2>
 <p>For questions, feedback, or support, please contact the maintainers at [<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#106;&#46;&#98;&#114;&#117;&#110;&#101;&#116;&#64;&#117;&#99;&#108;&#46;&#97;&#99;&#46;&#117;&#107;">&#106;&#46;&#98;&#114;&#117;&#110;&#101;&#116;&#64;&#117;&#99;&#108;&#46;&#97;&#99;&#46;&#117;&#107;</a>].</p>
 <h2 id="reference"><a class="toclink" href="#reference">Reference</a><a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
-<p>Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O’Leary, E., Bellier, A., et al. (2024). Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography. <em>Radiology, 312</em>(1), e232731. <a href="https://doi.org/10.1148/radiol.232731">https://doi.org/10.1148/radiol.232731</a>. [<a href="https://pubs.rsna.org/doi/epdf/10.1148/radiol.232731">PDF</a>]</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">brunet2024multidimensional</span><span class="p">,</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography}</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Brunet, Joseph and Cook, Andrew C and Walsh, Claire L and Cranley, James and Tafforeau, Paul and Engel, Klaus and Arthurs, Owen and Berruyer, Camille and Burke O’Leary, Emer and Bellier, Alexandre and others}</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Radiology}</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="na">volume</span><span class="p">=</span><span class="s">{312}</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="na">number</span><span class="p">=</span><span class="s">{1}</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="na">pages</span><span class="p">=</span><span class="s">{e232731}</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="na">publisher</span><span class="p">=</span><span class="s">{Radiological Society of North America}</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">}</span>
+<p>If you use <strong>Cardiotensor</strong> in your research, please cite:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">Brunet2026</span><span class="p">,</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="na">doi</span><span class="p">=</span><span class="s">{10.21105/joss.09720}</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="na">url</span><span class="p">=</span><span class="s">{https://doi.org/10.21105/joss.09720}</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2026}</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="na">publisher</span><span class="p">=</span><span class="s">{The Open Journal}</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="na">volume</span><span class="p">=</span><span class="s">{11}</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="na">number</span><span class="p">=</span><span class="s">{121}</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="na">pages</span><span class="p">=</span><span class="s">{9720}</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Brunet, Joseph and Chestnutt, Lisa and Chourrout, Matthieu and Dejea, Hector and Sabarigirivasan, Vaishnavi and Lee, Peter D. and Cook, Andrew C.}</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging}</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of Open Source Software}</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
 </code></pre></div>
+<p>Brunet, J., Chestnutt, L., Chourrout, M., Dejea, H., Sabarigirivasan, V., Lee, P. D., &amp; Cook, A. C. (2026). Cardiotensor: A Python Library for Orientation Analysis and Tractography in 3D Cardiac Imaging. <em>Journal of Open Source Software, 11</em>(121), 9720. <a href="https://doi.org/10.21105/joss.09720">https://doi.org/10.21105/joss.09720</a></p>
+<p>For background on the hierarchical phase-contrast tomography datasets and analysis motivating the package, see:</p>
+<p>Brunet, J., Cook, A. C., Walsh, C. L., Cranley, J., Tafforeau, P., Engel, K., Arthurs, O., Berruyer, C., Burke O'Leary, E., Bellier, A., et al. (2024). Multidimensional analysis of the adult human heart in health and disease using hierarchical phase-contrast tomography. <em>Radiology, 312</em>(1), e232731. <a href="https://doi.org/10.1148/radiol.232731">https://doi.org/10.1148/radiol.232731</a>. [<a href="https://pubs.rsna.org/doi/epdf/10.1148/radiol.232731">PDF</a>]</p>
 
 
 
@@ -1557,7 +1561,7 @@ cardiotensor with:</p>
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2024 - 2025 - Joseph Brunet
+      Copyright &copy; 2024 - 2026 - Joseph Brunet
     </div>
   
   
