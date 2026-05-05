@@ -6,8 +6,11 @@ import numpy as np
 from cardiotensor.orientation.orientation_computation_functions import (
     adjust_start_end_index,
     calculate_structure_tensor,
+    compute_azimuth_and_elevation,
     compute_fraction_anisotropy,
+    compute_helix_and_transverse_angles,
     interpolate_points,
+    orient_vectors_z_positive,
     plot_images,
     rotate_vectors_to_new_axis,
     write_images,
@@ -99,6 +102,42 @@ def test_vector_rotation_and_angles():
     assert np.allclose(rotated_same, vector_slice, atol=1e-6), (
         "Rotation to same axis should not change vectors"
     )
+
+
+def test_orient_vectors_z_positive_flips_negative_z_vectors():
+    vector_slice = np.zeros((3, 2, 2), dtype=np.float32)
+    vector_slice[0] = [[1, 1], [1, 1]]
+    vector_slice[2] = [[-1, 1], [-0.5, 0.5]]
+
+    oriented = orient_vectors_z_positive(vector_slice)
+
+    assert np.all(oriented[2] >= 0)
+    assert np.allclose(oriented[:, 0, 0], [-1, 0, 1])
+    assert np.allclose(oriented[:, 0, 1], [1, 0, 1])
+
+
+def test_compute_azimuth_and_elevation_uses_z_positive_convention():
+    vector_slice = np.zeros((3, 1, 2), dtype=np.float32)
+    vector_slice[:, 0, 0] = [1, 0, 1]
+    vector_slice[:, 0, 1] = [-1, 0, -1]
+
+    azimuth, elevation = compute_azimuth_and_elevation(vector_slice)
+
+    assert np.allclose(elevation, [[45, 45]], atol=1e-6)
+    assert np.allclose(azimuth, [[0, 0]], atol=1e-6)
+
+
+def test_compute_helix_and_transverse_angles_orients_circumferential_positive():
+    vector_slice = np.zeros((3, 1, 2), dtype=np.float32)
+    vector_slice[:, 0, 0] = [0, 1, 1]
+    vector_slice[:, 0, 1] = [0, -1, -1]
+
+    helix, transverse = compute_helix_and_transverse_angles(
+        vector_slice, center_point=(0, 0, 0)
+    )
+
+    assert np.allclose(helix, [[45, 45]], atol=1e-6)
+    assert np.allclose(transverse, [[0, 0]], atol=1e-6)
 
 
 def test_write_images_and_vectors(tmp_path: Path):
