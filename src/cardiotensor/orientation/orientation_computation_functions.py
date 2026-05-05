@@ -77,8 +77,12 @@ def calculate_center_vector(points: np.ndarray) -> np.ndarray:
 
     center_vec = vh[0] / np.linalg.norm(vh[0])
 
-    # Extract the Dominant Direction
-    center_vec = -center_vec[[2, 1, 0]]
+    # Keep the fitted centerline direction in the same x/y/z frame as AXIS_POINTS
+    # and the orientation vector components used by the angle helpers.
+    for component in (2, 1, 0):
+        if abs(center_vec[component]) > 1e-8:
+            center_vec = center_vec if center_vec[component] > 0 else -center_vec
+            break
 
     return center_vec
 
@@ -308,38 +312,42 @@ def rotate_vectors_to_new_axis(
     vector_field_slice: np.ndarray, new_axis_vec: np.ndarray
 ) -> np.ndarray:
     """
-    Rotates a vector field slice to align with a new axis.
+    Rotate vectors into a local frame where ``new_axis_vec`` is aligned to +Z.
 
     Args:
         vector_field_slice (np.ndarray): Array of shape (3, Y, X) for a slice.
-        new_axis_vec (np.ndarray): The new axis to align vectors with (3,).
+        new_axis_vec (np.ndarray): Local center axis direction in x/y/z order.
 
     Returns:
         np.ndarray: Rotated vectors with the same shape as input.
     """
-    # Normalize the new axis
-    new_axis_vec = new_axis_vec / np.linalg.norm(new_axis_vec)
+    axis_norm = np.linalg.norm(new_axis_vec)
+    if axis_norm == 0:
+        raise ValueError("new_axis_vec must be non-zero")
 
-    # Define the original reference axis (X-axis here)
-    vec1 = np.array([1, 0, 0], dtype=np.float32)
+    source_axis = np.asarray(new_axis_vec, dtype=np.float64) / axis_norm
+    target_axis = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
-    # Adjust for sign (optional)
-    vec1 = vec1 * np.sign(new_axis_vec[0])
+    rotation_axis = np.cross(source_axis, target_axis)
+    axis_length = np.linalg.norm(rotation_axis)
+    cos_angle = float(np.clip(np.dot(source_axis, target_axis), -1.0, 1.0))
 
-    # Compute rotation matrix using Rodrigues' formula
-    a = vec1 / np.linalg.norm(vec1)
-    b = new_axis_vec
-    v = np.cross(a, b)
-    c = np.dot(a, b)
-
-    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-
-    if np.linalg.norm(v) != 0:
-        rotation_matrix = (
-            np.eye(3) + kmat + np.dot(kmat, kmat) * ((1 - c) / (np.linalg.norm(v) ** 2))
-        )
+    if np.isclose(cos_angle, 1.0, atol=1e-10):
+        rotation_matrix = np.eye(3, dtype=np.float64)
+    elif np.isclose(cos_angle, -1.0, atol=1e-10):
+        rotation_matrix = np.diag([1.0, -1.0, -1.0])
     else:
-        rotation_matrix = np.eye(3)
+        kx, ky, kz = rotation_axis
+        skew_matrix = np.array(
+            [[0.0, -kz, ky], [kz, 0.0, -kx], [-ky, kx, 0.0]],
+            dtype=np.float64,
+        )
+        rotation_matrix = (
+            np.eye(3, dtype=np.float64)
+            + skew_matrix
+            + np.dot(skew_matrix, skew_matrix)
+            * ((1.0 - cos_angle) / (axis_length**2))
+        )
 
     # Flatten the vector field to shape (3, N)
     vec_reshaped = np.reshape(vector_field_slice, (3, -1))
@@ -356,6 +364,35 @@ def rotate_vectors_to_new_axis(
     rotated_vecs = rotated_vecs.reshape(vector_field_slice.shape)
 
     return rotated_vecs
+
+
+
+def orient_vectors_y_positive(vector_field_slice: np.ndarray) -> np.ndarray:
+    """
+    Flip unoriented vectors so their local Y component is non-negative.
+
+    Structure-tensor eigenvectors are axes: ``v`` and ``-v`` represent the same
+    local fiber direction. This helper chooses a deterministic polarity after
+    vectors have been rotated into the analysis frame.
+    """
+    oriented = np.array(vector_field_slice, copy=True)
+    flip_mask = oriented[1, :, :] < 0
+    oriented[:, flip_mask] *= -1
+    return oriented
+
+
+def orient_vectors_z_positive(vector_field_slice: np.ndarray) -> np.ndarray:
+    """
+    Flip unoriented vectors so their local Z component is non-negative.
+
+    This is useful for azimuth/elevation maps when the desired elevation is an
+    unsigned angle above the local XY plane. Structure-tensor eigenvectors are
+    axes, so ``v`` and ``-v`` represent the same local orientation.
+    """
+    oriented = np.array(vector_field_slice, copy=True)
+    flip_mask = oriented[2, :, :] < 0
+    oriented[:, flip_mask] *= -1
+    return oriented
 
 
 def compute_helix_and_transverse_angles(
@@ -401,12 +438,18 @@ def compute_helix_and_transverse_angles(
     for i in range(3):
         reshaped_rotated_vector_field[i] = rotated_vector_field[i].reshape(rows, cols)
 
-    # Calculate helix and transverse angles
-    helix_angle = np.arctan(
-        reshaped_rotated_vector_field[2, :, :] / reshaped_rotated_vector_field[1, :, :]
+    reshaped_rotated_vector_field = orient_vectors_y_positive(
+        reshaped_rotated_vector_field
     )
-    transverse_angle = np.arctan(
-        reshaped_rotated_vector_field[0, :, :] / reshaped_rotated_vector_field[1, :, :]
+
+    # Calculate helix and transverse angles
+    helix_angle = np.arctan2(
+        reshaped_rotated_vector_field[2, :, :],
+        reshaped_rotated_vector_field[1, :, :],
+    )
+    transverse_angle = np.arctan2(
+        reshaped_rotated_vector_field[0, :, :],
+        reshaped_rotated_vector_field[1, :, :],
     )
     helix_angle = np.rad2deg(helix_angle)
     transverse_angle = np.rad2deg(transverse_angle)
@@ -419,14 +462,16 @@ def compute_azimuth_and_elevation(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Azimuth = angle in XY plane from +X toward +Y, in degrees [-180, 180]
-    Elevation = angle from XY plane toward +Z, in degrees [-90, 90]
+    Elevation = unsigned angle from XY plane toward +Z, in degrees [0, 90]
     """
-    vx = vector_field_2d[0, :, :]
-    vy = vector_field_2d[1, :, :]
-    vz = vector_field_2d[2, :, :]
+    oriented = orient_vectors_z_positive(vector_field_2d)
+    vx = oriented[0, :, :]
+    vy = oriented[1, :, :]
+    vz = oriented[2, :, :]
 
     az = np.rad2deg(np.arctan2(vy, vx))  # [-180, 180]
-    el = np.rad2deg(np.arctan2(vz, np.sqrt(vx * vx + vy * vy)))  # [-90, 90]
+    el = np.rad2deg(np.arctan2(vz, np.hypot(vx, vy)))  # [0, 90]
+
     return az, el
 
 
@@ -515,9 +560,11 @@ def plot_images(
     center_point: tuple[int, int, int],
     vector_field_slice: np.ndarray | None = None,
     colormap_angle=None,
+    colormap_angle2=None,
     colormap_FA=None,
     angle1_title: str = "Helix Angle",
     angle2_title: str = "Intrusion Angle",
+    angle_ranges: tuple[tuple[float, float], tuple[float, float]] | None = None,
     save_path: str | None = None,
     show: bool = True,
     quiver_step: int | None = None,
@@ -545,13 +592,17 @@ def plot_images(
         Slice of the vector field with shape ``(3, Y, X)``. When provided, a
         subsampled arrow overlay is drawn on the source image.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles. Defaults to helix_angle_cmap if None.
+        Colormap for the first angle. Defaults to helix_angle_cmap if None.
+    colormap_angle2 : matplotlib colormap, optional
+        Colormap for the second angle. Defaults to colormap_angle if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA. Defaults to plt.cm.magma if None.
     angle1_title : str
         Title for the first angle panel.
     angle2_title : str
         Title for the second angle panel.
+    angle_ranges : tuple[(float, float), (float, float)], optional
+        Fixed display range for angle1 and angle2.
     save_path : str, optional
         If provided, save the figure to this location.
     show : bool
@@ -573,8 +624,12 @@ def plot_images(
     """
     if colormap_angle is None:
         colormap_angle = helix_angle_cmap
+    if colormap_angle2 is None:
+        colormap_angle2 = colormap_angle
     if colormap_FA is None:
         colormap_FA = plt.cm.magma
+    if angle_ranges is None:
+        angle_ranges = ((None, None), (None, None))
 
     if vector_field_slice is not None and vector_field_slice.shape[1:] != img.shape:
         raise ValueError("vector_field_slice shape must match the source image shape")
@@ -606,15 +661,37 @@ def plot_images(
     )
     ax[0, 0].axis("off")
 
-    im1 = ax[0, 1].imshow(img_angle1, cmap=colormap_angle)
+    im1 = ax[0, 1].imshow(
+        img_angle1,
+        cmap=colormap_angle,
+        vmin=angle_ranges[0][0],
+        vmax=angle_ranges[0][1],
+    )
     ax[0, 1].set_title(angle1_title)
     ax[0, 1].axis("off")
-    fig.colorbar(im1, ax=ax[0, 1], fraction=0.046, pad=0.04)
+    fig.colorbar(
+        im1,
+        ax=ax[0, 1],
+        fraction=0.046,
+        pad=0.04,
+        ticks=np.linspace(angle_ranges[0][0], angle_ranges[0][1], 10),
+    )
 
-    im2 = ax[1, 0].imshow(img_angle2, cmap=colormap_angle)
+    im2 = ax[1, 0].imshow(
+        img_angle2,
+        cmap=colormap_angle2,
+        vmin=angle_ranges[1][0],
+        vmax=angle_ranges[1][1],
+    )
     ax[1, 0].set_title(angle2_title)
     ax[1, 0].axis("off")
-    fig.colorbar(im2, ax=ax[1, 0], fraction=0.046, pad=0.04)
+    fig.colorbar(
+        im2,
+        ax=ax[1, 0],
+        fraction=0.046,
+        pad=0.04,
+        ticks=np.linspace(angle_ranges[1][0], angle_ranges[1][1], 10),
+    )
 
     im3 = ax[1, 1].imshow(img_FA, cmap=colormap_FA, vmin=0.0, vmax=1.0)
     ax[1, 1].set_title("Fractional Anisotropy")
@@ -673,13 +750,40 @@ def write_img_rgb(
     if output_format == "jp2":
         if glymur is None:
             raise RuntimeError("glymur is not available for JP2 writing")
-        glymur.Jp2k(out_path, data=rgb, cratios=[10], numres=8, irreversible=True)
+        write_jp2(out_path, rgb)
     elif output_format == "tif":
         if tifffile is None:
             raise RuntimeError("tifffile is not available for TIFF writing")
-        tifffile.imwrite(out_path, rgb)
+        write_tif(out_path, rgb)
     else:
         raise ValueError(f"Unsupported output_format {output_format}")
+
+
+def write_atomic(out_path: str, writer) -> None:
+    """Write to a temporary file first, then replace the final output."""
+    tmp_path = f"{out_path}.tmp"
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
+    try:
+        writer(tmp_path)
+        os.replace(tmp_path, out_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
+def write_jp2(out_path: str, data: np.ndarray) -> None:
+    write_atomic(
+        out_path,
+        lambda tmp_path: glymur.Jp2k(
+            tmp_path, data=data, cratios=[10], numres=8, irreversible=True
+        ),
+    )
+
+
+def write_tif(out_path: str, data: np.ndarray) -> None:
+    write_atomic(out_path, lambda tmp_path: tifffile.imwrite(tmp_path, data))
 
 
 def write_images(
@@ -692,6 +796,7 @@ def write_images(
     output_type: str,
     z: int,
     colormap_angle=None,
+    colormap_angle2=None,
     colormap_FA=None,
     angle_names: tuple[str, str] = ("HA", "IA"),
     angle_ranges: tuple[tuple[float, float], tuple[float, float]] = (
@@ -721,14 +826,16 @@ def write_images(
     z : int
         Current z offset used to compute the running index in filenames.
     colormap_angle : matplotlib colormap, optional
-        Colormap for angles in "rgb" mode. Defaults to helix_angle_cmap if None.
+        Colormap for the first angle in "rgb" mode. Defaults to helix_angle_cmap if None.
+    colormap_angle2 : matplotlib colormap, optional
+        Colormap for the second angle in "rgb" mode. Defaults to colormap_angle if None.
     colormap_FA : matplotlib colormap, optional
         Colormap for FA in "rgb" mode. Defaults to plt.cm.magma if None.
     angle_names : tuple[str, str]
         Names used for subfolders and file prefixes, for example ("HA", "IA") or ("AZ", "EL").
     angle_ranges : tuple[(float, float), (float, float)]
         Min and max for normalization of angle1 and angle2. For example
-        HA and IA use (-90, 90), AZ uses (-180, 180) and EL uses (-90, 90).
+        HA and IA use (-90, 90), AZ uses (-180, 180) and EL uses (0, 90).
 
     Raises
     ------
@@ -762,26 +869,28 @@ def write_images(
         if output_format == "jp2":
             if glymur is None:
                 raise RuntimeError("glymur is not available for JP2 writing")
-            glymur.Jp2k(out1, data=img1_8, cratios=[10], numres=8, irreversible=True)
-            glymur.Jp2k(out2, data=img2_8, cratios=[10], numres=8, irreversible=True)
-            glymur.Jp2k(outF, data=imgF_8, cratios=[10], numres=8, irreversible=True)
+            write_jp2(out1, img1_8)
+            write_jp2(out2, img2_8)
+            write_jp2(outF, imgF_8)
         elif output_format == "tif":
             if tifffile is None:
                 raise RuntimeError("tifffile is not available for TIFF writing")
-            tifffile.imwrite(out1, img1_8)
-            tifffile.imwrite(out2, img2_8)
-            tifffile.imwrite(outF, imgF_8)
+            write_tif(out1, img1_8)
+            write_tif(out2, img2_8)
+            write_tif(outF, imgF_8)
         else:
             raise ValueError(f"I do not recognise output_format {output_format}")
 
     elif output_type == "rgb":
         if colormap_angle is None:
             colormap_angle = helix_angle_cmap
+        if colormap_angle2 is None:
+            colormap_angle2 = colormap_angle
         if colormap_FA is None:
             colormap_FA = plt.cm.magma
 
         write_img_rgb(img_angle1, out1, a1_min, a1_max, colormap_angle, output_format)
-        write_img_rgb(img_angle2, out2, a2_min, a2_max, colormap_angle, output_format)
+        write_img_rgb(img_angle2, out2, a2_min, a2_max, colormap_angle2, output_format)
         write_img_rgb(img_FA, outF, 0.0, 1.0, colormap_FA, output_format)
 
     else:
