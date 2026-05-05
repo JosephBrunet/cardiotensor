@@ -94,6 +94,14 @@ OUTPUT_FORMAT = tif
 #   - "8bit" for grayscale 8-bit images
 #   - "rgb" for 3-channel color images
 OUTPUT_TYPE = 8bit
+
+# Optional colormaps for RGB output and test plots.
+# Use any Matplotlib colormap name, or helix_angle for the CardioTensor map.
+# COLORMAP applies to both angles unless COLORMAP_ANGLE1 or COLORMAP_ANGLE2 is set.
+# For ANGLE_MODE = az_el, defaults are helix_angle for AZ and viridis for EL.
+# COLORMAP =
+# COLORMAP_ANGLE1 =
+# COLORMAP_ANGLE2 =
 ```
 
 !!! note
@@ -158,5 +166,8 @@ OUTPUT_TYPE = 8bit
 - **`OUTPUT_TYPE`**: Image bit depth and channel type:
     - `8bit`: grayscale 8-bit image.
     - `rgb`: 3-channel color image.
+- **`COLORMAP`**: Optional shared colormap for both angle outputs.
+- **`COLORMAP_ANGLE1`**: Optional colormap for the first angle output (`HA` or `AZ`).
+- **`COLORMAP_ANGLE2`**: Optional colormap for the second angle output (`IA` or `EL`).
 
 ---
