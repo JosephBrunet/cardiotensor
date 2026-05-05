@@ -53,7 +53,19 @@ def script() -> None:
         "--colormap",
         type=str,
         default=None,
-        help="Colormap to apply, for example 'hsv'. If None, use helix_angle_cmap.",
+        help="Shared colormap for both angle outputs, for example 'hsv'.",
+    )
+    parser.add_argument(
+        "--colormap-angle1",
+        type=str,
+        default=None,
+        help="Colormap for the first angle output, for example HA or AZ.",
+    )
+    parser.add_argument(
+        "--colormap-angle2",
+        type=str,
+        default=None,
+        help="Colormap for the second angle output, for example IA or EL.",
     )
 
     args = parser.parse_args()
@@ -63,6 +75,8 @@ def script() -> None:
     reverse = args.reverse
     force_test = args.test
     colormap = args.colormap
+    colormap_angle1 = args.colormap_angle1
+    colormap_angle2 = args.colormap_angle2
 
     # --- Read configuration ---
     try:
@@ -93,6 +107,9 @@ def script() -> None:
     n_slice_test = params.get("N_SLICE_TEST", None)
     show_quiver = params.get("SHOW_QUIVER", True)
     n_chunk = params.get("N_CHUNK", 100)
+    colormap = colormap or params.get("COLORMAP", None)
+    colormap_angle1 = colormap_angle1 or params.get("COLORMAP_ANGLE1", None)
+    colormap_angle2 = colormap_angle2 or params.get("COLORMAP_ANGLE2", None)
 
     if not reverse:  # CLI --reverse overrides config
         reverse = params.get("REVERSE", False)
@@ -133,6 +150,8 @@ def script() -> None:
             start_index=start_index,
             end_index=end_index,
             colormap=colormap,
+            colormap_angle1=colormap_angle1,
+            colormap_angle2=colormap_angle2,
         )
         print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
         return
@@ -178,6 +197,8 @@ def script() -> None:
             start_index=s,
             end_index=e,
             colormap=colormap,
+            colormap_angle1=colormap_angle1,
+            colormap_angle2=colormap_angle2,
         )
 
         elapsed = time.time() - t0
