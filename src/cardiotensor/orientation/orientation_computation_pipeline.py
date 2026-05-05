@@ -159,6 +159,8 @@ def compute_orientation(
     start_index: int = 0,
     end_index: int | None = None,
     colormap: str | None = None,
+    colormap_angle1: str | None = None,
+    colormap_angle2: str | None = None,
 ) -> None:
     """
     Compute the orientation for a volume dataset.
@@ -182,7 +184,9 @@ def compute_orientation(
         show_quiver: If True, overlay the vector field on the test-slice figure.
         start_index: Start slice index.
         end_index: End slice index (None = last slice).
-        colormap: Colormap name for RGB angle outputs. Defaults to helix-angle map.
+        colormap: Shared colormap name for RGB angle outputs.
+        colormap_angle1: Colormap name for the first angle output.
+        colormap_angle2: Colormap name for the second angle output.
     """
 
     # --- Sanity checks ---
@@ -222,6 +226,8 @@ Parameters:
     - Test mode:      {is_test}
     - Show quiver:    {show_quiver}
     - Colormap:       {colormap or "[default]"}
+    - Colormap angle1:{colormap_angle1 or "[default]"}
+    - Colormap angle2:{colormap_angle2 or "[default]"}
     """)
 
     print("\n" + "-" * 40)
@@ -393,6 +399,8 @@ Parameters:
                             show_quiver,
                             angle_mode,
                             colormap,
+                            colormap_angle1,
+                            colormap_angle2,
                         ),
                         callback=update_bar,
                     )
@@ -425,6 +433,8 @@ Parameters:
             show_quiver,
             angle_mode,
             colormap,
+            colormap_angle1,
+            colormap_angle2,
         )
 
     if is_test:
@@ -453,6 +463,8 @@ def compute_slice_angles_and_anisotropy(
     show_quiver: bool = True,
     angle_mode: str = "ha_ia",
     colormap: str | None = None,
+    colormap_angle1: str | None = None,
+    colormap_angle2: str | None = None,
 ) -> None:
     """
     Compute either HA/IA or Azimuth/Elevation plus FA for a single slice,
@@ -465,13 +477,20 @@ def compute_slice_angles_and_anisotropy(
         angle_ranges = ((-90.0, 90.0), (-90.0, 90.0))
     elif mode == "az_el":
         angle_names = ("AZ", "EL")
-        angle_ranges = ((-180.0, 180.0), (-90.0, 90.0))
+        angle_ranges = ((-180.0, 180.0), (0.0, 90.0))
     else:
         raise ValueError("ANGLE_MODE must be 'ha_ia' or 'az_el'")
 
     ext = output_format.lstrip(".")
     idx = start_index + z
-    colormap_angle = _resolve_colormap(colormap)
+    shared_colormap = _resolve_colormap(colormap)
+    colormap_angle = _resolve_colormap(colormap_angle1) or shared_colormap
+    colormap_angle2 = _resolve_colormap(colormap_angle2) or shared_colormap
+    if mode == "az_el":
+        if colormap_angle is None:
+            colormap_angle = helix_angle_cmap
+        if colormap_angle2 is None:
+            colormap_angle2 = plt.cm.viridis
     rows, cols = img_slice.shape[:2]
     center_x, center_y = float(center_point[0]), float(center_point[1])
     if not (0 <= center_x < cols and 0 <= center_y < rows):
@@ -545,8 +564,10 @@ def compute_slice_angles_and_anisotropy(
             center_point,
             vector_field_slice=vector_field_slice if show_quiver else None,
             colormap_angle=colormap_angle,
+            colormap_angle2=colormap_angle2,
             angle1_title=titles[0],
             angle2_title=titles[1],
+            angle_ranges=angle_ranges,
             save_path=os.path.join(test_output_dir, "result_test_slice.png"),
             overlay_scalar_map=img_angle1 if show_quiver else None,
         )
@@ -560,6 +581,7 @@ def compute_slice_angles_and_anisotropy(
             output_type,
             z,
             colormap_angle=colormap_angle,
+            colormap_angle2=colormap_angle2,
             angle_names=angle_names,
             angle_ranges=angle_ranges,
         )
@@ -577,6 +599,7 @@ def compute_slice_angles_and_anisotropy(
             output_type,
             z,
             colormap_angle=colormap_angle,
+            colormap_angle2=colormap_angle2,
             angle_names=angle_names,
             angle_ranges=angle_ranges,
         )
