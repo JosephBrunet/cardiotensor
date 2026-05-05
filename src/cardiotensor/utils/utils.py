@@ -120,6 +120,9 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "OUTPUT_PATH": output_dir,
         "OUTPUT_FORMAT": config.get("OUTPUT", "OUTPUT_FORMAT", fallback="jp2").strip(),
         "OUTPUT_TYPE": config.get("OUTPUT", "OUTPUT_TYPE", fallback="8bit").strip(),
+        "COLORMAP": config.get("OUTPUT", "COLORMAP", fallback=None),
+        "COLORMAP_ANGLE1": config.get("OUTPUT", "COLORMAP_ANGLE1", fallback=None),
+        "COLORMAP_ANGLE2": config.get("OUTPUT", "COLORMAP_ANGLE2", fallback=None),
     }
 
 
