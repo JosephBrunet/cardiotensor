@@ -57,7 +57,7 @@ def _read_image_file(file_path: Path) -> np.ndarray:
     suffix = file_path.suffix.lower()
 
     if suffix == ".npy":
-        return np.load(file_path, mmap_mode="r")
+        return np.load(file_path)
 
     if suffix in {".tif", ".tiff"}:
         try:
@@ -447,7 +447,6 @@ class DataReader:
                 volume[z_idx, :, :] = arr
 
         max_workers = min(8, (os.cpu_count() or 8))
-        batch_size = max_workers * 2
 
         # Fill the rest with a progress bar
         with alive_bar(total_files, title="Loading Volume", length=40) as bar:
@@ -455,20 +454,17 @@ class DataReader:
             bar()  # account for the first already loaded slice
 
             if start_fill_idx < total_files:
-                for batch_start in range(start_fill_idx, total_files, batch_size):
-                    batch_end = min(batch_start + batch_size, total_files)
-                    delayed_reads = [
-                        delayed(_read_image_file)(paths[i])
-                        for i in range(batch_start, batch_end)
-                    ]
-                    batch_arrays = compute(
-                        *delayed_reads,
-                        scheduler="processes",
-                        num_workers=max_workers,
-                    )
-                    for z_idx, arr in enumerate(batch_arrays, start=batch_start):
-                        _assign(z_idx, arr)
-                        bar()
+                delayed_reads = [
+                    delayed(_read_image_file)(path) for path in paths[start_fill_idx:]
+                ]
+                arrays = compute(
+                    *delayed_reads,
+                    scheduler="processes",
+                    num_workers=max_workers,
+                )
+                for z_idx, arr in enumerate(arrays, start=start_fill_idx):
+                    _assign(z_idx, arr)
+                    bar()
 
         return volume
 
