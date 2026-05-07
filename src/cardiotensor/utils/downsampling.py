@@ -10,7 +10,7 @@ from alive_progress import alive_bar
 from skimage.measure import block_reduce
 
 from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import convert_to_8bit
+from cardiotensor.utils.utils import convert_to_8bit, get_available_cpu_count
 
 
 def process_vector_block(
@@ -108,7 +108,7 @@ def downsample_vector_volume(
         (block, bin_factor, h, w, bin_dir, idx) for idx, block in enumerate(blocks)
     ]
 
-    with mp.Pool(processes=min(mp.cpu_count(), 16)) as pool:
+    with mp.Pool(processes=min(get_available_cpu_count(), 16)) as pool:
         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
             results = [
                 pool.apply_async(
@@ -229,7 +229,7 @@ def chunked_downsample_vector_volume_mp(
         tasks.append((slice_paths, bin_factor, H, W, eig_out_dir, block_idx))
 
     # Launch multiprocessing pool with a progress bar
-    cpu_count = min(mp.cpu_count(), len(tasks))
+    cpu_count = min(get_available_cpu_count(), len(tasks))
     if sys.platform.startswith("win"):
         cpu_count = min(cpu_count, 59)
     with mp.Pool(processes=cpu_count) as pool:
@@ -243,7 +243,7 @@ def chunked_downsample_vector_volume_mp(
 
 
 def process_image_block(
-    file_list, block_idx, bin_factor, out_file, min_value, max_value
+    file_list, block_idx, bin_factor, h, w, out_file, min_value, max_value
 ):
     """
     Process a Z-block of images by averaging along the Z axis,
@@ -252,11 +252,12 @@ def process_image_block(
     Args:
         file_list (list): List of file paths (entire volume stack).
         bin_factor (int): Binning factor for XY downsampling.
+        h (int): Input image height.
+        w (int): Input image width.
         out_file (Path): Output file path for the downsampled image.
         min_value (float): Minimum intensity for 8-bit scaling.
         max_value (float): Maximum intensity for 8-bit scaling.
     """
-    h, w = cv2.imread(str(file_list[0]), cv2.IMREAD_UNCHANGED).shape
     block = file_list[block_idx * bin_factor : (block_idx + 1) * bin_factor]
     array = np.full((len(block), h, w), np.nan, dtype=np.float32)
 
@@ -330,12 +331,19 @@ def downsample_volume(
         print(f"✅ Downsampled images for '{subfolder}' already exist. Skipping.")
         return
 
+    sample = reader._custom_image_reader(file_list[0])
+    if sample.ndim == 3 and sample.shape[2] == 1:
+        sample = sample[:, :, 0]
+    if sample.ndim != 2:
+        raise ValueError(f"Expected 2D image slices for downsampling, got {sample.shape}")
+    H, W = sample.shape
+
     tasks = []
     for block_idx in range(num_blocks):
         out_file = out_dir / f"{subfolder}_{block_idx:06d}.{out_ext}"
         if not out_file.exists():
             tasks.append(
-                (file_list, block_idx, bin_factor, out_file, min_value, max_value)
+                (file_list, block_idx, bin_factor, H, W, out_file, min_value, max_value)
             )
 
     if not tasks:
@@ -343,9 +351,9 @@ def downsample_volume(
         return
 
     if sys.platform.startswith("win"):
-        cpu_count = min(mp.cpu_count(), 59)
+        cpu_count = min(get_available_cpu_count(), 59)
     else:
-        cpu_count = mp.cpu_count()
+        cpu_count = min(get_available_cpu_count(), 32)
 
     with mp.Pool(processes=cpu_count) as pool:
         with alive_bar(len(tasks), title=f"Downsampling '{subfolder}' volume") as bar:
