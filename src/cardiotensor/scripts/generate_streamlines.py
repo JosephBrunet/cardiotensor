@@ -99,6 +99,7 @@ def script() -> None:
         max_steps=args.max_steps,
         angle_threshold=args.angle,
         min_length_pts=args.min_len,
+        angle_mode=angle_mode,
     )
 
     print(

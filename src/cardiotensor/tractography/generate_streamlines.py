@@ -6,74 +6,157 @@ import numpy as np
 from alive_progress import alive_bar
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import save_trk
+from numba import njit
 
 from cardiotensor.utils.am_utils import write_spatialgraph_am
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
 
 
-def trilinear_interpolate_vector(
-    vector_field: np.ndarray, pt: tuple[float, float, float]
+@njit(cache=True)
+def _trilinear_interpolate_vector_numba(
+    vector_field: np.ndarray,
+    zf: float,
+    yf: float,
+    xf: float,
+    reference_x: float,
+    reference_y: float,
+    reference_z: float,
+    use_reference: bool,
 ) -> np.ndarray:
-    """
-    Given a fractional (z,y,x), returns the trilinearly‐interpolated 3‐vector
-    from `vector_field` (shape = (3, Z, Y, X)). Clamps to nearest voxel if out‐of‐bounds.
-    """
-    zf, yf, xf = pt
+    """Fast vector interpolation kernel. Coordinates are z/y/x; components are x/y/z."""
     _, Z, Y, X = vector_field.shape
 
-    # Clamp floor and ceil to valid ranges
-    z0 = max(min(int(np.floor(zf)), Z - 1), 0)
+    # Find the voxel cube that contains the fractional point. For each axis,
+    # index 0 is the lower corner and index 1 is the upper corner.
+    z0 = int(np.floor(zf))
+    y0 = int(np.floor(yf))
+    x0 = int(np.floor(xf))
+
+    if z0 < 0:
+        z0 = 0
+    if y0 < 0:
+        y0 = 0
+    if x0 < 0:
+        x0 = 0
+    if z0 > Z - 1:
+        z0 = Z - 1
+    if y0 > Y - 1:
+        y0 = Y - 1
+    if x0 > X - 1:
+        x0 = X - 1
+
     z1 = min(z0 + 1, Z - 1)
-    y0 = max(min(int(np.floor(yf)), Y - 1), 0)
     y1 = min(y0 + 1, Y - 1)
-    x0 = max(min(int(np.floor(xf)), X - 1), 0)
     x1 = min(x0 + 1, X - 1)
 
+    # Fractional distance from the lower corner to the upper corner.
+    # Example: dx=0.25 means the point is 25% of the way from x0 to x1.
     dz = zf - z0
     dy = yf - y0
     dx = xf - x0
 
-    # 8 corner vectors
-    c000 = vector_field[:, z0, y0, x0]
-    c001 = vector_field[:, z0, y0, x1]
-    c010 = vector_field[:, z0, y1, x0]
-    c011 = vector_field[:, z0, y1, x1]
-    c100 = vector_field[:, z1, y0, x0]
-    c101 = vector_field[:, z1, y0, x1]
-    c110 = vector_field[:, z1, y1, x0]
-    c111 = vector_field[:, z1, y1, x1]
+    out = np.zeros(3, dtype=np.float64)
 
-    # Interpolate along X
-    c00 = c000 * (1 - dx) + c001 * dx
-    c01 = c010 * (1 - dx) + c011 * dx
-    c10 = c100 * (1 - dx) + c101 * dx
-    c11 = c110 * (1 - dx) + c111 * dx
+    # Add one weighted corner vector to the output. When a reference vector is
+    # available, opposite-sign eigenvectors are flipped before averaging because
+    # v and -v describe the same structure-tensor orientation.
+    for z, y, x, weight in (
+        (z0, y0, x0, (1.0 - dz) * (1.0 - dy) * (1.0 - dx)),
+        (z0, y0, x1, (1.0 - dz) * (1.0 - dy) * dx),
+        (z0, y1, x0, (1.0 - dz) * dy * (1.0 - dx)),
+        (z0, y1, x1, (1.0 - dz) * dy * dx),
+        (z1, y0, x0, dz * (1.0 - dy) * (1.0 - dx)),
+        (z1, y0, x1, dz * (1.0 - dy) * dx),
+        (z1, y1, x0, dz * dy * (1.0 - dx)),
+        (z1, y1, x1, dz * dy * dx),
+    ):
+        vx = vector_field[0, z, y, x]
+        vy = vector_field[1, z, y, x]
+        vz = vector_field[2, z, y, x]
 
-    # Interpolate along Y
-    c0 = c00 * (1 - dy) + c01 * dy
-    c1 = c10 * (1 - dy) + c11 * dy
+        if use_reference and (
+            vx * reference_x + vy * reference_y + vz * reference_z < 0.0
+        ):
+            vx = -vx
+            vy = -vy
+            vz = -vz
 
-    # Interpolate along Z
-    c = c0 * (1 - dz) + c1 * dz
-    return c  # shape (3,)
+        out[0] += weight * vx
+        out[1] += weight * vy
+        out[2] += weight * vz
+
+    # Weighted average of the eight corner vectors, returned as (x, y, z).
+    return out
 
 
+def trilinear_interpolate_vector(
+    vector_field: np.ndarray,
+    pt: tuple[float, float, float],
+    reference_vector: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    Given a fractional (z,y,x), returns the trilinearly‐interpolated 3‐vector
+    from `vector_field` (shape = (3, Z, Y, X)). Clamps to nearest voxel if out‐of‐bounds.
+
+    Spatial indexing is (z, y, x), but vector components are stored as
+    (x, y, z): ``vector_field[0]`` is the x component, ``vector_field[1]`` is y,
+    and ``vector_field[2]`` is z.
+
+    If `reference_vector` is provided, the eight corner vectors are first
+    flipped so they point into the same half-space as the reference. This treats
+    structure-tensor eigenvectors as unoriented axes and avoids cancellation
+    when neighboring voxels store equivalent vectors with opposite signs.
+    """
+    # Keep this public wrapper readable; the actual weighted average is compiled
+    # in _trilinear_interpolate_vector_numba for speed.
+    if reference_vector is None:
+        return _trilinear_interpolate_vector_numba(
+            vector_field, pt[0], pt[1], pt[2], 0.0, 0.0, 0.0, False
+        )
+
+    # reference_vector is expected in component order (x, y, z).
+    return _trilinear_interpolate_vector_numba(
+        vector_field,
+        pt[0],
+        pt[1],
+        pt[2],
+        reference_vector[0],
+        reference_vector[1],
+        reference_vector[2],
+        True,
+    )
+
+
+@njit(cache=True)
 def trilinear_interpolate_scalar(
-    volume: np.ndarray, pt: tuple[float, float, float]
+    volume: np.ndarray, zf: float, yf: float, xf: float
 ) -> float:
     """
     Trilinearly interpolate a scalar volume at fractional point (z, y, x).
     Clamps to valid range.
     """
-    zf, yf, xf = pt
     Z, Y, X = volume.shape
 
     z0 = int(np.floor(zf))
-    z1 = min(z0 + 1, Z - 1)
     y0 = int(np.floor(yf))
-    y1 = min(y0 + 1, Y - 1)
     x0 = int(np.floor(xf))
+
+    if z0 < 0:
+        z0 = 0
+    if y0 < 0:
+        y0 = 0
+    if x0 < 0:
+        x0 = 0
+    if z0 > Z - 1:
+        z0 = Z - 1
+    if y0 > Y - 1:
+        y0 = Y - 1
+    if x0 > X - 1:
+        x0 = X - 1
+
+    z1 = min(z0 + 1, Z - 1)
+    y1 = min(y0 + 1, Y - 1)
     x1 = min(x0 + 1, X - 1)
 
     dz = zf - z0
@@ -154,7 +237,7 @@ def trace_streamline(
     fa_volume: np.ndarray | None = None,
     fa_threshold: float = 0.1,
     step_length: float = 0.5,
-    max_steps: int | None = 1000,
+    max_steps: int | None = None,
     angle_threshold: float = 60.0,
     eps: float = 1e-10,
     direction: int = 1,
@@ -165,15 +248,45 @@ def trace_streamline(
     ]
     current_pt = np.array(start_pt, dtype=np.float64)
     prev_dir: np.ndarray | None = None
+    loop_resolution = max(step_length * 0.5, eps)
+    visited: set[tuple[int, int, int]] = {
+        tuple(np.round(current_pt / loop_resolution).astype(int))
+    }
 
-    def interp_unit(pt: np.ndarray) -> np.ndarray | None:
-        vec = trilinear_interpolate_vector(vector_field, (pt[0], pt[1], pt[2]))
+    def interp_unit(
+        pt: np.ndarray, reference_dir: np.ndarray | None = None
+    ) -> np.ndarray | None:
+        # Streamline directions are in point order (z, y, x), but vector
+        # components are interpolated in component order (x, y, z).
+        if reference_dir is None:
+            vec = _trilinear_interpolate_vector_numba(
+                vector_field, pt[0], pt[1], pt[2], 0.0, 0.0, 0.0, False
+            )
+        else:
+            # Convert reference direction from step order (z, y, x) to component
+            # order (x, y, z) before resolving eigenvector sign ambiguity.
+            vec = _trilinear_interpolate_vector_numba(
+                vector_field,
+                pt[0],
+                pt[1],
+                pt[2],
+                reference_dir[2],
+                reference_dir[1],
+                reference_dir[0],
+                True,
+            )
         if np.isnan(vec).any():
             return None
         n = np.linalg.norm(vec)
         if n < eps:
             return None
-        return np.array([vec[2], vec[1], vec[0]]) / n * direction  # to (z,y,x)
+        # Convert interpolated component order (x, y, z) to step order (z, y, x).
+        unit = np.array([vec[2], vec[1], vec[0]]) / n  # to (z,y,x)
+        if reference_dir is None:
+            return unit * direction
+        if np.dot(unit, reference_dir) < 0:
+            unit *= -1
+        return unit
 
     step_count = 0
     while max_steps is None or step_count < max_steps:
@@ -181,12 +294,14 @@ def trace_streamline(
 
         if fa_volume is not None:
             if (
-                trilinear_interpolate_scalar(fa_volume, tuple(current_pt))
+                trilinear_interpolate_scalar(
+                    fa_volume, current_pt[0], current_pt[1], current_pt[2]
+                )
                 < fa_threshold
             ):
                 break
 
-        k1 = interp_unit(current_pt)
+        k1 = interp_unit(current_pt, prev_dir)
         if k1 is None:
             break
         if prev_dir is not None:
@@ -195,15 +310,15 @@ def trace_streamline(
                 break
 
         mid1 = current_pt + 0.5 * step_length * k1
-        k2 = interp_unit(mid1)
+        k2 = interp_unit(mid1, k1)
         if k2 is None:
             break
         mid2 = current_pt + 0.5 * step_length * k2
-        k3 = interp_unit(mid2)
+        k3 = interp_unit(mid2, k2)
         if k3 is None:
             break
         end_pt = current_pt + step_length * k3
-        k4 = interp_unit(end_pt)
+        k4 = interp_unit(end_pt, k3)
         if k4 is None:
             break
 
@@ -216,9 +331,16 @@ def trace_streamline(
         if not (0 <= zn < Z and 0 <= yn < Y and 0 <= xn < X):
             break
 
+        loop_key = tuple(np.round(next_pt / loop_resolution).astype(int))
+        if step_count > 8 and loop_key in visited:
+            break
+        visited.add(loop_key)
+
+        step_dir = next_pt - current_pt
+        step_norm = np.linalg.norm(step_dir)
+        prev_dir = step_dir / step_norm if step_norm >= eps else k4
         coords.append((float(zn), float(yn), float(xn)))
         current_pt = next_pt
-        prev_dir = k1
 
     return coords
 
@@ -346,21 +468,25 @@ def generate_streamlines_from_params(
     fa_seed_min: float = 0.4,
     fa_threshold: float = 0.1,
     step_length: float = 0.5,
-    max_steps: int | None = None,
+    max_steps: int | None = 1000,
     angle_threshold: float = 60.0,
     min_length_pts: int = 10,
     bidirectional: bool = True,
     voxel_sizes_zyx: tuple[float, float, float] = (1.0, 1.0, 1.0),
     save_trk_file: bool = True,
+    angle_mode: str = "ha_ia",
 ) -> None:
     """
     Generate streamlines from the eigenvector field, then export:
       - .trk with all discovered per-point angle fields
       - .am with all per-edge mean angle scalars
 
-    Angle discovery:
-      If `angle_dir` is one of HA, IA, AZ, EL, discover siblings with those names and include all that exist.
-      If `angle_dir` is a parent, include all subfolders named HA, IA, AZ, EL that exist.
+    Angle discovery follows ``angle_mode``:
+      - "ha_ia" includes HA and IA only.
+      - "az_el" includes AZ and EL only.
+      If `angle_dir` is one of the selected angle folders, discover selected
+      siblings next to it. If `angle_dir` is a parent, include selected
+      subfolders below it.
       If none are found, treat `angle_dir` as a single custom angle and include it.
     """
     vector_field_dir = Path(vector_field_dir)
@@ -369,18 +495,25 @@ def generate_streamlines_from_params(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Discover all angle folders
-    KNOWN = ("HA", "IA", "AZ", "EL")
+    # Discover only the angle folders requested by ANGLE_MODE.
+    mode = angle_mode.lower().strip()
+    if mode == "ha_ia":
+        selected_angles = ("HA", "IA")
+    elif mode == "az_el":
+        selected_angles = ("AZ", "EL")
+    else:
+        raise ValueError("angle_mode must be 'ha_ia' or 'az_el'")
+
     discovered: dict[str, Path] = {}
 
-    if angle_dir.name.upper() in KNOWN:
+    if angle_dir.name.upper() in selected_angles:
         parent = angle_dir.parent
-        for name in KNOWN:
+        for name in selected_angles:
             p = parent / name
             if p.exists():
                 discovered[name] = p
     else:
-        for name in KNOWN:
+        for name in selected_angles:
             p = angle_dir / name
             if p.exists():
                 discovered[name] = p
@@ -439,10 +572,6 @@ def generate_streamlines_from_params(
     if vector_field.ndim == 4 and vector_field.shape[-1] == 3:
         print("Reordering vector field axes")
         vector_field = np.moveaxis(vector_field, -1, 0)
-
-    # Consistent sign
-    neg_mask = vector_field[0] < 0
-    vector_field[:, neg_mask] *= -1
 
     # Mask
     if mask_path:
@@ -509,7 +638,7 @@ def generate_streamlines_from_params(
             zc = min(max(z, 0.0), Zc - 1.0)
             yc = min(max(y, 0.0), Yc - 1.0)
             xc = min(max(x, 0.0), Xc - 1.0)
-            vals.append(trilinear_interpolate_scalar(volume, (zc, yc, xc)))
+            vals.append(trilinear_interpolate_scalar(volume, zc, yc, xc))
         return np.asarray(vals, dtype=np.float32)
 
     per_point_angles = {
