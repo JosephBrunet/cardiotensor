@@ -1,10 +1,57 @@
 import ast
 import configparser
 import os
+import platform
+import subprocess
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+
+def get_available_cpu_count(default: int = 1) -> int:
+    """Return the CPU count available to this process, respecting SLURM limits."""
+    for env_name in ("SLURM_CPUS_PER_TASK", "SLURM_CPUS_ON_NODE"):
+        value = os.environ.get(env_name)
+        if value:
+            try:
+                count = int(value)
+            except ValueError:
+                continue
+            if count > 0:
+                return count
+
+    return os.cpu_count() or default
+
+
+def get_gpu_count() -> int:
+    """Return the number of visible NVIDIA GPUs, or 0 if none are detected."""
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if visible:
+        ids = [x for x in visible.split(",") if x.strip().isdigit()]
+        if ids:
+            return len(ids)
+
+    try:
+        if platform.system() == "Windows":
+            result = subprocess.run(
+                [r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe", "-L"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        else:
+            result = subprocess.run(
+                ["nvidia-smi", "-L"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        return len(
+            [line for line in result.stdout.strip().splitlines() if "GPU" in line]
+        )
+    except Exception:
+        return 0
 
 
 def read_conf_file(file_path: str) -> dict[str, Any]:
