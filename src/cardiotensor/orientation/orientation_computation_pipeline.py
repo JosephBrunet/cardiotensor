@@ -363,17 +363,13 @@ Parameters:
     if not is_test:
         num_slices = vec.shape[1]
         available_cpus = get_available_cpu_count()
-        print(f"Using {available_cpus} CPU cores")
+        num_procs = min(available_cpus, 32)  # Avoid too many processes even on large CPU counts
+
+        print(f"Using {num_procs} CPU cores")
 
         def update_bar(_):
             """Callback to tick the progress bar after each finished task."""
             bar()
-
-        # Limit number of processes to avoid exceeding handler limits on Windows
-        if sys.platform.startswith("win"):
-            num_procs = min(available_cpus, 59)
-        else:
-            num_procs = available_cpus
 
         with mp.Pool(processes=num_procs) as pool:
             with alive_bar(
