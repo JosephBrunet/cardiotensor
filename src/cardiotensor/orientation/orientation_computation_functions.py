@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.utils import convert_to_8bit
+from cardiotensor.utils.utils import get_available_cpu_count, get_gpu_count
 
 
 def interpolate_points(
@@ -128,42 +129,6 @@ def adjust_start_end_index(
 
     return start_index_padded, end_index_padded
 
-
-import platform
-import subprocess
-
-
-def get_gpu_count() -> int:
-    # Try reading CUDA_VISIBLE_DEVICES
-    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
-    if visible:
-        ids = [x for x in visible.split(",") if x.strip().isdigit()]
-        if ids:
-            return len(ids)
-
-    # Try nvidia-smi
-    try:
-        if platform.system() == "Windows":
-            result = subprocess.run(
-                [r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe", "-L"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-        else:
-            result = subprocess.run(
-                ["nvidia-smi", "-L"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-        return len(
-            [line for line in result.stdout.strip().splitlines() if "GPU" in line]
-        )
-    except Exception:
-        return 0
-
-
 def calculate_structure_tensor(
     volume: np.ndarray,
     sigma: float,
@@ -191,9 +156,7 @@ def calculate_structure_tensor(
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    num_cpus = max(
-        os.cpu_count() or 4, 4
-    )  # Default to 4 if os.cpu_count() returns None
+    num_cpus = get_available_cpu_count(default=4)
 
     devices = devices or []
     num_gpus = 0
