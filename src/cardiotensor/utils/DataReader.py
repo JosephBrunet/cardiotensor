@@ -14,6 +14,8 @@ from alive_progress import alive_bar
 from dask import compute, delayed
 from skimage.measure import block_reduce
 
+from cardiotensor.utils.utils import get_available_cpu_count
+
 
 # ---------------------------
 # Integer-only upsampling util
@@ -38,18 +40,17 @@ def _fit(
     Crops if too large, pads with `pad_value` if too small.
     """
     tz, ty, tx = target
-    arr = arr[:tz, :ty, :tx]
-    padz = max(0, tz - arr.shape[0])
-    pady = max(0, ty - arr.shape[1])
-    padx = max(0, tx - arr.shape[2])
-    if padz or pady or padx:
-        arr = np.pad(
-            arr,
-            ((0, padz), (0, pady), (0, padx)),
-            mode="constant",
-            constant_values=pad_value,
-        )
-    return arr
+    z, y, x = arr.shape
+
+    if (z, y, x) == target:
+        return arr
+
+    if z >= tz and y >= ty and x >= tx:
+        return arr[:tz, :ty, :tx]
+
+    fitted = np.full(target, pad_value, dtype=arr.dtype)
+    fitted[: min(z, tz), : min(y, ty), : min(x, tx)] = arr[:tz, :ty, :tx]
+    return fitted
 
 
 def _read_image_file(file_path: Path) -> np.ndarray:
@@ -357,10 +358,11 @@ class DataReader:
                 return "x1"
 
             print(
-                f"Applied integer resampling: Z {_fmt(kz, dz)}, Y {_fmt(ky, dy)}, X {_fmt(kx, dx)}"
+                f"Applied integer resampling: Z {_fmt(kz, dz)}, Y {_fmt(ky, dy)}, X {_fmt(kx, dx)} -> resulting shape {volume.shape}"
             )
 
             # Enforce exact shape
+            print(f"Fitting to exact unbinned shape: {unbinned_shape}")
             volume = _fit(volume, (z1, y1, x1), pad_value=0)
 
         return volume
@@ -446,7 +448,8 @@ class DataReader:
                     )
                 volume[z_idx, :, :] = arr
 
-        max_workers = min(8, (os.cpu_count() or 8))
+        scheduler = "threads"
+        max_workers = min(32, get_available_cpu_count(default=8))
 
         # Fill the rest with a progress bar
         with alive_bar(total_files, title="Loading Volume", length=40) as bar:
@@ -459,7 +462,7 @@ class DataReader:
                 ]
                 arrays = compute(
                     *delayed_reads,
-                    scheduler="processes",
+                    scheduler=scheduler,
                     num_workers=max_workers,
                 )
                 for z_idx, arr in enumerate(arrays, start=start_fill_idx):
