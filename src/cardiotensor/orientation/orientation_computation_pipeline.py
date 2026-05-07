@@ -27,7 +27,7 @@ from cardiotensor.orientation.orientation_computation_functions import (
     write_vector_field,
 )
 from cardiotensor.utils.DataReader import DataReader
-from cardiotensor.utils.utils import remove_corrupted_files
+from cardiotensor.utils.utils import get_available_cpu_count, remove_corrupted_files
 
 
 # --- small helpers ---
@@ -362,7 +362,8 @@ Parameters:
 
     if not is_test:
         num_slices = vec.shape[1]
-        print(f"Using {mp.cpu_count()} CPU cores")
+        available_cpus = get_available_cpu_count()
+        print(f"Using {available_cpus} CPU cores")
 
         def update_bar(_):
             """Callback to tick the progress bar after each finished task."""
@@ -370,9 +371,9 @@ Parameters:
 
         # Limit number of processes to avoid exceeding handler limits on Windows
         if sys.platform.startswith("win"):
-            num_procs = min(mp.cpu_count(), 59)
+            num_procs = min(available_cpus, 59)
         else:
-            num_procs = mp.cpu_count()
+            num_procs = available_cpus
 
         with mp.Pool(processes=num_procs) as pool:
             with alive_bar(
