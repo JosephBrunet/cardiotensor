@@ -4,6 +4,10 @@ visualize_vector_field.py
 -------------------------
 CLI tool to visualize 3D vector fields using FURY from a configuration file.
 Supports arrow or cylinder visualization, optional VTK export.
+
+Color-by
+  - any saved scalar folder under OUTPUT_PATH, e.g. HA, IA, AZ, EL, FA
+  - use --list-color-by to print available folders and exit
 """
 
 import argparse
@@ -17,16 +21,32 @@ from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.vector_field import visualize_vector_field
 
 
+def _discover_color_folders(output_dir: Path) -> list[str]:
+    candidates = []
+    for path in sorted(output_dir.iterdir()):
+        if not path.is_dir() or path.name == "eigen_vec":
+            continue
+        try:
+            if any(
+                p.suffix.lower() in {".jp2", ".tif", ".tiff", ".png"}
+                for p in path.iterdir()
+            ):
+                candidates.append(path.name)
+        except OSError:
+            pass
+    return candidates
+
+
 def script():
     parser = argparse.ArgumentParser(
         description="Plot 3D vector field using FURY from configuration file."
     )
     parser.add_argument("conf_file", type=Path, help="Path to configuration file")
     parser.add_argument(
-        "--stride",
+        "--downsample",
         type=int,
         default=10,
-        help="Stride to downsample vectors for display (default: 10)",
+        help="Downsample factor for vector display (default: 10)",
     )
     parser.add_argument(
         "--bin",
@@ -60,6 +80,18 @@ def script():
         help="Colormap for coloring vectors. "
         "Use 'helix_angle' for custom colormap or any Matplotlib colormap name (default: helix_angle)",
     )
+    parser.add_argument(
+        "--color-by",
+        type=str,
+        default=None,
+        help="Saved scalar folder used to color vectors, e.g. HA, IA, AZ, EL, FA. "
+        "Use --list-color-by to see available folders.",
+    )
+    parser.add_argument(
+        "--list-color-by",
+        action="store_true",
+        help="List available saved scalar folders and exit",
+    )
 
     parser.add_argument("--start", type=int, default=None, help="Start slice index")
     parser.add_argument("--end", type=int, default=None, help="End slice index")
@@ -86,23 +118,35 @@ def script():
     output_dir = Path(params.get("OUTPUT_PATH", "./output"))
     voxel_size = params.get("VOXEL_SIZE", 1)
     mask_path = params.get("MASK_PATH", None)
-    angle_mode = params.get("ANGLE_MODE", "ha_ia").strip().lower()
-
-    if angle_mode == "ha_ia":
-        color_volume_dir = "HA"
-    elif angle_mode == "az_el":
-        color_volume_dir = "AZ"
-    else:
-        sys.exit(f"⚠️ Unknown ANGLE_MODE '{angle_mode}' in configuration")
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    available_color_by = _discover_color_folders(output_dir)
+    if args.list_color_by:
+        print("Available color-by folders:")
+        for name in available_color_by:
+            print(f"  - {name}")
+        return
+
+    if args.color_by is None:
+        sys.exit("⚠️ Please choose a scalar folder with --color-by, e.g. --color-by HA")
+
+    color_by = args.color_by
+    matches = {name.lower(): name for name in available_color_by}
+    color_by_key = color_by.lower()
+    if color_by_key not in matches:
+        available = ", ".join(available_color_by) if available_color_by else "[none]"
+        sys.exit(
+            f"⚠️ Color folder '{color_by}' not found under {output_dir}. "
+            f"Available: {available}"
+        )
+    color_volume_dir = matches[color_by_key]
 
     # Call visualization function (handles both plotting and VTK export)
     visualize_vector_field(
         vector_field_path=output_dir / "eigen_vec",
         color_volume_path=output_dir / color_volume_dir,
         mask_path=mask_path,
-        stride=args.stride,
+        downsample=args.downsample,
         bin_factor=args.bin,
         size=args.size,
         radius=args.radius,
