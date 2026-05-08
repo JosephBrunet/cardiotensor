@@ -504,6 +504,13 @@ def generate_streamlines_from_params(
     else:
         raise ValueError("angle_mode must be 'ha_ia' or 'az_el'")
 
+    angle_ranges = {
+        "HA": (-90.0, 90.0),
+        "IA": (-90.0, 90.0),
+        "AZ": (-180.0, 180.0),
+        "EL": (0.0, 90.0),
+    }
+
     discovered: dict[str, Path] = {}
 
     if angle_dir.name.upper() in selected_angles:
@@ -627,7 +634,29 @@ def generate_streamlines_from_params(
         v = DataReader(vol_dir).load_volume(start_index=start_z_b, end_index=end_z_b)
         return v[:, start_y_b:end_y_b, start_x_b:end_x_b]
 
-    cropped_angles = {name: load_crop(path) for name, path in angle_load_dirs.items()}
+    def decode_angle_volume(name: str, volume: np.ndarray) -> np.ndarray:
+        """
+        Convert saved 8-bit angle images back to physical degrees.
+
+        The orientation pipeline writes angle images as 0..255 for visualization.
+        Streamline scalar fields should store degrees, not raw image intensity.
+        """
+        name = name.upper()
+        if name not in angle_ranges:
+            return volume.astype(np.float32, copy=False)
+
+        angle_min, angle_max = angle_ranges[name]
+        volume = volume.astype(np.float32, copy=False)
+
+        if np.nanmin(volume) >= angle_min and np.nanmax(volume) <= angle_max:
+            return volume
+
+        return angle_min + (volume / 255.0) * (angle_max - angle_min)
+
+    cropped_angles = {
+        name: decode_angle_volume(name, load_crop(path))
+        for name, path in angle_load_dirs.items()
+    }
 
     def sample_along(
         volume: np.ndarray, sl: list[tuple[float, float, float]]
