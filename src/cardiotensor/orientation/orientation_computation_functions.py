@@ -1,15 +1,14 @@
 import os
 import warnings
 
-import glymur
 import matplotlib.pyplot as plt
 import numpy as np
-import tifffile
 from scipy.interpolate import CubicSpline
 from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from tqdm import tqdm
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+from cardiotensor.utils.image_io import write_jp2, write_tif, write_vector_field
 from cardiotensor.utils.utils import convert_to_8bit
 from cardiotensor.utils.utils import get_available_cpu_count, get_gpu_count
 
@@ -711,42 +710,11 @@ def write_img_rgb(
     rgb = (colormap(x)[..., :3] * 255.0 + 0.5).astype(np.uint8)  # H, W, 3
 
     if output_format == "jp2":
-        if glymur is None:
-            raise RuntimeError("glymur is not available for JP2 writing")
         write_jp2(out_path, rgb)
     elif output_format == "tif":
-        if tifffile is None:
-            raise RuntimeError("tifffile is not available for TIFF writing")
         write_tif(out_path, rgb)
     else:
         raise ValueError(f"Unsupported output_format {output_format}")
-
-
-def write_atomic(out_path: str, writer) -> None:
-    """Write to a temporary file first, then replace the final output."""
-    tmp_path = f"{out_path}.tmp"
-    if os.path.exists(tmp_path):
-        os.remove(tmp_path)
-
-    try:
-        writer(tmp_path)
-        os.replace(tmp_path, out_path)
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-
-def write_jp2(out_path: str, data: np.ndarray) -> None:
-    write_atomic(
-        out_path,
-        lambda tmp_path: glymur.Jp2k(
-            tmp_path, data=data, cratios=[10], numres=8, irreversible=True
-        ),
-    )
-
-
-def write_tif(out_path: str, data: np.ndarray) -> None:
-    write_atomic(out_path, lambda tmp_path: tifffile.imwrite(tmp_path, data))
 
 
 def write_images(
@@ -830,14 +798,10 @@ def write_images(
         imgF_8 = convert_to_8bit(img_FA, min_value=0.0, max_value=1.0)
 
         if output_format == "jp2":
-            if glymur is None:
-                raise RuntimeError("glymur is not available for JP2 writing")
             write_jp2(out1, img1_8)
             write_jp2(out2, img2_8)
             write_jp2(outF, imgF_8)
         elif output_format == "tif":
-            if tifffile is None:
-                raise RuntimeError("tifffile is not available for TIFF writing")
             write_tif(out1, img1_8)
             write_tif(out2, img2_8)
             write_tif(outF, imgF_8)
@@ -858,26 +822,3 @@ def write_images(
 
     else:
         raise ValueError(f"I do not recognise output_type {output_type}")
-
-
-def write_vector_field(
-    vector_field_slice: np.ndarray, start_index: int, output_dir: str, slice_idx: int
-) -> None:
-    """
-    Saves a vector field slice to the specified directory in .npy format.
-
-    Args:
-        vector_field_slice (np.ndarray): Vector field data slice.
-        start_index (int): Starting index for filenames.
-        output_dir (str): Directory to save the vector field.
-        slice_idx (int): Current slice index.
-
-    Returns:
-        None
-    """
-    os.makedirs(f"{output_dir}/eigen_vec", exist_ok=True)
-    np.save(
-        f"{output_dir}/eigen_vec/eigen_vec_{(start_index + slice_idx):06d}.npy",
-        vector_field_slice,
-    )
-    # print(f"Vector field slice saved at index {slice_idx}")

@@ -4,16 +4,14 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-import cv2
-import glymur
 import numpy as np
 import psutil
 import SimpleITK as sitk
-import tifffile as tiff
 from alive_progress import alive_bar
 from dask import compute, delayed
 from skimage.measure import block_reduce
 
+from cardiotensor.utils.image_io import read_image_file
 from cardiotensor.utils.utils import get_available_cpu_count
 
 
@@ -51,42 +49,6 @@ def _fit(
     fitted = np.full(target, pad_value, dtype=arr.dtype)
     fitted[: min(z, tz), : min(y, ty), : min(x, tx)] = arr[:tz, :ty, :tx]
     return fitted
-
-
-def _read_image_file(file_path: Path) -> np.ndarray:
-    """Reads one image file to a NumPy array."""
-    suffix = file_path.suffix.lower()
-
-    if suffix == ".npy":
-        return np.load(file_path)
-
-    if suffix in {".tif", ".tiff"}:
-        try:
-            return tiff.imread(file_path)
-        except Exception as e:
-            img = cv2.imread(str(file_path), -1)
-            if img is not None:
-                print(
-                    f"⚠ Falling back to OpenCV for TIFF '{file_path}' "
-                    f"(tifffile error: {e})"
-                )
-                return img
-            raise RuntimeError(
-                "Failed to read TIFF with tifffile and OpenCV. "
-                "If the file uses LZW/other codecs, install 'imagecodecs' "
-                "to enable decoding."
-            ) from e
-
-    if suffix == ".jp2":
-        return glymur.Jp2k(str(file_path))[:]
-
-    img = cv2.imread(str(file_path), -1)
-    if img is None:
-        raise RuntimeError(
-            f"cv2.imread failed for '{file_path}'. "
-            "File may be missing or in an unsupported/invalid format."
-        )
-    return img
 
 
 def _normalize_single_tiff_volume(volume: np.ndarray) -> np.ndarray:
@@ -371,7 +333,7 @@ class DataReader:
         """
         Reads an image from the given file path into a NumPy array.
         """
-        return _read_image_file(file_path)
+        return read_image_file(file_path)
 
     def _load_image_stack(
         self, file_list: list[Path], start_index: int, end_index: int
@@ -458,7 +420,7 @@ class DataReader:
 
             if start_fill_idx < total_files:
                 delayed_reads = [
-                    delayed(_read_image_file)(path) for path in paths[start_fill_idx:]
+                    delayed(read_image_file)(path) for path in paths[start_fill_idx:]
                 ]
                 arrays = compute(
                     *delayed_reads,

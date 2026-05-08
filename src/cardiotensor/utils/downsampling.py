@@ -1,15 +1,15 @@
 import math
-import multiprocessing as mp
 import os
 import sys
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-import cv2
 import numpy as np
 from alive_progress import alive_bar
 from skimage.measure import block_reduce
 
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.image_io import read_image_file, write_image
 from cardiotensor.utils.utils import convert_to_8bit, get_available_cpu_count
 
 
@@ -70,7 +70,7 @@ def downsample_vector_volume(
     output_dir: Path,
 ) -> None:
     """
-    Downsamples a vector volume using multiprocessing.
+    Downsamples a vector volume using a thread pool.
 
     Args:
         input_npy (Path): Path to the directory containing numpy files.
@@ -108,7 +108,7 @@ def downsample_vector_volume(
         (block, bin_factor, h, w, bin_dir, idx) for idx, block in enumerate(blocks)
     ]
 
-    with mp.Pool(processes=min(get_available_cpu_count(), 16)) as pool:
+    with ThreadPool(processes=min(get_available_cpu_count(), 32)) as pool:
         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
             results = [
                 pool.apply_async(
@@ -120,126 +120,123 @@ def downsample_vector_volume(
                 result.wait()
 
 
-from pathlib import Path
 
 
-def _process_chunk(
-    slice_paths: list[Path],
-    bin_factor: int,
-    H: int,
-    W: int,
-    eig_out_dir: Path,
-    block_idx: int,
-) -> None:
-    """
-    Worker function for downsampling one block of fine‐scale slices.
-    Loads each slice in `slice_paths` (each shape = (3, H, W)), averages them, downsamples in‐plane,
-    renormalizes, and writes to eig_out_dir/eigen_vec_{block_idx:06d}.npy.
-    """
-    out_file = eig_out_dir / f"eigen_vec_{block_idx:06d}.npy"
-    if out_file.exists():
-        return
+# def _process_chunk(
+#     slice_paths: list[Path],
+#     bin_factor: int,
+#     H: int,
+#     W: int,
+#     eig_out_dir: Path,
+#     block_idx: int,
+# ) -> None:
+#     """
+#     Worker function for downsampling one block of fine‐scale slices.
+#     Loads each slice in `slice_paths` (each shape = (3, H, W)), averages them, downsamples in‐plane,
+#     renormalizes, and writes to eig_out_dir/eigen_vec_{block_idx:06d}.npy.
+#     """
+#     out_file = eig_out_dir / f"eigen_vec_{block_idx:06d}.npy"
+#     if out_file.exists():
+#         return
 
-    # 1) Load exactly those `n_slices_in_block` into a small array of shape (3, n_slices, H, W)
-    n_slices = len(slice_paths)
-    arr_block = np.empty((3, n_slices, H, W), dtype=np.float32)
-    for i, p in enumerate(slice_paths):
-        arr_block[:, i, :, :] = np.load(p)
+#     # 1) Load exactly those `n_slices_in_block` into a small array of shape (3, n_slices, H, W)
+#     n_slices = len(slice_paths)
+#     arr_block = np.empty((3, n_slices, H, W), dtype=np.float32)
+#     for i, p in enumerate(slice_paths):
+#         arr_block[:, i, :, :] = np.load(p)
 
-    # 2) Average across Z within this block: shape → (3, H, W)
-    avg_block = arr_block.mean(axis=1)
+#     # 2) Average across Z within this block: shape → (3, H, W)
+#     avg_block = arr_block.mean(axis=1)
 
-    # 3) First renormalize each 3‐vector to unit length
-    norms = np.linalg.norm(avg_block, axis=0, keepdims=True)  # (1, H, W)
-    avg_unit = avg_block / np.maximum(norms, 1e-12)
+#     # 3) First renormalize each 3‐vector to unit length
+#     norms = np.linalg.norm(avg_block, axis=0, keepdims=True)  # (1, H, W)
+#     avg_unit = avg_block / np.maximum(norms, 1e-12)
 
-    # 4) Downsample in‐plane (H, W) by block_reduce averaging each bin_factor×bin_factor patch
-    Hc = math.ceil(H / bin_factor)
-    Wc = math.ceil(W / bin_factor)
-    downsampled = np.empty((3, Hc, Wc), dtype=np.float32)
-    for comp in range(3):
-        downsampled_comp = block_reduce(
-            avg_unit[comp], block_size=(bin_factor, bin_factor), func=np.mean
-        )
-        downsampled[comp] = downsampled_comp
+#     # 4) Downsample in‐plane (H, W) by block_reduce averaging each bin_factor×bin_factor patch
+#     Hc = math.ceil(H / bin_factor)
+#     Wc = math.ceil(W / bin_factor)
+#     downsampled = np.empty((3, Hc, Wc), dtype=np.float32)
+#     for comp in range(3):
+#         downsampled_comp = block_reduce(
+#             avg_unit[comp], block_size=(bin_factor, bin_factor), func=np.mean
+#         )
+#         downsampled[comp] = downsampled_comp
 
-    # 5) Second renormalization
-    norms2 = np.linalg.norm(downsampled, axis=0, keepdims=True)
-    downsampled_unit = downsampled / np.maximum(norms2, 1e-12)
+#     # 5) Second renormalization
+#     norms2 = np.linalg.norm(downsampled, axis=0, keepdims=True)
+#     downsampled_unit = downsampled / np.maximum(norms2, 1e-12)
 
-    # 6) Save coarse slice
-    np.save(out_file, downsampled_unit)
+#     # 6) Save coarse slice
+#     np.save(out_file, downsampled_unit)
 
 
-def chunked_downsample_vector_volume_mp(
-    input_npy_dir: Path,
-    bin_factor: int,
-    output_dir: Path,
-) -> None:
-    """
-    Multi‐process + progress‐bar version of chunked_downsample_vector_volume.
-    Reads a directory of per‐slice NumPy files (shape = (3, H, W) each),
-    groups every `bin_factor` consecutive slices into blocks, averages, downsamples, renormalizes,
-    and writes each block as one coarse slice in output_dir/bin{bin_factor}/eigen_vec/.
+# def chunked_downsample_vector_volume_mp(
+#     input_npy_dir: Path,
+#     bin_factor: int,
+#     output_dir: Path,
+# ) -> None:
+#     """
+#     Multi‐process + progress‐bar version of chunked_downsample_vector_volume.
+#     Reads a directory of per‐slice NumPy files (shape = (3, H, W) each),
+#     groups every `bin_factor` consecutive slices into blocks, averages, downsamples, renormalizes,
+#     and writes each block as one coarse slice in output_dir/bin{bin_factor}/eigen_vec/.
 
-    Parameters
-    ----------
-    input_npy_dir : Path
-        Directory containing fine‐scale “eigen_vec_*.npy” files, each shape (3, H, W).
-    bin_factor : int
-        Number of fine Z‐slices per block.
-    output_dir : Path
-        Base output directory. Will create output_dir/bin{bin_factor}/eigen_vec/.
-    """
-    all_files = sorted(input_npy_dir.glob("*.npy"))
-    if not all_files:
-        raise RuntimeError(f"No .npy files found in {input_npy_dir}")
+#     Parameters
+#     ----------
+#     input_npy_dir : Path
+#         Directory containing fine‐scale “eigen_vec_*.npy” files, each shape (3, H, W).
+#     bin_factor : int
+#         Number of fine Z‐slices per block.
+#     output_dir : Path
+#         Base output directory. Will create output_dir/bin{bin_factor}/eigen_vec/.
+#     """
+#     all_files = sorted(input_npy_dir.glob("*.npy"))
+#     if not all_files:
+#         raise RuntimeError(f"No .npy files found in {input_npy_dir}")
 
-    # Determine H, W from the first slice
-    sample = np.load(all_files[0])
-    if sample.ndim != 3 or sample.shape[0] != 3:
-        raise RuntimeError(
-            f"Expected each .npy to have shape (3, H, W), but got {sample.shape}"
-        )
-    _, H, W = sample.shape
+#     # Determine H, W from the first slice
+#     sample = np.load(all_files[0])
+#     if sample.ndim != 3 or sample.shape[0] != 3:
+#         raise RuntimeError(
+#             f"Expected each .npy to have shape (3, H, W), but got {sample.shape}"
+#         )
+#     _, H, W = sample.shape
 
-    Z_full = len(all_files)
-    num_blocks = math.ceil(Z_full / bin_factor)
+#     Z_full = len(all_files)
+#     num_blocks = math.ceil(Z_full / bin_factor)
 
-    # Prepare output directory
-    bin_dir = output_dir / f"bin{bin_factor}"
-    eig_out_dir = bin_dir / "eigen_vec"
-    eig_out_dir.mkdir(parents=True, exist_ok=True)
+#     # Prepare output directory
+#     bin_dir = output_dir / f"bin{bin_factor}"
+#     eig_out_dir = bin_dir / "eigen_vec"
+#     eig_out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Quick skip: if all expected files exist, return immediately
-    all_exist = True
-    for block_idx in range(num_blocks):
-        if not (eig_out_dir / f"eigen_vec_{block_idx:06d}.npy").exists():
-            all_exist = False
-            break
-    if all_exist:
-        return
+#     # Quick skip: if all expected files exist, return immediately
+#     all_exist = True
+#     for block_idx in range(num_blocks):
+#         if not (eig_out_dir / f"eigen_vec_{block_idx:06d}.npy").exists():
+#             all_exist = False
+#             break
+#     if all_exist:
+#         return
 
-    # Build task list: (slice_paths, bin_factor, H, W, eig_out_dir, block_idx)
-    tasks = []
-    for block_idx in range(num_blocks):
-        z_start = block_idx * bin_factor
-        z_end = min(z_start + bin_factor, Z_full)
-        slice_paths = all_files[z_start:z_end]
-        tasks.append((slice_paths, bin_factor, H, W, eig_out_dir, block_idx))
+#     # Build task list: (slice_paths, bin_factor, H, W, eig_out_dir, block_idx)
+#     tasks = []
+#     for block_idx in range(num_blocks):
+#         z_start = block_idx * bin_factor
+#         z_end = min(z_start + bin_factor, Z_full)
+#         slice_paths = all_files[z_start:z_end]
+#         tasks.append((slice_paths, bin_factor, H, W, eig_out_dir, block_idx))
 
-    # Launch multiprocessing pool with a progress bar
-    cpu_count = min(get_available_cpu_count(), len(tasks))
-    if sys.platform.startswith("win"):
-        cpu_count = min(cpu_count, 59)
-    with mp.Pool(processes=cpu_count) as pool:
-        with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
-            results = [
-                pool.apply_async(_process_chunk, args=task, callback=lambda _: bar())
-                for task in tasks
-            ]
-            for r in results:
-                r.wait()
+#     # Launch thread pool with a progress bar
+#     cpu_count = min(get_available_cpu_count(), len(tasks), 32)
+#     with ThreadPool(processes=cpu_count) as pool:
+#         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
+#             results = [
+#                 pool.apply_async(_process_chunk, args=task, callback=lambda _: bar())
+#                 for task in tasks
+#             ]
+#             for r in results:
+#                 r.wait()
 
 
 def process_image_block(
@@ -262,7 +259,7 @@ def process_image_block(
     array = np.full((len(block), h, w), np.nan, dtype=np.float32)
 
     for i, p in enumerate(block):
-        img = cv2.imread(str(p), cv2.IMREAD_UNCHANGED)
+        img = read_image_file(p)
         if img is None or img.size == 0:
             print(f"⚠️ Warning: Failed to read image {p}, filling with NaNs")
             continue
@@ -281,7 +278,7 @@ def process_image_block(
     downsampled_8bit = convert_to_8bit(
         downsampled, min_value=min_value, max_value=max_value
     )
-    cv2.imwrite(str(out_file), downsampled_8bit)
+    write_image(out_file, downsampled_8bit)
     return True
 
 
@@ -350,12 +347,9 @@ def downsample_volume(
         print(f"✔️ All downsampled blocks already exist for '{subfolder}'. Skipping.")
         return
 
-    if sys.platform.startswith("win"):
-        cpu_count = min(get_available_cpu_count(), 59)
-    else:
-        cpu_count = min(get_available_cpu_count(), 32)
+    cpu_count = min(get_available_cpu_count(), 32)
 
-    with mp.Pool(processes=cpu_count) as pool:
+    with ThreadPool(processes=cpu_count) as pool:
         with alive_bar(len(tasks), title=f"Downsampling '{subfolder}' volume") as bar:
             results = [
                 pool.apply_async(
