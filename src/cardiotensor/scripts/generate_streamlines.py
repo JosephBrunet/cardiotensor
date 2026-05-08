@@ -103,7 +103,7 @@ def script() -> None:
     )
 
     print(
-        f"Done. Base angle folder used for discovery: {angle_folder}/ under {output_dir}"
+        f"Done! Streamlines generated and saved to {output_dir}."
     )
 
 
