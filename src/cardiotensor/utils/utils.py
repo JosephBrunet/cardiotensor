@@ -26,11 +26,40 @@ def get_available_cpu_count(default: int = 1) -> int:
 
 def get_gpu_count() -> int:
     """Return the number of visible NVIDIA GPUs, or 0 if none are detected."""
+    def _cupy_gpu_count(max_count: int | None = None) -> int:
+        try:
+            import cupy as cp
+
+            count = int(cp.cuda.runtime.getDeviceCount())
+            if max_count is not None:
+                count = min(count, max_count)
+
+            # Make sure the devices can actually be selected by CuPy.
+            usable = 0
+            for device_id in range(count):
+                try:
+                    cp.cuda.Device(device_id).use()
+                    usable += 1
+                except Exception:
+                    pass
+            return usable
+        except Exception:
+            return 0
+
+    if os.environ.get("SLURM_JOB_ID"):
+        allocated = os.environ.get("SLURM_JOB_GPUS") or os.environ.get(
+            "SLURM_STEP_GPUS"
+        )
+        if not allocated:
+            return 0
+        count = len([x for x in allocated.split(",") if x.strip()])
+        return _cupy_gpu_count(max_count=count)
+
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     if visible:
-        ids = [x for x in visible.split(",") if x.strip().isdigit()]
+        ids = [x for x in visible.split(",") if x.strip()]
         if ids:
-            return len(ids)
+            return _cupy_gpu_count(max_count=len(ids))
 
     try:
         if platform.system() == "Windows":
@@ -47,9 +76,10 @@ def get_gpu_count() -> int:
                 text=True,
                 check=True,
             )
-        return len(
+        count = len(
             [line for line in result.stdout.strip().splitlines() if "GPU" in line]
         )
+        return _cupy_gpu_count(max_count=count)
     except Exception:
         return 0
 
