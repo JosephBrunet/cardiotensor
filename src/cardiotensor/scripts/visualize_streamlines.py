@@ -152,8 +152,8 @@ def script() -> None:
     parser.add_argument(
         "--colormap",
         type=str,
-        default="helix_angle",
-        help="Colormap name. Use 'helix_angle' for cardiac HA or any Matplotlib colormap like viridis, hsv",
+        default=None,
+        help="Colormap name. By default, choose one from --color-by: helix_angle for HA/IA, viridis for EL, hsv for AZ.",
     )
 
     args = parser.parse_args()
@@ -191,15 +191,18 @@ def script() -> None:
         )
         sys.exit(2)
 
-    # Choose colormap
-    if args.colormap.lower() == "helix_angle":
-        chosen_cmap = helix_angle_cmap
-    else:
-        try:
-            chosen_cmap = plt.get_cmap(args.colormap)
-        except ValueError:
-            print(f"Unknown colormap '{args.colormap}', falling back to helix_angle")
+    # Choose colormap only when explicitly requested; otherwise the visualizer
+    # picks the default based on color_by.
+    chosen_cmap = None
+    if args.colormap is not None:
+        if args.colormap.lower() == "helix_angle":
             chosen_cmap = helix_angle_cmap
+        else:
+            try:
+                chosen_cmap = plt.get_cmap(args.colormap)
+            except ValueError:
+                print(f"Unknown colormap '{args.colormap}', falling back to helix_angle")
+                chosen_cmap = helix_angle_cmap
 
     # Crop bounds
     crop_bounds = None
