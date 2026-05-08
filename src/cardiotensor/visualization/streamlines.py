@@ -8,46 +8,12 @@ from cardiotensor.utils.streamlines_io_utils import load_trk_streamlines
 from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
 
 
-def _normalize_attrs_to_degrees(
-    attrs: dict[str, list[np.ndarray]],
-) -> dict[str, list[np.ndarray]]:
-    """
-    Normalize known angle fields to degrees.
-
-    Rules
-    - HA, IA, EL: if values look like 0..255, map to -90..90 via (v/255)*180 - 90
-                  else keep as float32
-    - AZ:  if values look like 0..255, map to 0..360 via (v/255)*360
-           else keep as float32
-    Other fields are passed through unchanged.
-    """
-    out: dict[str, list[np.ndarray]] = {}
-    for name, seq in attrs.items():
-        key = name.upper()
-        norm_list: list[np.ndarray] = []
-        for arr in seq:
-            a = np.asarray(arr)
-            if a.size == 0:
-                norm_list.append(a.astype(np.float32))
-                continue
-
-            mx = float(np.nanmax(a))
-            if key in {"HA", "IA", "EL"}:
-                if mx > 1.5:  # looks like byte scale
-                    a = (a.astype(np.float32) / 255.0) * 180.0 - 90.0
-                else:
-                    a = a.astype(np.float32)
-            elif key == "AZ":
-                if mx > 6.0:  # likely 0..255
-                    a = (a.astype(np.float32) / 255.0) * 360.0
-                else:
-                    a = a.astype(np.float32)
-            else:
-                a = a.astype(np.float32)
-
-            norm_list.append(a)
-        out[key] = norm_list
-    return out
+ANGLE_RANGES = {
+    "HA": (-90.0, 90.0),
+    "IA": (-90.0, 90.0),
+    "AZ": (-180.0, 180.0),
+    "EL": (0.0, 90.0),
+}
 
 
 def _compute_az_el_from_streamlines(
@@ -56,7 +22,7 @@ def _compute_az_el_from_streamlines(
     """
     Derive per-vertex azimuth and elevation from streamline tangents.
     - elevation = arcsin(ẑ) in degrees
-    - azimuth   = atan2(ŷ, x̂) in degrees mapped to [0, 360)
+    - azimuth   = atan2(ŷ, x̂) in degrees
     The last vertex repeats the previous angle to keep lengths aligned.
     """
     az_list: list[np.ndarray] = []
@@ -75,7 +41,6 @@ def _compute_az_el_from_streamlines(
 
         el = np.degrees(np.arcsin(np.clip(unit[:, 2], -1.0, 1.0)))
         az = np.degrees(np.arctan2(unit[:, 1], unit[:, 0]))
-        az = np.mod(az, 360.0)
 
         # repeat last value to match vertex count
         el = np.concatenate([el, [el[-1]]]).astype(np.float32)
@@ -115,12 +80,13 @@ def visualize_streamlines(
     streamlines_xyz, attrs = load_trk_streamlines(
         p
     )  # attrs is dict[str, List[np.ndarray]]
-
-    # Normalize known attributes to degrees
-    attrs_deg: dict[str, list[np.ndarray]] = _normalize_attrs_to_degrees(attrs)
+    attrs = {
+        name.upper(): [np.asarray(arr, dtype=np.float32) for arr in seq]
+        for name, seq in attrs.items()
+    }
 
     # ---- Inform the user of available angle fields ----
-    available = list(attrs_deg.keys())
+    available = list(attrs.keys())
 
     # Also say that AZ and EL can be computed even if missing
     print(
@@ -135,26 +101,38 @@ def visualize_streamlines(
     # Decide the color scalar
     mode = color_by.lower().strip()
     color_values: list[np.ndarray] | None = None
+    color_range: tuple[float, float] | None = None
+    color_label = "Angle (deg)"
 
     if mode in {"ha", "ia", "az", "el"}:
         key = mode.upper()
-        if key in attrs_deg:
-            color_values = attrs_deg[key]
+        color_range = ANGLE_RANGES[key]
+        color_label = f"{key} (deg)"
+        if key in attrs:
+            color_values = attrs[key]
         else:
             if key in {"AZ", "EL"}:
                 az_list, el_list = _compute_az_el_from_streamlines(streamlines_xyz)
-                color_values = az_list if key == "AZ" else el_list
+                color_values = (
+                    az_list
+                    if key == "AZ"
+                    else [np.abs(el).astype(np.float32) for el in el_list]
+                )
             else:
                 raise ValueError(f"No per-point attribute '{key}' found in .trk")
     elif mode in {"elevation", "azimuth"}:
         az_list, el_list = _compute_az_el_from_streamlines(streamlines_xyz)
         color_values = el_list if mode == "elevation" else az_list
+        color_range = (-90.0, 90.0) if mode == "elevation" else ANGLE_RANGES["AZ"]
+        color_label = "Elevation (deg)" if mode == "elevation" else "Azimuth (deg)"
     else:
         raise ValueError("color_by must be one of: ha, ia, az, el, elevation, azimuth")
 
     # Default colormap selection
     if colormap is None:
-        if mode in {"ha", "ia", "el", "elevation"}:
+        if mode == "el":
+            colormap = cm.viridis
+        elif mode in {"ha", "ia", "elevation"}:
             colormap = helix_angle_cmap
         else:
             colormap = cm.hsv
@@ -175,4 +153,6 @@ def visualize_streamlines(
         crop_bounds=crop_bounds,
         colormap=colormap,
         spline_subdiv=spline_subdiv,
+        color_range=color_range,
+        color_label=color_label,
     )
