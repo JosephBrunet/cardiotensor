@@ -22,7 +22,7 @@ def visualize_vector_field(
     vector_field_path: str | Path,
     color_volume_path: str | Path | None = None,
     mask_path: str | Path | None = None,
-    stride: int = 10,
+    downsample: int = 10,
     bin_factor: int = 1,
     size: float = 1.0,
     radius: float = 0.5,
@@ -54,9 +54,9 @@ def visualize_vector_field(
     mask_path : str or Path, optional
         Path to a binary mask volume. Vectors outside the mask are set to NaN
         and ignored in visualization.
-    stride : int, optional
-        Step size for downsampling the vectors in each dimension for
-        visualization. Default is 10.
+    downsample : int, optional
+        Display one vector every `downsample` voxels in each dimension.
+        Default is 10.
     bin_factor : int, optional
         Spatial downsampling factor applied before visualization. Useful for
         large volumes. Default is 1 (no binning).
@@ -131,9 +131,10 @@ def visualize_vector_field(
         start_index=start_binned, end_index=end_binned
     )
 
-    # Ensure Z-component orientation
-    print("🔄 Aligning vector orientations...")
-    neg_mask = vector_field[0] > 0
+    # Eigenvectors are axes, so v and -v are equivalent. Pick one half-space
+    # for display; component order is (x, y, z), so index 2 is Z.
+    print("🔄 Aligning vector orientations to +Z...")
+    neg_mask = vector_field[2] < 0
     vector_field[:, neg_mask] *= -1
     del neg_mask
 
@@ -192,7 +193,7 @@ def visualize_vector_field(
         vector_field,
         size=size,
         radius=radius,
-        stride=stride,
+        downsample=downsample,
         color_volume=color_volume,
         voxel_size=voxel_size * bin_factor,
         mode=mode,
@@ -208,6 +209,6 @@ def visualize_vector_field(
             vector_field=vector_field,
             color_volume=color_volume,
             voxel_size=voxel_size * bin_factor,
-            stride=stride,
+            downsample=downsample,
             save_path=vtk_path,
         )
