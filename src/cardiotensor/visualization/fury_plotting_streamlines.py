@@ -31,7 +31,7 @@ def parse_background_color(color) -> tuple[float, float, float]:
                 f"Unknown background color '{color}'. Available: {list(NAMED.keys())}"
             )
         return NAMED[key]
-    elif isinstance(color, (tuple, list)) and len(color) == 3:
+    elif isinstance(color, tuple | list) and len(color) == 3:
         return tuple(float(c) for c in color)
     else:
         raise TypeError("background_color must be str or 3-tuple")

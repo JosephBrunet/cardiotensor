@@ -201,7 +201,9 @@ def script() -> None:
             try:
                 chosen_cmap = plt.get_cmap(args.colormap)
             except ValueError:
-                print(f"Unknown colormap '{args.colormap}', falling back to helix_angle")
+                print(
+                    f"Unknown colormap '{args.colormap}', falling back to helix_angle"
+                )
                 chosen_cmap = helix_angle_cmap
 
     # Crop bounds

@@ -26,6 +26,7 @@ def get_available_cpu_count(default: int = 1) -> int:
 
 def get_gpu_count() -> int:
     """Return the number of visible NVIDIA GPUs, or 0 if none are detected."""
+
     def _cupy_gpu_count(max_count: int | None = None) -> int:
         try:
             import cupy as cp
@@ -205,6 +206,7 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
 def remove_corrupted_files(file_paths, size_threshold=200):
     import warnings
+
     for file_path in file_paths:
         if os.path.exists(file_path) and os.path.getsize(file_path) < size_threshold:
             warnings.warn(

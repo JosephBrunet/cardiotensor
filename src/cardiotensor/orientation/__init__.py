@@ -8,7 +8,9 @@ from cardiotensor.orientation.orientation_computation_functions import (
     orient_vectors_z_positive,
     rotate_vectors_to_new_axis,
 )
-from cardiotensor.orientation.orientation_computation_pipeline import compute_orientation
+from cardiotensor.orientation.orientation_computation_pipeline import (
+    compute_orientation,
+)
 
 __all__ = [
     "calculate_structure_tensor",

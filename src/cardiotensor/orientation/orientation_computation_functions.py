@@ -8,9 +8,12 @@ from structure_tensor.multiprocessing import parallel_structure_tensor_analysis
 from tqdm import tqdm
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
-from cardiotensor.utils.image_io import write_jp2, write_tif, write_vector_field
-from cardiotensor.utils.utils import convert_to_8bit
-from cardiotensor.utils.utils import get_available_cpu_count, get_gpu_count
+from cardiotensor.utils.image_io import write_jp2, write_tif
+from cardiotensor.utils.utils import (
+    convert_to_8bit,
+    get_available_cpu_count,
+    get_gpu_count,
+)
 
 
 def interpolate_points(
@@ -128,6 +131,7 @@ def adjust_start_end_index(
 
     return start_index_padded, end_index_padded
 
+
 def calculate_structure_tensor(
     volume: np.ndarray,
     sigma: float,
@@ -218,8 +222,7 @@ def calculate_structure_tensor(
             raise
 
         print(
-            "⚠️ GPU structure tensor computation failed. "
-            f"Retrying on CPU. Reason: {e}"
+            f"⚠️ GPU structure tensor computation failed. Retrying on CPU. Reason: {e}"
         )
         devices = ["cpu"] * num_cpus
         S, val, vec = run_structure_tensor(devices)
@@ -321,8 +324,7 @@ def rotate_vectors_to_new_axis(
         rotation_matrix = (
             np.eye(3, dtype=np.float64)
             + skew_matrix
-            + np.dot(skew_matrix, skew_matrix)
-            * ((1.0 - cos_angle) / (axis_length**2))
+            + np.dot(skew_matrix, skew_matrix) * ((1.0 - cos_angle) / (axis_length**2))
         )
 
     # Flatten the vector field to shape (3, N)
@@ -340,7 +342,6 @@ def rotate_vectors_to_new_axis(
     rotated_vecs = rotated_vecs.reshape(vector_field_slice.shape)
 
     return rotated_vecs
-
 
 
 def orient_vectors_y_positive(vector_field_slice: np.ndarray) -> np.ndarray:

@@ -102,9 +102,7 @@ def script() -> None:
         angle_mode=angle_mode,
     )
 
-    print(
-        f"Done! Streamlines generated and saved to {output_dir}."
-    )
+    print(f"Done! Streamlines generated and saved to {output_dir}.")
 
 
 if __name__ == "__main__":

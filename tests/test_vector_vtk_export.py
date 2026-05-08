@@ -105,7 +105,7 @@ def test_export_vector_field_to_vtk_basic(tmp_path: Path):
     color = np.random.rand(4, 4, 4).astype(np.float32)
     out = tmp_path / "paraview.vtk"
     result = export_vector_field_to_vtk(
-        vf, color, voxel_size=1.0, stride=2, save_path=out
+        vf, color, voxel_size=1.0, downsample=2, save_path=out
     )
     assert result == out
     assert out.exists()
@@ -120,7 +120,7 @@ def test_export_vector_field_default_path(tmp_path: Path):
         os.chdir(tmp_path)
         vf = np.ones((4, 4, 4, 3), dtype=np.float32)
         color = np.ones((4, 4, 4), dtype=np.float32)
-        result = export_vector_field_to_vtk(vf, color, voxel_size=1.0, stride=2)
+        result = export_vector_field_to_vtk(vf, color, voxel_size=1.0, downsample=2)
         assert result.name == "paraview.vtk"
     finally:
         os.chdir(old_cwd)
@@ -138,6 +138,6 @@ def test_export_negative_z_flipped(tmp_path: Path):
     vf[..., 2] = -1.0  # all Z negative
     color = np.zeros((4, 4, 4), dtype=np.float32)
     out = tmp_path / "out.vtk"
-    export_vector_field_to_vtk(vf, color, voxel_size=1.0, stride=1, save_path=out)
+    export_vector_field_to_vtk(vf, color, voxel_size=1.0, downsample=1, save_path=out)
     # After export the file should exist (flip happened in-place but no crash)
     assert out.exists()

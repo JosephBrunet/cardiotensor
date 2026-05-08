@@ -1,6 +1,5 @@
 import math
 import os
-import sys
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
@@ -213,7 +212,9 @@ def downsample_volume(
     if sample.ndim == 3 and sample.shape[2] == 1:
         sample = sample[:, :, 0]
     if sample.ndim != 2:
-        raise ValueError(f"Expected 2D image slices for downsampling, got {sample.shape}")
+        raise ValueError(
+            f"Expected 2D image slices for downsampling, got {sample.shape}"
+        )
     H, W = sample.shape
 
     tasks = []

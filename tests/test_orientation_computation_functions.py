@@ -14,8 +14,8 @@ from cardiotensor.orientation.orientation_computation_functions import (
     plot_images,
     rotate_vectors_to_new_axis,
     write_images,
-    write_vector_field,
 )
+from cardiotensor.utils.image_io import write_vector_field
 
 
 def test_interpolate_points_linear():
@@ -95,7 +95,7 @@ def test_vector_rotation_and_angles():
 
     # --- Test 1: Rotate to the same axis (Z-axis) ---
     rotated_same = rotate_vectors_to_new_axis(
-        vector_slice, np.array([1, 0, 0], dtype=np.float32)
+        vector_slice, np.array([0, 0, 1], dtype=np.float32)
     )
     assert isinstance(rotated_same, np.ndarray)
     assert rotated_same.shape == vector_slice.shape
@@ -203,6 +203,7 @@ def test_plot_images_with_vector_overlay(tmp_path: Path):
         save_path=str(out_path),
         show=False,
         quiver_step=2,
+        angle_ranges=((-90.0, 90.0), (-90.0, 90.0)),
     )
 
     assert out_path.is_file(), "Diagnostic test-slice figure was not created"

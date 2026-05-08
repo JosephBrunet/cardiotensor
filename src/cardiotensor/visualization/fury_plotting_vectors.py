@@ -87,9 +87,7 @@ def plot_vector_field_fury(
     # Colors
     scalar_lut = None
     if color_volume is not None:
-        color_sub = color_volume[
-            0:Z:downsample, 0:Y:downsample, 0:X:downsample
-        ]
+        color_sub = color_volume[0:Z:downsample, 0:Y:downsample, 0:X:downsample]
         color_flat = color_sub.reshape(-1)
         color_values = color_flat[valid_mask]
 

@@ -7,7 +7,6 @@ from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.streamlines_io_utils import load_trk_streamlines
 from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
 
-
 ANGLE_RANGES = {
     "HA": (-90.0, 90.0),
     "IA": (-90.0, 90.0),

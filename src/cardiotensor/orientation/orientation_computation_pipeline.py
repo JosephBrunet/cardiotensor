@@ -24,9 +24,9 @@ from cardiotensor.orientation.orientation_computation_functions import (
     remove_padding,
     rotate_vectors_to_new_axis,
     write_images,
-    write_vector_field,
 )
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.image_io import write_vector_field
 from cardiotensor.utils.utils import get_available_cpu_count, remove_corrupted_files
 
 
@@ -135,9 +135,6 @@ def check_already_processed(
 
     print(f"Checking already processed files: all expected files exist in {output_dir}")
     return True
-
-
-
 
 
 # --- main API ---
@@ -349,7 +346,6 @@ Parameters:
     center_line = center_line[start_index_padded:end_index_padded]
 
     vec = vec / np.linalg.norm(vec, axis=0)
-
 
     t2 = time.perf_counter()  # stop time
     print(f"finished calculating structure tensors in {t2 - t1} seconds")
