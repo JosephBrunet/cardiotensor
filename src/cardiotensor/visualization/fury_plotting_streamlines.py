@@ -122,12 +122,15 @@ class StreamlineViewer:
         lut,
         background_color="black",
         spline_subdiv=16,
+        color_range: tuple[float, float] | None = None,
+        color_label: str = "Angle",
     ):
         self.streamlines_xyz = streamlines_xyz
         self.color_values = color_values
         self.mode = mode
         self.window_size = window_size
         self.lut = lut
+        self.color_label = color_label
 
         # Scene
         self.scene = fury.window.Scene()
@@ -158,8 +161,11 @@ class StreamlineViewer:
         self.flat_vals = np.concatenate(
             [np.asarray(c).ravel() for c in self.color_values]
         ).astype(np.float32)
-        self.vmin = float(np.nanmin(self.flat_vals))
-        self.vmax = float(np.nanmax(self.flat_vals))
+        if color_range is None:
+            self.vmin = float(np.nanmin(self.flat_vals))
+            self.vmax = float(np.nanmax(self.flat_vals))
+        else:
+            self.vmin, self.vmax = (float(color_range[0]), float(color_range[1]))
         self.lut.SetRange(self.vmin, self.vmax)
 
         # bounds and center from NumPy
@@ -272,7 +278,7 @@ class StreamlineViewer:
 
     def _add_scalar_bar(self):
         self.scene.add(
-            fury.actor.scalar_bar(lookup_table=self.lut, title="Angle (deg)")
+            fury.actor.scalar_bar(lookup_table=self.lut, title=self.color_label)
         )
 
     def _render_now(self):
@@ -573,6 +579,8 @@ def show_streamlines(
     colormap=None,
     background_color: str | tuple[float, float, float] = "black",
     spline_subdiv: int = 16,
+    color_range: tuple[float, float] | None = None,
+    color_label: str = "Angle (deg)",
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
     full_mins, full_maxs = _compute_streamline_bounds(streamlines_xyz)
@@ -655,19 +663,24 @@ def show_streamlines(
     min_val = float(np.nanmin(flat_colors))
     max_val = float(np.nanmax(flat_colors))
     print(f"Coloring range: min={min_val:.3f}, max={max_val:.3f}")
+    if color_range is None:
+        lut_range = (min_val, max_val)
+    else:
+        lut_range = (float(color_range[0]), float(color_range[1]))
+        print(f"Colorbar range: min={lut_range[0]:.3f}, max={lut_range[1]:.3f}")
     print(f"Rendering mode: {mode}")
 
     if colormap is None:
         lut = fury.actor.colormap_lookup_table(
-            scale_range=(min_val, max_val),
+            scale_range=lut_range,
             hue_range=(0.7, 0.0),
             saturation_range=(0.5, 1.0),
         )
     else:
         lut = matplotlib_cmap_to_fury_lut(
-            cmap=colormap, value_range=(min_val, max_val), n_colors=256
+            cmap=colormap, value_range=lut_range, n_colors=256
         )
-    lut.SetRange(min_val, max_val)
+    lut.SetRange(*lut_range)
 
     viewer = StreamlineViewer(
         streamlines_xyz,
@@ -678,6 +691,8 @@ def show_streamlines(
         lut,
         background_color=background_color,
         spline_subdiv=spline_subdiv,
+        color_range=lut_range,
+        color_label=color_label,
     )
     viewer.run(interactive=interactive, screenshot_path=screenshot_path)
 
