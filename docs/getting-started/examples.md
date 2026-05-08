@@ -113,17 +113,18 @@ Once the structure tensor and eigenvectors have been calculated on the whole vol
 
 1. Use the `cardio-visualize-vector` command:
     ```console
-    $ cardio-visualize-vector parameters_example.conf --start 120 --stride 6
+    $ cardio-visualize-vector parameters_example.conf --start 120 --downsample 6
     ```
 
     - `--start`
     : Show vectors only from slice 120 to the last slice.
 
-    - `--stride 6`
+    - `--downsample 6`
     : Show only 1 vector out of every 6.
 
 
-2. The plot will appear and you will be able to rotate it by dragging left click
+2. The plot will appear and you will be able to rotate it by dragging left click.
+   Press `+` to increase vector size and `-` to decrease vector size.
 
     <figure markdown="span">
     ![Vector visualization](../assets/images/vectors_example.png){ width="70%" }
@@ -169,4 +170,3 @@ Once the structure tensor and eigenvectors have been calculated on the whole vol
 
 - The provided dataset is for demonstration purposes only.
 - Modify parameters in `parameters_example.conf` (e.g., `SIGMA`, `RHO`) to suit your data.
-
