@@ -196,19 +196,33 @@ def calculate_structure_tensor(
                 self.total = total
             return self.update(1)
 
-    with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
-        S, val, vec = parallel_structure_tensor_analysis(
-            volume,
-            sigma,
-            rho,
-            devices=devices,
-            block_size=block_size,
-            truncate=truncate,
-            structure_tensor=None,
-            eigenvectors=dtype,
-            eigenvalues=dtype,
-            progress_callback_fn=t.update_with_total,
+    def run_structure_tensor(selected_devices: list[str]):
+        with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
+            return parallel_structure_tensor_analysis(
+                volume,
+                sigma,
+                rho,
+                devices=selected_devices,
+                block_size=block_size,
+                truncate=truncate,
+                structure_tensor=None,
+                eigenvectors=dtype,
+                eigenvalues=dtype,
+                progress_callback_fn=t.update_with_total,
+            )
+
+    try:
+        S, val, vec = run_structure_tensor(devices)
+    except Exception as e:
+        if not any(str(device).startswith("cuda") for device in devices):
+            raise
+
+        print(
+            "⚠️ GPU structure tensor computation failed. "
+            f"Retrying on CPU. Reason: {e}"
         )
+        devices = ["cpu"] * num_cpus
+        S, val, vec = run_structure_tensor(devices)
 
     print("Structure tensor computation completed\n")
 
