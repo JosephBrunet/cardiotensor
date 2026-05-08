@@ -47,17 +47,21 @@ def read_image_file(file_path: str | Path) -> np.ndarray:
 
 def write_atomic(out_path: str | Path, writer: Callable[[str], None]) -> None:
     """Write to a temporary file first, then replace the final output."""
-    out_path = str(out_path)
-    tmp_path = f"{out_path}.tmp"
-    if os.path.exists(tmp_path):
-        os.remove(tmp_path)
+    out_path = Path(out_path)
+    if out_path.suffix:
+        tmp_path = out_path.with_name(f"{out_path.stem}.tmp{out_path.suffix}")
+    else:
+        tmp_path = out_path.with_name(f"{out_path.name}.tmp")
+
+    if tmp_path.exists():
+        tmp_path.unlink()
 
     try:
-        writer(tmp_path)
+        writer(str(tmp_path))
         os.replace(tmp_path, out_path)
     finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 
 def write_jp2(out_path: str | Path, data: np.ndarray) -> None:
