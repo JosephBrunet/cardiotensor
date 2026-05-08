@@ -1,10 +1,10 @@
 import math
-import multiprocessing as mp
 import os
 import sys
 import time
 import warnings
 from collections.abc import Sequence
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from alive_progress import alive_bar
@@ -135,6 +135,9 @@ def check_already_processed(
 
     print(f"Checking already processed files: all expected files exist in {output_dir}")
     return True
+
+
+
 
 
 # --- main API ---
@@ -345,13 +348,8 @@ Parameters:
 
     center_line = center_line[start_index_padded:end_index_padded]
 
-    # Putting all the vectors in positive direction
-    # posdef = np.all(val >= 0, axis=0)  # Check if all elements are non-negative along the first axis
     vec = vec / np.linalg.norm(vec, axis=0)
 
-    # Check for negative z component and flip if necessary
-    # negative_z = vec[2, :] < 0
-    # vec[:, negative_z] *= -1
 
     t2 = time.perf_counter()  # stop time
     print(f"finished calculating structure tensors in {t2 - t1} seconds")
@@ -363,17 +361,17 @@ Parameters:
     if not is_test:
         num_slices = vec.shape[1]
         available_cpus = get_available_cpu_count()
-        num_procs = min(available_cpus, 32)  # Avoid too many processes even on large CPU counts
+        num_workers = min(available_cpus, 32)  # Avoid too many concurrent writers
 
-        print(f"Using {num_procs} CPU cores")
+        print(f"Using {num_workers} threads")
 
         def update_bar(_):
             """Callback to tick the progress bar after each finished task."""
             bar()
 
-        with mp.Pool(processes=num_procs) as pool:
+        with ThreadPool(processes=num_workers) as pool:
             with alive_bar(
-                num_slices, title="Processing slices (Multiprocess)", bar="smooth"
+                num_slices, title="Processing slices (ThreadPool)", bar="smooth"
             ) as bar:
                 results = []
                 for z in range(num_slices):
@@ -404,8 +402,22 @@ Parameters:
                     results.append(result)
 
                 # Ensure all tasks complete before leaving the pool context
+                total_compute_time = 0.0
+                total_write_time = 0.0
+                skipped_slices = 0
                 for r in results:
-                    r.wait()
+                    compute_time, write_time, skipped = r.get()
+                    total_compute_time += compute_time
+                    total_write_time += write_time
+                    skipped_slices += int(skipped)
+
+        processed_slices = num_slices - skipped_slices
+        print(
+            "Angle/FA timing: "
+            f"compute={total_compute_time:.2f}s, "
+            f"write={total_write_time:.2f}s, "
+            f"processed={processed_slices}, skipped={skipped_slices}"
+        )
     else:
         if vec.shape[1] != 1:
             raise ValueError(
@@ -462,7 +474,7 @@ def compute_slice_angles_and_anisotropy(
     colormap: str | None = None,
     colormap_angle1: str | None = None,
     colormap_angle2: str | None = None,
-) -> None:
+) -> tuple[float, float, bool]:
     """
     Compute either HA/IA or Azimuth/Elevation plus FA for a single slice,
     then plot and/or write outputs depending on flags.
@@ -516,7 +528,9 @@ def compute_slice_angles_and_anisotropy(
         and expected_paths
         and all(os.path.exists(p) for p in expected_paths)
     ):
-        return
+        return 0.0, 0.0, True
+
+    compute_t0 = time.perf_counter()
 
     # Build a small window around the slice index to estimate the local axis direction
     buffer = 5
@@ -544,6 +558,9 @@ def compute_slice_angles_and_anisotropy(
             img_angle1, img_angle2 = compute_azimuth_and_elevation(
                 vector_field_slice_rotated
             )
+
+    compute_time = time.perf_counter() - compute_t0
+    write_t0 = time.perf_counter()
 
     # Test mode: visualize a 2x2 figure and write to test subfolder
     if is_test:
@@ -582,7 +599,7 @@ def compute_slice_angles_and_anisotropy(
             angle_names=angle_names,
             angle_ranges=angle_ranges,
         )
-        return
+        return compute_time, time.perf_counter() - write_t0, False
 
     # Persist outputs
     if write_angles:
@@ -602,3 +619,5 @@ def compute_slice_angles_and_anisotropy(
         )
     if write_vectors:
         write_vector_field(vector_field_slice, start_index, output_dir, z)
+
+    return compute_time, time.perf_counter() - write_t0, False
