@@ -36,6 +36,7 @@ dependencies = [
     "opencv-python-headless",
     "pandas",
     "psutil",
+    "pyvista",
     "scikit-image",
     "structure-tensor>=0.3.0",
     "tifffile",
@@ -77,6 +78,7 @@ git = [
 cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
 cardio-analysis-histo = "cardiotensor.scripts.analysis_histograms:script"
 cardio-analysis-streamlines = "cardiotensor.scripts.analysis_streamlines:script"
+cardio-create-movie = "cardiotensor.scripts.create_movie:script"
 cardio-generate-streamlines = "cardiotensor.scripts.generate_streamlines:script"
 cardio-tensor = "cardiotensor.scripts.compute_orientation:script"
 cardio-tensor-slurm = "cardiotensor.scripts.slurm_launcher:script"

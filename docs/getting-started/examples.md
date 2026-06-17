@@ -73,7 +73,7 @@ The `./examples/` directory contains:
 3. Outputs will be saved in the `./output` directory with the following structure:
     ```
     ./output
-    ├── HA          # Helix angle results
+    ├── HA          # Helical angle results
     ├── IA          # Intrusion angle results
     ├── FA          # Fractional anisotropy results
     └── eigen_vec   # 3rd Eigenvectors

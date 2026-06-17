@@ -81,7 +81,7 @@ def script() -> None:
         "--line-width",
         type=float,
         default=4.0,
-        help="Tube width",
+        help="Tube radius in tube mode, or screen line width in line mode",
     )
     parser.add_argument(
         "--subsample",
@@ -131,7 +131,7 @@ def script() -> None:
     parser.add_argument(
         "--no-interactive",
         action="store_true",
-        help="Disable interactive window, useful when only saving a screenshot",
+        help="Disable interactive window, useful when only saving a screenshot or video",
     )
     parser.add_argument(
         "--screenshot",
@@ -140,10 +140,32 @@ def script() -> None:
         help="Path to save a PNG screenshot, no file is saved if omitted",
     )
     parser.add_argument(
+        "--video",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Path for an orbit video (e.g. orbit.mp4 or orbit.gif). "
+            "Implies --no-interactive. FURY MP4 uses OpenCV; PyVista MP4 may require imageio-ffmpeg."
+        ),
+    )
+    parser.add_argument(
+        "--video-fps",
+        type=int,
+        default=30,
+        help="Frames per second for the orbit video (default: 30)",
+    )
+    parser.add_argument(
+        "--video-frames",
+        type=int,
+        default=120,
+        help="Total number of frames in the orbit video (default: 120 = 4 s at 30 fps)",
+    )
+    parser.add_argument(
         "--spline-subdiv",
         type=int,
-        default=16,
-        help="Spline subdivisions for tube rendering (higher = smoother, heavier)",
+        default=2,
+        help="Spline/display subdivisions for smoother streamlines (higher = smoother, heavier)",
     )
     parser.add_argument("--width", type=int, default=800, help="Window width in pixels")
     parser.add_argument(
@@ -155,6 +177,61 @@ def script() -> None:
         default=None,
         help="Colormap name. By default, choose one from --color-by: helix_angle for HA/IA, viridis for EL, hsv for AZ.",
     )
+    parser.add_argument(
+        "--backend",
+        choices=("fury", "pyvista"),
+        default="fury",
+        help="Rendering backend",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("tube", "line"),
+        default="tube",
+        help="Render explicit tube geometry or faster line geometry",
+    )
+    parser.add_argument(
+        "--background-color",
+        type=str,
+        default=None,
+        help="Renderer background color. Default: white for PyVista, black for FURY",
+    )
+    parser.add_argument(
+        "--tube-sides",
+        type=int,
+        default=9,
+        help="Number of sides for tube geometry",
+    )
+    parser.add_argument(
+        "--opacity",
+        type=float,
+        default=1.0,
+        help="Streamline opacity for the PyVista backend",
+    )
+    parser.add_argument(
+        "--shadows",
+        action="store_true",
+        help="Enable PyVista shadow rendering at startup",
+    )
+    parser.add_argument(
+        "--no-shadows",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--hide-axes",
+        action="store_true",
+        help="Hide the PyVista orientation axes",
+    )
+    parser.add_argument(
+        "--show-bounds",
+        action="store_true",
+        help="Show the PyVista bounds grid at startup",
+    )
+    parser.add_argument(
+        "--hide-bounds",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
 
     args = parser.parse_args()
 
@@ -163,7 +240,8 @@ def script() -> None:
 
     # List available color-by and exit if requested
     available_dpp = _discover_trk_color_fields(trk_path)
-    available = ["elevation"] + available_dpp
+    computed_color_options = ["elevation", "azimuth", "az", "el"]
+    available = computed_color_options + available_dpp
     if args.list_color_by:
         print("Available color-by options:")
         for k in available:
@@ -185,11 +263,13 @@ def script() -> None:
         print(f"Auto color-by resolved to: {color_by}")
 
     # Validate choice
-    if color_by != "elevation" and color_by not in dpp_lower:
+    if color_by not in computed_color_options and color_by not in dpp_lower:
         print(
             f"Requested color-by '{args.color_by}' not found. Available: {', '.join(available)}"
         )
         sys.exit(2)
+
+    selected_color_by = dpp_lower[color_by] if color_by in dpp_lower else color_by
 
     # Choose colormap only when explicitly requested; otherwise the visualizer
     # picks the default based on color_by.
@@ -215,24 +295,35 @@ def script() -> None:
             tuple(args.crop_z or [-float("inf"), float("inf")]),
         )
 
+    # --video implies off-screen
+    is_interactive = not args.no_interactive and not args.video
+
     # Call the visualizer
-    # Always render as tubes as requested earlier
     visualize_streamlines(
         streamlines_file=trk_path,
-        color_by=(
-            color_by if color_by == "elevation" else dpp_lower[color_by]
-        ),  # pass original key if stored
+        color_by=selected_color_by,
         line_width=args.line_width,
         subsample_factor=args.subsample,
         filter_min_len=args.min_length,
         downsample_factor=args.downsample_factor,
         max_streamlines=args.max_streamlines,
         crop_bounds=crop_bounds,
-        interactive=not args.no_interactive,
+        interactive=is_interactive,
         screenshot_path=args.screenshot,
+        video_path=args.video,
+        video_fps=args.video_fps,
+        video_frames=args.video_frames,
         window_size=(args.width, args.height),
         colormap=chosen_cmap,
         spline_subdiv=args.spline_subdiv,
+        backend=args.backend,
+        mode=args.mode,
+        background_color=args.background_color,
+        tube_sides=args.tube_sides,
+        pyvista_opacity=args.opacity,
+        pyvista_show_axes=not args.hide_axes,
+        pyvista_show_bounds=args.show_bounds and not args.hide_bounds,
+        pyvista_shadows=args.shadows and not args.no_shadows,
     )
 
 

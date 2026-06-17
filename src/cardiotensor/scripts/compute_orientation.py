@@ -67,6 +67,11 @@ def script() -> None:
         default=None,
         help="Colormap for the second angle output, for example IA or EL.",
     )
+    parser.add_argument(
+        "--projected",
+        action="store_true",
+        help="In ha_ia mode, write legacy projected HA/IA maps instead of 3D HA/IA.",
+    )
 
     args = parser.parse_args()
     conf_file_path = args.conf_file_path
@@ -77,6 +82,7 @@ def script() -> None:
     colormap = args.colormap
     colormap_angle1 = args.colormap_angle1
     colormap_angle2 = args.colormap_angle2
+    projected = args.projected
 
     # --- Read configuration ---
     try:
@@ -106,6 +112,7 @@ def script() -> None:
     is_test = force_test or params.get("TEST", False)
     n_slice_test = params.get("N_SLICE_TEST", None)
     show_quiver = params.get("SHOW_QUIVER", True)
+    projected = projected or params.get("PROJECTED_ANGLES", False)
     n_chunk = params.get("N_CHUNK", 100)
     colormap = colormap or params.get("COLORMAP", None)
     colormap_angle1 = colormap_angle1 or params.get("COLORMAP_ANGLE1", None)
@@ -152,6 +159,7 @@ def script() -> None:
             colormap=colormap,
             colormap_angle1=colormap_angle1,
             colormap_angle2=colormap_angle2,
+            projected=projected,
         )
         print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
         return
@@ -199,6 +207,7 @@ def script() -> None:
             colormap=colormap,
             colormap_angle1=colormap_angle1,
             colormap_angle2=colormap_angle2,
+            projected=projected,
         )
 
         elapsed = time.time() - t0

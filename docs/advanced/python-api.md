@@ -55,12 +55,12 @@ print(fa.shape)   # (Y, X), values in [0, 1]
 
 ---
 
-## Helix and Transverse Angles
+## Helical and Intrusion Angles
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from cardiotensor import compute_helix_and_transverse_angles
+from cardiotensor import compute_helical_and_intrusion_angles
 from cardiotensor.orientation import rotate_vectors_to_new_axis
 
 # Use one slice of the eigenvector field computed above
@@ -76,17 +76,17 @@ center_point = (
     z_index,
 )
 
-helix_angle, intrusion_angle = compute_helix_and_transverse_angles(
+helical_angle, intrusion_angle = compute_helical_and_intrusion_angles(
     rotated_vectors,
     center_point,
 )
 # Both arrays shape: (Y, X), values in degrees
-# The second output corresponds to the transverse/intrusion companion angle map
+# The second output corresponds to the intrusion angle map
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
 
-im0 = axes[0].imshow(helix_angle, cmap="viridis", vmin=-90, vmax=90)
-axes[0].set_title("Helix angle")
+im0 = axes[0].imshow(helical_angle, cmap="viridis", vmin=-90, vmax=90)
+axes[0].set_title("Helical angle")
 axes[0].axis("off")
 fig.colorbar(im0, ax=axes[0], label="degrees")
 
@@ -113,7 +113,7 @@ from cardiotensor import (
     calculate_structure_tensor,
     compute_azimuth_and_elevation,
     compute_fraction_anisotropy,
-    compute_helix_and_transverse_angles,
+    compute_helical_and_intrusion_angles,
     # Tractography
     generate_streamlines_from_vector_field,
     generate_streamlines_from_params,

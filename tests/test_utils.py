@@ -1,3 +1,5 @@
+from unittest import TestCase
+
 import numpy as np
 import pytest
 
@@ -36,6 +38,7 @@ def test_read_conf_file(tmp_path):
         "REVERSE = False\n\n"
         "[ANGLE CALCULATION]\n"
         "WRITE_ANGLES = True\n"
+        "PROJECTED_ANGLES = True\n"
         "AXIS_POINTS = (0,0,0), (1,1,1)\n\n"
         "[TEST]\n"
         "TEST = True\n"
@@ -65,6 +68,7 @@ def test_read_conf_file(tmp_path):
 
     # Angles
     assert config["WRITE_ANGLES"] is True
+    TestCase().assertIs(config["PROJECTED_ANGLES"], True)
     assert isinstance(config["AXIS_POINTS"], list)
     assert config["AXIS_POINTS"] == [(0, 0, 0), (1, 1, 1)]
 

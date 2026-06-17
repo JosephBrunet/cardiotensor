@@ -61,7 +61,7 @@ REVERSE = False
 WRITE_ANGLES = True
 
 # Choose which angle pair to compute:
-#   ha_ia  → Helix Angle / Intrusion Angle (standard myocardial architecture)
+#   ha_ia  → Helical Angle / Intrusion Angle (standard myocardial architecture)
 #   az_el  → Azimuth / Elevation (generic vector orientation in 3D)
 ANGLE_MODE = ha_ia
 
@@ -145,7 +145,9 @@ OUTPUT_TYPE = 8bit
 ---
 
 ### `[ANGLE CALCULATION]`
-- **`WRITE_ANGLES`**: Save helix and intrusion angles and fractional anisotropy values.
+- **`WRITE_ANGLES`**: Save helical and intrusion angles and fractional anisotropy values.
+- **`ANGLE_MODE`**: Choose `ha_ia` for cardiac HA/IA or `az_el` for generic azimuth/elevation maps.
+- **`PROJECTED_ANGLES`**: In `ha_ia` mode, keep `False` for unprojected 3D HA/IA. Set `True` only to write legacy projected `HA_projected`/`IA_projected` comparison maps.
 - **`AXIS_POINTS`**: List of 3D points `[X, Y, Z]` along the ventricle axis. Typically, the first and last points correspond to the mitral valve and apex. Intermediate points help create a curved axis via interpolation.
 
 ---

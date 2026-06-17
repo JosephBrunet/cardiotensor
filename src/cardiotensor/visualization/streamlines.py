@@ -5,7 +5,6 @@ import numpy as np
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 from cardiotensor.utils.streamlines_io_utils import load_trk_streamlines
-from cardiotensor.visualization.fury_plotting_streamlines import show_streamlines
 
 ANGLE_RANGES = {
     "HA": (-90.0, 90.0),
@@ -61,13 +60,31 @@ def visualize_streamlines(
     crop_bounds: tuple | None = None,  # ((xmin,xmax),(ymin,ymax),(zmin,zmax))
     interactive: bool = True,
     screenshot_path: str | None = None,
+    video_path: str | None = None,
+    video_fps: int = 30,
+    video_frames: int = 120,
     window_size: tuple[int, int] = (800, 800),
     colormap=None,
-    spline_subdiv: int = 16,
+    spline_subdiv: int = 2,
+    backend: str = "fury",
+    mode: str = "tube",
+    background_color: str | tuple[float, float, float] | None = None,
+    tube_sides: int = 9,
+    pyvista_opacity: float = 1.0,
+    pyvista_show_axes: bool = True,
+    pyvista_show_bounds: bool = False,
+    pyvista_shadows: bool = False,
 ):
     """
     Visualize .trk streamlines with per-point angle-based coloring.
-    Always renders in tube mode.
+
+    Parameters
+    ----------
+    backend
+        Rendering backend: "fury" for tractography-oriented interaction or
+        "pyvista" for polished scientific plots and screenshots.
+    mode
+        "tube" for explicit tube geometry or "line" for faster line rendering.
     """
     p = Path(streamlines_file)
     if not p.exists():
@@ -98,13 +115,13 @@ def visualize_streamlines(
     print("🧭 You can use: color_by = ha, ia, az, el, elevation, azimuth\n")
 
     # Decide the color scalar
-    mode = color_by.lower().strip()
+    color_mode = color_by.lower().strip()
     color_values: list[np.ndarray] | None = None
     color_range: tuple[float, float] | None = None
     color_label = "Angle (deg)"
 
-    if mode in {"ha", "ia", "az", "el"}:
-        key = mode.upper()
+    if color_mode in {"ha", "ia", "az", "el"}:
+        key = color_mode.upper()
         color_range = ANGLE_RANGES[key]
         color_label = f"{key} (deg)"
         if key in attrs:
@@ -119,39 +136,89 @@ def visualize_streamlines(
                 )
             else:
                 raise ValueError(f"No per-point attribute '{key}' found in .trk")
-    elif mode in {"elevation", "azimuth"}:
+    elif color_mode in {"elevation", "azimuth"}:
         az_list, el_list = _compute_az_el_from_streamlines(streamlines_xyz)
-        color_values = el_list if mode == "elevation" else az_list
-        color_range = (-90.0, 90.0) if mode == "elevation" else ANGLE_RANGES["AZ"]
-        color_label = "Elevation (deg)" if mode == "elevation" else "Azimuth (deg)"
+        color_values = el_list if color_mode == "elevation" else az_list
+        color_range = (-90.0, 90.0) if color_mode == "elevation" else ANGLE_RANGES["AZ"]
+        color_label = (
+            "Elevation (deg)" if color_mode == "elevation" else "Azimuth (deg)"
+        )
     else:
         raise ValueError("color_by must be one of: ha, ia, az, el, elevation, azimuth")
 
     # Default colormap selection
     if colormap is None:
-        if mode == "el":
+        if color_mode == "el":
             colormap = cm.viridis
-        elif mode in {"ha", "ia", "elevation"}:
+        elif color_mode in {"ha", "ia", "elevation"}:
             colormap = helix_angle_cmap
         else:
             colormap = cm.hsv
 
-    # Always use tube mode
-    show_streamlines(
-        streamlines_xyz=streamlines_xyz,
-        color_values=color_values,
-        mode="tube",
-        line_width=line_width,
-        interactive=interactive,
-        screenshot_path=screenshot_path,
-        window_size=window_size,
-        downsample_factor=downsample_factor,
-        max_streamlines=max_streamlines,
-        filter_min_len=filter_min_len,
-        subsample_factor=subsample_factor,
-        crop_bounds=crop_bounds,
-        colormap=colormap,
-        spline_subdiv=spline_subdiv,
-        color_range=color_range,
-        color_label=color_label,
-    )
+    backend = backend.lower().strip()
+    render_mode = mode.lower().strip()
+    if render_mode not in {"tube", "line"}:
+        raise ValueError("mode must be one of: tube, line")
+
+    if backend == "fury":
+        from cardiotensor.visualization.fury_plotting_streamlines import (
+            show_streamlines,
+        )
+
+        show_streamlines(
+            streamlines_xyz=streamlines_xyz,
+            color_values=color_values,
+            mode=render_mode,
+            line_width=line_width,
+            interactive=interactive,
+            screenshot_path=screenshot_path,
+            video_path=video_path,
+            video_fps=video_fps,
+            video_frames=video_frames,
+            window_size=window_size,
+            downsample_factor=downsample_factor,
+            max_streamlines=max_streamlines,
+            filter_min_len=filter_min_len,
+            subsample_factor=subsample_factor,
+            crop_bounds=crop_bounds,
+            colormap=colormap,
+            background_color=background_color or "black",
+            spline_subdiv=spline_subdiv,
+            tube_sides=tube_sides,
+            color_range=color_range,
+            color_label=color_label,
+        )
+    elif backend == "pyvista":
+        from cardiotensor.visualization.pyvista_plotting_streamlines import (
+            show_streamlines_pyvista,
+        )
+
+        show_streamlines_pyvista(
+            streamlines_xyz=streamlines_xyz,
+            color_values=color_values,
+            mode=render_mode,
+            line_width=line_width,
+            interactive=interactive,
+            screenshot_path=screenshot_path,
+            video_path=video_path,
+            video_fps=video_fps,
+            video_frames=video_frames,
+            window_size=window_size,
+            downsample_factor=downsample_factor,
+            max_streamlines=max_streamlines,
+            filter_min_len=filter_min_len,
+            subsample_factor=subsample_factor,
+            crop_bounds=crop_bounds,
+            colormap=colormap,
+            background_color=background_color or "white",
+            tube_sides=tube_sides,
+            color_range=color_range,
+            color_label=color_label,
+            opacity=pyvista_opacity,
+            show_axes=pyvista_show_axes,
+            show_bounds=pyvista_show_bounds,
+            shadows=pyvista_shadows,
+            spline_subdiv=spline_subdiv,
+        )
+    else:
+        raise ValueError("backend must be one of: fury, pyvista")

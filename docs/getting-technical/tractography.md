@@ -56,7 +56,7 @@ Streamlines shorter than `min_length_pts` (default: 10 points) are discarded. Yo
 The streamline results are saved in `.trk` format as:
 
 * `streamlines`: a list of arrays, each of shape (N, 3), where N is the number of points in that streamline
-* `ha_values`: sampled HA (helix angle) values along each point
+* `ha_values`: sampled HA (helical angle) values along each point
 
 These can be loaded in Python or exported to `.vtk` for 3D visualization in ParaView.
 
@@ -74,7 +74,7 @@ cardio-generate config.conf --seeds 20000 --bin 2 --step 0.5 --fa-threshold 0.15
 
 * Streamlines are computed from the 3rd eigenvector of the structure tensor, corresponding to the myocyte axis.
 * FA is computed once from the structure tensor and optionally downsampled for speed.
-* Helix angle (HA) is sampled at each point along the streamline and saved for further analysis.
+* Helical angle (HA) is sampled at each point along the streamline and saved for further analysis.
 
 ---
 

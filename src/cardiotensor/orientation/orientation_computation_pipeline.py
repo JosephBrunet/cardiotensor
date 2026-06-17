@@ -18,7 +18,7 @@ from cardiotensor.orientation.orientation_computation_functions import (
     calculate_structure_tensor,
     compute_azimuth_and_elevation,
     compute_fraction_anisotropy,
-    compute_helix_and_transverse_angles,
+    compute_helical_and_intrusion_angles,
     interpolate_points,
     plot_images,
     remove_padding,
@@ -32,7 +32,7 @@ from cardiotensor.utils.utils import get_available_cpu_count, remove_corrupted_f
 
 # --- small helpers ---
 def _resolve_colormap(colormap: str | None):
-    """Resolve colormap names, including the project-specific helix angle map."""
+    """Resolve colormap names, including the project-specific helical angle map."""
     if colormap is None:
         return None
     cmap_name = colormap.strip()
@@ -161,6 +161,7 @@ def compute_orientation(
     colormap: str | None = None,
     colormap_angle1: str | None = None,
     colormap_angle2: str | None = None,
+    projected: bool = False,
 ) -> None:
     """
     Compute the orientation for a volume dataset.
@@ -178,6 +179,7 @@ def compute_orientation(
         vertical_padding: Padding slices for tensor computation.
         write_vectors: Whether to save eigenvectors. Ignored in test mode.
         write_angles: Whether to save HA/IA/FA maps.
+        projected: If True in ha_ia mode, write projected HA/IA legacy maps.
         use_gpu: Use GPU acceleration for tensor computation.
         is_test: If True, runs in test mode and outputs plots.
         n_slice_test: Number of slices to process in test mode.
@@ -194,7 +196,9 @@ def compute_orientation(
         raise ValueError("sigma must be <= rho")
 
     if angle_mode.lower() == "ha_ia":
-        angle_names = ("HA", "IA")
+        angle_names = (
+            ("HA_projected", "IA_projected") if projected else ("HA", "IA")
+        )
     elif angle_mode.lower() == "az_el":
         angle_names = ("AZ", "EL")
     else:
@@ -210,6 +214,10 @@ def compute_orientation(
         )
         write_vectors = False
 
+    projected_status = (
+        projected if angle_mode.lower().strip() == "ha_ia" else "[n/a]"
+    )
+
     print(f"""
 Parameters:
     - Volume path:    {volume_path}
@@ -221,6 +229,7 @@ Parameters:
     - truncate:       {truncate}
     - Write angles:   {write_angles}
     - Angle mode:     {angle_mode}  -> {angle_names[0]}, {angle_names[1]}
+    - Projected HA/IA:{projected_status}
     - Write vectors:  {write_vectors}
     - Use GPU:        {use_gpu}
     - Test mode:      {is_test}
@@ -392,6 +401,7 @@ Parameters:
                             colormap,
                             colormap_angle1,
                             colormap_angle2,
+                            projected,
                         ),
                         callback=update_bar,
                     )
@@ -440,6 +450,7 @@ Parameters:
             colormap,
             colormap_angle1,
             colormap_angle2,
+            projected,
         )
 
     if is_test:
@@ -470,6 +481,7 @@ def compute_slice_angles_and_anisotropy(
     colormap: str | None = None,
     colormap_angle1: str | None = None,
     colormap_angle2: str | None = None,
+    projected: bool = False,
 ) -> tuple[float, float, bool]:
     """
     Compute either HA/IA or Azimuth/Elevation plus FA for a single slice,
@@ -478,7 +490,9 @@ def compute_slice_angles_and_anisotropy(
     # Decide angle labels and ranges based on mode
     mode = angle_mode.lower().strip()
     if mode == "ha_ia":
-        angle_names = ("HA", "IA")
+        angle_names = (
+            ("HA_projected", "IA_projected") if projected else ("HA", "IA")
+        )
         angle_ranges = ((-90.0, 90.0), (-90.0, 90.0))
     elif mode == "az_el":
         angle_names = ("AZ", "EL")
@@ -547,8 +561,8 @@ def compute_slice_angles_and_anisotropy(
         )
 
         if mode == "ha_ia":
-            img_angle1, img_angle2 = compute_helix_and_transverse_angles(
-                vector_field_slice_rotated, center_point
+            img_angle1, img_angle2 = compute_helical_and_intrusion_angles(
+                vector_field_slice_rotated, center_point, projected=projected
             )
         else:  # "az_el"
             img_angle1, img_angle2 = compute_azimuth_and_elevation(
@@ -560,11 +574,14 @@ def compute_slice_angles_and_anisotropy(
 
     # Test mode: visualize a 2x2 figure and write to test subfolder
     if is_test:
-        titles = (
-            ("Helix Angle", "Intrusion Angle")
-            if mode == "ha_ia"
-            else ("Azimuth", "Elevation")
-        )
+        if mode == "ha_ia":
+            titles = (
+                ("Projected Helical Angle", "Projected Intrusion Angle")
+                if projected
+                else ("Helical Angle", "Intrusion Angle")
+            )
+        else:
+            titles = ("Azimuth", "Elevation")
         test_output_dir = os.path.join(output_dir, "test_slice")
         plot_images(
             img_slice,
