@@ -1451,7 +1451,7 @@
 <a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="na">WRITE_ANGLES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
 <a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>
 <a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="c1"># Choose which angle pair to compute:</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1">#   ha_ia  → Helix Angle / Intrusion Angle (standard myocardial architecture)</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1">#   ha_ia  → Helical Angle / Intrusion Angle (standard myocardial architecture)</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="c1">#   az_el  → Azimuth / Elevation (generic vector orientation in 3D)</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="na">ANGLE_MODE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">ha_ia</span>
 <a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>
@@ -1534,7 +1534,9 @@
 <hr />
 <h3 id="angle-calculation"><a class="toclink" href="#angle-calculation"><code>[ANGLE CALCULATION]</code></a><a class="headerlink" href="#angle-calculation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>WRITE_ANGLES</code></strong>: Save helix and intrusion angles and fractional anisotropy values.</li>
+<li><strong><code>WRITE_ANGLES</code></strong>: Save helical and intrusion angles and fractional anisotropy values.</li>
+<li><strong><code>ANGLE_MODE</code></strong>: Choose <code>ha_ia</code> for cardiac HA/IA or <code>az_el</code> for generic azimuth/elevation maps.</li>
+<li><strong><code>PROJECTED_ANGLES</code></strong>: In <code>ha_ia</code> mode, keep <code>False</code> for unprojected 3D HA/IA. Set <code>True</code> only to write legacy projected <code>HA_projected</code>/<code>IA_projected</code> comparison maps.</li>
 <li><strong><code>AXIS_POINTS</code></strong>: List of 3D points <code>[X, Y, Z]</code> along the ventricle axis. Typically, the first and last points correspond to the mitral valve and apex. Intermediate points help create a curved axis via interpolation.</li>
 </ul>
 <hr />
@@ -1584,7 +1586,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 5, 2026 20:22:11 UTC"><span class="timeago" datetime="2026-05-05T20:22:11+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 5, 2026 20:22:11 UTC">2026-05-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 17, 2026 12:57:44 UTC"><span class="timeago" datetime="2026-06-17T12:57:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 17, 2026 12:57:44 UTC">2026-06-17</span>
   </span>
 
     
