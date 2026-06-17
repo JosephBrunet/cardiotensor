@@ -136,8 +136,8 @@ def test_compute_helical_and_intrusion_angles_orients_circumferential_positive()
         vector_slice, center_point=(0, 0, 0)
     )
 
-    assert np.allclose(helical, [[45, 45]], atol=1e-6)
-    assert np.allclose(intrusion, [[0, 0]], atol=1e-6)
+    np.testing.assert_allclose(helical, [[45, 45]], atol=1e-6)
+    np.testing.assert_allclose(intrusion, [[0, 0]], atol=1e-6)
 
 
 def test_compute_angles_use_full_vector_without_projection():
@@ -150,8 +150,8 @@ def test_compute_angles_use_full_vector_without_projection():
 
     expected_helical = np.rad2deg(np.arctan2(3, np.hypot(1, 2)))
     expected_intrusion = np.rad2deg(np.arctan2(1, np.hypot(2, 3)))
-    assert np.allclose(helical, [[expected_helical]], atol=1e-6)
-    assert np.allclose(intrusion, [[expected_intrusion]], atol=1e-6)
+    np.testing.assert_allclose(helical, [[expected_helical]], atol=1e-6)
+    np.testing.assert_allclose(intrusion, [[expected_intrusion]], atol=1e-6)
 
 
 def test_compute_angles_can_return_projected_intrusion_values():
@@ -164,8 +164,8 @@ def test_compute_angles_can_return_projected_intrusion_values():
 
     expected_helical = np.rad2deg(np.arctan2(3, 2))
     expected_intrusion = np.rad2deg(np.arctan2(1, 2))
-    assert np.allclose(helical, [[expected_helical]], atol=1e-6)
-    assert np.allclose(intrusion, [[expected_intrusion]], atol=1e-6)
+    np.testing.assert_allclose(helical, [[expected_helical]], atol=1e-6)
+    np.testing.assert_allclose(intrusion, [[expected_intrusion]], atol=1e-6)
 
 
 def test_write_images_and_vectors(tmp_path: Path):
