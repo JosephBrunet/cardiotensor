@@ -189,6 +189,13 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "ANGLE_MODE": config.get(
             "ANGLE CALCULATION", "ANGLE_MODE", fallback="ha_ia"
         ).strip(),
+        "PROJECTED_ANGLES": config.getboolean(
+            "ANGLE CALCULATION",
+            "PROJECTED_ANGLES",
+            fallback=config.getboolean(
+                "ANGLE CALCULATION", "PROJECTED", fallback=False
+            ),
+        ),
         "AXIS_POINTS": parse_coordinates("ANGLE CALCULATION", "AXIS_POINTS"),
         # TEST
         "TEST": config.getboolean("TEST", "TEST", fallback=False),
