@@ -372,19 +372,31 @@ def orient_vectors_z_positive(vector_field_slice: np.ndarray) -> np.ndarray:
     return oriented
 
 
-def compute_helix_and_transverse_angles(
+def compute_helical_and_intrusion_angles(
     vector_field_2d: np.ndarray,
     center_point: tuple[int, int, int],
+    projected: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Computes helix and transverse angles from a 2D vector field.
+    Computes helical and intrusion angles from a 2D vector field.
+
+    By default, both angles use the full local vector. The helical angle retains
+    radial contribution instead of first projecting into the circumferential/
+    longitudinal plane, and the intrusion angle retains longitudinal
+    contribution instead of first projecting into the radial/circumferential
+    plane.
+
+    Set projected=True to return the legacy projected helical angle and
+    projected intrusion angle for comparison with projection-based literature.
 
     Args:
         vector_field_2d (np.ndarray): 2D orientation vector field.
         center_point (Tuple[int, int, int]): Coordinates of the center point.
+        projected (bool): If True, compute projected helical/intrusion angles.
+            Defaults to False for unprojected 3D helical/intrusion angles.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Helix and transverse angle arrays.
+        Tuple[np.ndarray, np.ndarray]: Helical and intrusion angle arrays.
     """
     center = center_point[0:2]  # Replace with actual values
     rows, cols = vector_field_2d.shape[1:3]
@@ -419,19 +431,27 @@ def compute_helix_and_transverse_angles(
         reshaped_rotated_vector_field
     )
 
-    # Calculate helix and transverse angles
-    helix_angle = np.arctan2(
-        reshaped_rotated_vector_field[2, :, :],
-        reshaped_rotated_vector_field[1, :, :],
-    )
-    transverse_angle = np.arctan2(
-        reshaped_rotated_vector_field[0, :, :],
-        reshaped_rotated_vector_field[1, :, :],
-    )
-    helix_angle = np.rad2deg(helix_angle)
-    transverse_angle = np.rad2deg(transverse_angle)
+    radial_component = reshaped_rotated_vector_field[0, :, :]
+    circumferential_component = reshaped_rotated_vector_field[1, :, :]
+    longitudinal_component = reshaped_rotated_vector_field[2, :, :]
 
-    return helix_angle, transverse_angle
+    # Calculate helical and intrusion angles
+    if projected:
+        helical_angle = np.arctan2(longitudinal_component, circumferential_component)
+        intrusion_angle = np.arctan2(radial_component, circumferential_component)
+    else:
+        helical_angle = np.arctan2(
+            longitudinal_component,
+            np.hypot(radial_component, circumferential_component),
+        )
+        intrusion_angle = np.arctan2(
+            radial_component,
+            np.hypot(circumferential_component, longitudinal_component),
+        )
+    helical_angle = np.rad2deg(helical_angle)
+    intrusion_angle = np.rad2deg(intrusion_angle)
+
+    return helical_angle, intrusion_angle
 
 
 def compute_azimuth_and_elevation(
@@ -539,7 +559,7 @@ def plot_images(
     colormap_angle=None,
     colormap_angle2=None,
     colormap_FA=None,
-    angle1_title: str = "Helix Angle",
+    angle1_title: str = "Helical Angle",
     angle2_title: str = "Intrusion Angle",
     angle_ranges: tuple[tuple[float, float], tuple[float, float]] | None = None,
     save_path: str | None = None,
