@@ -45,7 +45,7 @@ from cardiotensor.orientation import (
     calculate_structure_tensor,
     compute_azimuth_and_elevation,
     compute_fraction_anisotropy,
-    compute_helix_and_transverse_angles,
+    compute_helical_and_intrusion_angles,
     compute_orientation,
 )
 from cardiotensor.tractography import (
@@ -72,7 +72,7 @@ __all__ = [
     "calculate_structure_tensor",
     "compute_azimuth_and_elevation",
     "compute_fraction_anisotropy",
-    "compute_helix_and_transverse_angles",
+    "compute_helical_and_intrusion_angles",
     # Tractography
     "generate_streamlines_from_vector_field",
     "generate_streamlines_from_params",

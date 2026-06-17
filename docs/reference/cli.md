@@ -7,7 +7,7 @@ Cardiotensor provides powerful features for analyzing 3D cardiac imaging data, f
 Compute myocyte orientation from a 3D volume using a configuration file.
 
 - `cardio-tensor`
-  Computes structure tensor, helix/transverse angle, FA, and eigenvectors.
+  Computes structure tensor, helical/intrusion angle, FA, and eigenvectors.
 
 - `cardio-tensor-slurm`
   Submits chunked `cardio-tensor` runs as SLURM array jobs.

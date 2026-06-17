@@ -49,7 +49,7 @@ def visualize_vector_field(
         Path to the 3D vector field (directory or file). The vector field must
         be stored as (3, Z, Y, X) or (Z, Y, X, 3) numpy arrays.
     color_volume_path : str or Path, optional
-        Path to a scalar volume used to color the vectors (e.g., helix angles).
+        Path to a scalar volume used to color the vectors (e.g., helical angles).
         If RGB, the channels will be averaged to a single scalar map.
     mask_path : str or Path, optional
         Path to a binary mask volume. Vectors outside the mask are set to NaN

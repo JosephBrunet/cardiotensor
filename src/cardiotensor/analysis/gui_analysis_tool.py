@@ -105,7 +105,7 @@ def plot_label_and_limits(mode: str):
     if m == "FA":
         return "Fractional Anisotropy", 0.0, 1.0
     if m in {"HA", "IA", "EL"}:
-        name = {"HA": "Helix Angle", "IA": "Intrusion Angle", "EL": "Elevation Angle"}[
+        name = {"HA": "Helical Angle", "IA": "Intrusion Angle", "EL": "Elevation Angle"}[
             m
         ]
         return f"{name} (°)", -90.0, 90.0

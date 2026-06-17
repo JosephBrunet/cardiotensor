@@ -73,7 +73,7 @@ To process the entire volume:
 3. The results will be saved in the `./output` directory with the following structure:
    ```
    ./output
-   ├── HA   # Helix angle results
+   ├── HA   # Helical angle results
    ├── IA   # Intrusion angle results
    └── FA   # Fractional anisotropy results
    ```

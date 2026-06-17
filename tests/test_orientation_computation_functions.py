@@ -8,7 +8,7 @@ from cardiotensor.orientation.orientation_computation_functions import (
     calculate_structure_tensor,
     compute_azimuth_and_elevation,
     compute_fraction_anisotropy,
-    compute_helix_and_transverse_angles,
+    compute_helical_and_intrusion_angles,
     interpolate_points,
     orient_vectors_z_positive,
     plot_images,
@@ -127,28 +127,56 @@ def test_compute_azimuth_and_elevation_uses_z_positive_convention():
     assert np.allclose(azimuth, [[0, 0]], atol=1e-6)
 
 
-def test_compute_helix_and_transverse_angles_orients_circumferential_positive():
+def test_compute_helical_and_intrusion_angles_orients_circumferential_positive():
     vector_slice = np.zeros((3, 1, 2), dtype=np.float32)
     vector_slice[:, 0, 0] = [0, 1, 1]
     vector_slice[:, 0, 1] = [0, -1, -1]
 
-    helix, transverse = compute_helix_and_transverse_angles(
+    helical, intrusion = compute_helical_and_intrusion_angles(
         vector_slice, center_point=(0, 0, 0)
     )
 
-    assert np.allclose(helix, [[45, 45]], atol=1e-6)
-    assert np.allclose(transverse, [[0, 0]], atol=1e-6)
+    assert np.allclose(helical, [[45, 45]], atol=1e-6)
+    assert np.allclose(intrusion, [[0, 0]], atol=1e-6)
+
+
+def test_compute_angles_use_full_vector_without_projection():
+    vector_slice = np.zeros((3, 1, 1), dtype=np.float32)
+    vector_slice[:, 0, 0] = [1, 2, 3]
+
+    helical, intrusion = compute_helical_and_intrusion_angles(
+        vector_slice, center_point=(0, 0, 0)
+    )
+
+    expected_helical = np.rad2deg(np.arctan2(3, np.hypot(1, 2)))
+    expected_intrusion = np.rad2deg(np.arctan2(1, np.hypot(2, 3)))
+    assert np.allclose(helical, [[expected_helical]], atol=1e-6)
+    assert np.allclose(intrusion, [[expected_intrusion]], atol=1e-6)
+
+
+def test_compute_angles_can_return_projected_intrusion_values():
+    vector_slice = np.zeros((3, 1, 1), dtype=np.float32)
+    vector_slice[:, 0, 0] = [1, 2, 3]
+
+    helical, intrusion = compute_helical_and_intrusion_angles(
+        vector_slice, center_point=(0, 0, 0), projected=True
+    )
+
+    expected_helical = np.rad2deg(np.arctan2(3, 2))
+    expected_intrusion = np.rad2deg(np.arctan2(1, 2))
+    assert np.allclose(helical, [[expected_helical]], atol=1e-6)
+    assert np.allclose(intrusion, [[expected_intrusion]], atol=1e-6)
 
 
 def test_write_images_and_vectors(tmp_path: Path):
     # --- Prepare dummy 2D slices ---
-    img_helix = np.ones((5, 5), dtype=np.float32)
+    img_helical = np.ones((5, 5), dtype=np.float32)
     img_intrusion = np.ones((5, 5), dtype=np.float32)
     img_FA = np.ones((5, 5), dtype=np.float32)
 
     # --- Test write_images ---
     write_images(
-        img_helix,
+        img_helical,
         img_intrusion,
         img_FA,
         start_index=0,

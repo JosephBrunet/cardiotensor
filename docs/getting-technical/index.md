@@ -8,7 +8,7 @@ This section provides a deeper understanding of how `cardiotensor` works, includ
 
 - [Structure Tensor](./structure_tensor.md): Mathematical background on the structure tensor and eigen decomposition
 
-- [Angle Definitions](./angles.md): Detailed explanation of helix and intrusion angles
+- [Angle Definitions](./angles.md): Detailed explanation of helical and intrusion angles
 
 - [Fractional Anisotropy](./fractional_anisotropy.md)
 
