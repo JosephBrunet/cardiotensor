@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import datetime
+import inspect
 import random
+import tempfile
+from pathlib import Path
 
 import fury
 import matplotlib.pyplot as plt
@@ -39,6 +43,71 @@ def parse_background_color(color) -> tuple[float, float, float]:
 
 def downsample_streamline(streamline: np.ndarray, factor: int = 2) -> np.ndarray:
     return streamline if len(streamline) < 3 or factor <= 1 else streamline[::factor]
+
+
+def _supported_actor_kwargs(func, **kwargs):
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return kwargs
+
+    if any(param.kind == inspect.Parameter.VAR_KEYWORD for param in params.values()):
+        return kwargs
+    return {name: value for name, value in kwargs.items() if name in params}
+
+
+def _write_frame_sequence_to_video(
+    frame_paths: list[Path], output_path: Path, fps: int
+) -> None:
+    if not frame_paths:
+        raise ValueError("No FURY frames were recorded for the video.")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    suffix = output_path.suffix.lower()
+    if suffix == ".gif":
+        try:
+            import imageio.v2 as imageio
+        except ImportError as err:
+            raise RuntimeError(
+                "GIF export requires imageio: pip install imageio"
+            ) from err
+
+        with imageio.get_writer(
+            str(output_path), mode="I", duration=1.0 / fps
+        ) as writer:
+            for frame_path in frame_paths:
+                writer.append_data(imageio.imread(frame_path))
+        return
+
+    try:
+        import cv2
+    except ImportError as err:
+        raise RuntimeError(
+            "MP4 export requires OpenCV: pip install opencv-python"
+        ) from err
+
+    first = cv2.imread(str(frame_paths[0]), cv2.IMREAD_COLOR)
+    if first is None:
+        raise RuntimeError(f"Could not read recorded frame: {frame_paths[0]}")
+
+    height, width = first.shape[:2]
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(
+        str(output_path), fourcc, float(fps), (width, height), isColor=True
+    )
+    if not writer.isOpened():
+        raise RuntimeError(f"Could not open video writer for {output_path}")
+
+    try:
+        for frame_path in frame_paths:
+            frame = cv2.imread(str(frame_path), cv2.IMREAD_COLOR)
+            if frame is None:
+                raise RuntimeError(f"Could not read recorded frame: {frame_path}")
+            if frame.shape[:2] != (height, width):
+                frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+            writer.write(frame)
+    finally:
+        writer.release()
 
 
 def _compute_streamline_bounds(
@@ -122,6 +191,7 @@ class StreamlineViewer:
         lut,
         background_color="black",
         spline_subdiv=16,
+        tube_sides: int = 9,
         color_range: tuple[float, float] | None = None,
         color_label: str = "Angle",
     ):
@@ -140,6 +210,7 @@ class StreamlineViewer:
         # thickness state
         self.linewidth = max(1.0, float(line_width))  # used for both line and tube
         self.spline_subdiv = spline_subdiv
+        self.tube_sides = max(3, int(tube_sides))
 
         self.scale_bar = None
         self.scale_bar_on = False
@@ -189,10 +260,8 @@ class StreamlineViewer:
                 linewidth=self.linewidth,
                 spline_subdiv=self.spline_subdiv,
                 lookup_colormap=self.lut,
-                tube_sides=20,
-                # lod=False,  # <—
-                # lod_points=20000,  # optional, tune
-                # lod_points_size=2,  # optional, tune
+                tube_sides=self.tube_sides,
+                **_supported_actor_kwargs(actor.streamtube, lod=False),
             )
         else:
             self.actor0 = actor.line(
@@ -200,6 +269,7 @@ class StreamlineViewer:
                 colors=self.flat_vals,  # scalars
                 linewidth=self.linewidth,
                 lookup_colormap=self.lut,
+                **_supported_actor_kwargs(actor.line, lod=False),
             )
 
         self.scene.add(self.actor0)
@@ -211,8 +281,8 @@ class StreamlineViewer:
             colors=self.flat_vals,  # pass scalars
             linewidth=1.0,  # very light
             lookup_colormap=self.lut,
-            # lod=False,  # make it deterministic
             fake_tube=True,  # a bit of shading to hint tubes
+            **_supported_actor_kwargs(actor.line, lod=False),
         )
         self.actor_fast.SetVisibility(False)
         self.scene.add(self.actor_fast)
@@ -238,10 +308,10 @@ class StreamlineViewer:
     def _style_streamline_actor(self):
         prop = self.actor0.GetProperty()
         prop.SetInterpolationToPhong()
-        prop.SetAmbient(0.1)
-        prop.SetDiffuse(0.95)
-        prop.SetSpecular(0.25)
-        prop.SetSpecularPower(12)
+        prop.SetAmbient(0.45)  # raised from 0.1 → brighter unlit sides, less dark
+        prop.SetDiffuse(0.75)
+        prop.SetSpecular(0.15)
+        prop.SetSpecularPower(10)
 
     def _add_origin_marker(self):
         bounds_size = np.array(
@@ -347,11 +417,9 @@ class StreamlineViewer:
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
                 spline_subdiv=self.spline_subdiv,
-                tube_sides=20,
+                tube_sides=self.tube_sides,
                 lookup_colormap=self.lut,
-                # lod=False,  # <—
-                # lod_points=20000,  # optional, tune
-                # lod_points_size=2,  # optional, tune
+                **_supported_actor_kwargs(actor.streamtube, lod=False),
             )
         else:
             self.actor0 = actor.line(
@@ -359,6 +427,7 @@ class StreamlineViewer:
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
                 lookup_colormap=self.lut,
+                **_supported_actor_kwargs(actor.line, lod=False),
             )
 
         self.scene.add(self.actor0)
@@ -420,16 +489,13 @@ class StreamlineViewer:
             self._render_now()
 
         elif key == "p":
-            import datetime
-            import os
-
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            out_path = os.path.abspath(f"view_{ts}_hires.png")
+            out_path = Path.cwd() / f"view_{ts}_hires.png"
             try:
                 highres_size = (2000, 2000)
                 fury.window.record(
                     scene=self.scene,
-                    out_path=out_path,
+                    out_path=str(out_path),
                     size=highres_size,
                     reset_camera=False,
                 )
@@ -438,6 +504,10 @@ class StreamlineViewer:
                 )
             except Exception as e:
                 print(f"Failed to save screenshot: {e}")
+
+        elif key == "v":
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            self._record_orbit(Path.cwd() / f"fury_orbit_{ts}.mp4", 120, 30)
 
         elif key == "r":
             self.plane_rep.SetOrigin(*self.center)
@@ -473,35 +543,91 @@ class StreamlineViewer:
 
             # Apply clipping only if it was previously enabled
             if self.clipping_active:
-                self.actor_fast.GetMapper().AddClippingPlane(
-                    self.plane_fn
-                )  # Apply clipping to the fast actor
+                mapper = self.actor_fast.GetMapper()
+                mapper.RemoveAllClippingPlanes()
+                mapper.AddClippingPlane(self.plane_fn)
         except Exception:
             pass
         self._render_now()
 
     def _lod_off(self, obj=None, evt=None):
         """Switch back to full-res actor, applying clipping if it was previously enabled."""
-        # Rebuild actor to ensure it shows at full resolution with clipping applied
-        self._rebuild_unclipped_actor()
-
         try:
             self.actor_fast.SetVisibility(False)  # Hide the fast actor
             self.actor0.SetVisibility(True)  # Show the full-res actor
 
             # Apply clipping to the full-res actor if it was previously enabled
             if self.clipping_active:
-                self.actor0.GetMapper().AddClippingPlane(
-                    self.plane_fn
-                )  # Reapply clipping
+                mapper = self.actor0.GetMapper()
+                mapper.RemoveAllClippingPlanes()
+                mapper.AddClippingPlane(self.plane_fn)
         except Exception:
             pass
         self._render_now()
 
+    def _set_default_camera(self) -> None:
+        self.scene.reset_camera()
+        self.scene.azimuth(15)
+        self.scene.elevation(10)
+        self.scene.zoom(1.1)
+
+    def _record_orbit(
+        self, video_path: str | Path, video_frames: int, video_fps: int
+    ) -> None:
+        out_path = Path(video_path).resolve()
+        n_frames = max(1, int(video_frames))
+        fps = max(1, int(video_fps))
+        step_degrees = 360.0 / float(n_frames)
+
+        try:
+            self.actor_fast.SetVisibility(False)
+            self.actor0.SetVisibility(True)
+        except Exception:
+            pass
+
+        self._set_default_camera()
+        print(
+            f"Recording FURY orbit video: {n_frames} frames at {fps} fps -> {out_path}"
+        )
+
+        with tempfile.TemporaryDirectory(prefix="cardiotensor_fury_orbit_") as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            frame_paths = []
+            try:
+                from tqdm import tqdm
+
+                frame_iter = tqdm(
+                    range(n_frames), total=n_frames, unit="frame", desc="Recording"
+                )
+            except ImportError:
+                frame_iter = range(n_frames)
+
+            for frame_idx in frame_iter:
+                frame_path = tmpdir_path / f"frame_{frame_idx:05d}.png"
+                fury.window.record(
+                    scene=self.scene,
+                    out_path=str(frame_path),
+                    size=self.window_size,
+                    reset_camera=False,
+                )
+                frame_paths.append(frame_path)
+                self.scene.azimuth(step_degrees)
+
+            _write_frame_sequence_to_video(frame_paths, out_path, fps)
+
+        print(f"Saved FURY orbit video to {out_path}")
+
     # ---------------------------
     # main entry
     # ---------------------------
-    def run(self, interactive: bool, screenshot_path: str | None):
+    def run(
+        self,
+        interactive: bool,
+        screenshot_path: str | None,
+        video_path: str | None = None,
+        video_fps: int = 30,
+        video_frames: int = 120,
+    ):
         if interactive:
             self.showm = window.ShowManager(
                 scene=self.scene, size=self.window_size, reset_camera=False
@@ -540,23 +666,29 @@ class StreamlineViewer:
 
             self.showm.iren.AddObserver("KeyPressEvent", self._on_keypress)
 
-            self.scene.reset_camera()
-
-            self.scene.azimuth(15)
-            self.scene.elevation(10)
-            self.scene.zoom(1.1)
+            self._set_default_camera()
 
             print(
-                "Keys: O toggle plane, H hide gizmo, I flip side, R reset plane, +/- thickness, B background, S scale bar, P save PNG"
+                "Keys: O toggle plane, H hide gizmo, I flip side, R reset plane, +/- thickness, B background, S scale bar, P save PNG, V record orbit"
             )
             self.showm.start()
         else:
-            if not screenshot_path:
-                raise ValueError("Must specify screenshot_path when interactive=False.")
-            self.scene.reset_camera()
-            fury.window.record(
-                scene=self.scene, out_path=screenshot_path, size=self.window_size
-            )
+            if not screenshot_path and not video_path:
+                raise ValueError(
+                    "Must specify screenshot_path or video_path when interactive=False."
+                )
+            self._set_default_camera()
+            if screenshot_path:
+                screenshot = Path(screenshot_path).resolve()
+                screenshot.parent.mkdir(parents=True, exist_ok=True)
+                fury.window.record(
+                    scene=self.scene,
+                    out_path=str(screenshot),
+                    size=self.window_size,
+                    reset_camera=False,
+                )
+            if video_path:
+                self._record_orbit(video_path, video_frames, video_fps)
 
 
 # ===========================
@@ -569,16 +701,21 @@ def show_streamlines(
     line_width: float = 4,
     interactive: bool = True,
     screenshot_path: str | None = None,
+    video_path: str | None = None,
+    video_fps: int = 30,
+    video_frames: int = 120,
     window_size: tuple[int, int] = (800, 800),
     downsample_factor: int = 2,
     max_streamlines: int | None = None,
     filter_min_len: int | None = None,
     subsample_factor: int = 1,
-    crop_bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
-    | None = None,
+    crop_bounds: (
+        tuple[tuple[float, float], tuple[float, float], tuple[float, float]] | None
+    ) = None,
     colormap=None,
     background_color: str | tuple[float, float, float] = "black",
     spline_subdiv: int = 16,
+    tube_sides: int = 9,
     color_range: tuple[float, float] | None = None,
     color_label: str = "Angle (deg)",
 ):
@@ -691,10 +828,17 @@ def show_streamlines(
         lut,
         background_color=background_color,
         spline_subdiv=spline_subdiv,
+        tube_sides=tube_sides,
         color_range=lut_range,
         color_label=color_label,
     )
-    viewer.run(interactive=interactive, screenshot_path=screenshot_path)
+    viewer.run(
+        interactive=interactive,
+        screenshot_path=screenshot_path,
+        video_path=video_path,
+        video_fps=video_fps,
+        video_frames=video_frames,
+    )
 
 
 # ---------------------------
