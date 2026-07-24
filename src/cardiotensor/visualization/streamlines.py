@@ -57,6 +57,7 @@ def visualize_streamlines(
     filter_min_len: int | None = None,
     downsample_factor: int = 1,
     max_streamlines: int | None = None,
+    top_clusters: int | None = None,
     crop_bounds: tuple | None = None,  # ((xmin,xmax),(ymin,ymax),(zmin,zmax))
     interactive: bool = True,
     screenshot_path: str | None = None,
@@ -74,6 +75,11 @@ def visualize_streamlines(
     pyvista_show_axes: bool = True,
     pyvista_show_bounds: bool = False,
     pyvista_shadows: bool = False,
+    random_seed: int | None = None,
+    session_path: str | Path | None = None,
+    restore_session: bool = True,
+    session_settings: dict | None = None,
+    fury_quality: str = "interactive",
 ):
     """
     Visualize .trk streamlines with per-point angle-based coloring.
@@ -93,29 +99,90 @@ def visualize_streamlines(
         raise ValueError("Only .trk input is supported here")
 
     print(f"Loading .trk streamlines: {p}")
-    streamlines_xyz, attrs = load_trk_streamlines(
-        p
-    )  # attrs is dict[str, List[np.ndarray]]
-    attrs = {
-        name.upper(): [np.asarray(arr, dtype=np.float32) for arr in seq]
-        for name, seq in attrs.items()
+    streamlines_xyz, attrs, streamline_attrs = load_trk_streamlines(
+        p, include_per_streamline=True
+    )
+    attrs = {name.upper(): seq for name, seq in attrs.items()}
+    streamline_attrs = {
+        name.upper(): values for name, values in streamline_attrs.items()
     }
 
-    # ---- Inform the user of available angle fields ----
+    if top_clusters is not None:
+        if top_clusters < 1:
+            raise ValueError("top_clusters must be at least 1")
+        if "CLUSTER_ID" not in attrs:
+            raise ValueError(
+                "--top-clusters requires a clustered TRK with a per-point "
+                "cluster_id field"
+            )
+
+        cluster_ids = []
+        for values in attrs["CLUSTER_ID"]:
+            values = np.asarray(values, dtype=np.float64).reshape(-1)
+            if (
+                not values.size
+                or not np.all(np.isfinite(values))
+                or not np.allclose(values, values[0])
+                or not np.isclose(values[0], round(float(values[0])))
+            ):
+                raise ValueError(
+                    "Each streamline must have one constant integer cluster_id"
+                )
+            cluster_ids.append(int(round(float(values[0]))))
+
+        cluster_ids = np.asarray(cluster_ids, dtype=np.int64)
+        unique_ids, counts = np.unique(cluster_ids, return_counts=True)
+        cluster_sizes = {
+            int(cluster_id): int(count)
+            for cluster_id, count in zip(unique_ids, counts)
+        }
+        if "CLUSTER_SIZE" in streamline_attrs:
+            stored_sizes = np.asarray(
+                streamline_attrs["CLUSTER_SIZE"], dtype=np.float64
+            ).reshape(len(streamlines_xyz), -1)[:, 0]
+            for cluster_id, size in zip(cluster_ids, stored_sizes):
+                if np.isfinite(size) and size > 0:
+                    cluster_sizes[int(cluster_id)] = max(
+                        cluster_sizes[int(cluster_id)], int(round(float(size)))
+                    )
+
+        ranked_ids = sorted(
+            (int(cluster_id) for cluster_id in unique_ids),
+            key=lambda cluster_id: (-cluster_sizes[cluster_id], cluster_id),
+        )
+        selected_ids = set(ranked_ids[:top_clusters])
+        keep = [
+            index
+            for index, cluster_id in enumerate(cluster_ids)
+            if int(cluster_id) in selected_ids
+        ]
+        print(
+            f"Top-cluster filter: keeping {len(selected_ids):,}/"
+            f"{len(unique_ids):,} largest clusters and {len(keep):,}/"
+            f"{len(streamlines_xyz):,} streamlines"
+        )
+        streamlines_xyz = [streamlines_xyz[index] for index in keep]
+        attrs = {
+            name: [values[index] for index in keep]
+            for name, values in attrs.items()
+        }
+
+    # ---- Inform the user of available stored scalar fields ----
     available = list(attrs.keys())
 
-    # Also say that AZ and EL can be computed even if missing
     print(
-        "\n🎨  Available angle fields in this .trk:",
+        "\n🎨  Available per-point fields in this .trk:",
         available if available else "None stored",
     )
     print(
         "💡 Note: 'az' and 'el' can still be computed on-the-fly from streamline geometry."
     )
-    print("🧭 You can use: color_by = ha, ia, az, el, elevation, azimuth\n")
+    options = ["elevation", "azimuth", "az", "el", *available]
+    print(f"🧭 You can use: color_by = {', '.join(options)}\n")
 
     # Decide the color scalar
     color_mode = color_by.lower().strip()
+    stored_fields = {name.lower(): name for name in available}
     color_values: list[np.ndarray] | None = None
     color_range: tuple[float, float] | None = None
     color_label = "Angle (deg)"
@@ -125,7 +192,9 @@ def visualize_streamlines(
         color_range = ANGLE_RANGES[key]
         color_label = f"{key} (deg)"
         if key in attrs:
-            color_values = attrs[key]
+            color_values = [
+                np.asarray(arr, dtype=np.float32).reshape(-1) for arr in attrs[key]
+            ]
         else:
             if key in {"AZ", "EL"}:
                 az_list, el_list = _compute_az_el_from_streamlines(streamlines_xyz)
@@ -143,8 +212,30 @@ def visualize_streamlines(
         color_label = (
             "Elevation (deg)" if color_mode == "elevation" else "Azimuth (deg)"
         )
+    elif color_mode in stored_fields:
+        key = stored_fields[color_mode]
+        color_values = []
+        field_min = np.inf
+        field_max = -np.inf
+        for values in attrs[key]:
+            values = np.asarray(values, dtype=np.float32)
+            if values.ndim != 1:
+                raise ValueError(f"Per-point field '{key}' must contain one scalar")
+            color_values.append(values)
+            finite = values[np.isfinite(values)]
+            if finite.size:
+                field_min = min(field_min, float(finite.min()))
+                field_max = max(field_max, float(finite.max()))
+        if not np.isfinite(field_min):
+            raise ValueError(f"Per-point field '{key}' contains no finite values")
+        if field_min == field_max:
+            field_max = field_min + 1.0
+        color_range = (field_min, field_max)
+        color_label = key
     else:
-        raise ValueError("color_by must be one of: ha, ia, az, el, elevation, azimuth")
+        raise ValueError(
+            f"Unknown color_by '{color_by}'. Available: {', '.join(options)}"
+        )
 
     # Default colormap selection
     if colormap is None:
@@ -152,8 +243,10 @@ def visualize_streamlines(
             colormap = cm.viridis
         elif color_mode in {"ha", "ia", "elevation"}:
             colormap = helix_angle_cmap
-        else:
+        elif color_mode in {"az", "azimuth"}:
             colormap = cm.hsv
+        else:
+            colormap = cm.viridis
 
     backend = backend.lower().strip()
     render_mode = mode.lower().strip()
@@ -187,6 +280,13 @@ def visualize_streamlines(
             tube_sides=tube_sides,
             color_range=color_range,
             color_label=color_label,
+            random_seed=random_seed,
+            session_path=session_path,
+            restore_session=restore_session,
+            session_settings=session_settings,
+            streamlines_file=p,
+            opacity=pyvista_opacity,
+            quality=fury_quality,
         )
     elif backend == "pyvista":
         from cardiotensor.visualization.pyvista_plotting_streamlines import (
@@ -219,6 +319,7 @@ def visualize_streamlines(
             show_bounds=pyvista_show_bounds,
             shadows=pyvista_shadows,
             spline_subdiv=spline_subdiv,
+            random_seed=random_seed,
         )
     else:
         raise ValueError("backend must be one of: fury, pyvista")

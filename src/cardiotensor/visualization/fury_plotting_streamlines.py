@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import inspect
+import json
 import random
 import tempfile
 from pathlib import Path
@@ -11,7 +12,7 @@ import fury
 import matplotlib.pyplot as plt
 import numpy as np
 import vtk
-from fury import actor, window
+from fury import actor, ui, window
 
 # ---------------------------
 # small utilities
@@ -116,8 +117,15 @@ def _compute_streamline_bounds(
     if not streamlines_xyz:
         raise ValueError("No streamlines available to compute bounds.")
 
-    mins = np.min([sl.min(axis=0) for sl in streamlines_xyz], axis=0)
-    maxs = np.max([sl.max(axis=0) for sl in streamlines_xyz], axis=0)
+    mins = np.full(3, np.inf)
+    maxs = np.full(3, -np.inf)
+    for streamline in streamlines_xyz:
+        if len(streamline) == 0:
+            continue
+        mins = np.minimum(mins, np.min(streamline, axis=0))
+        maxs = np.maximum(maxs, np.max(streamline, axis=0))
+    if not np.all(np.isfinite(mins)):
+        raise ValueError("No non-empty streamlines available to compute bounds.")
     return mins, maxs
 
 
@@ -194,6 +202,13 @@ class StreamlineViewer:
         tube_sides: int = 9,
         color_range: tuple[float, float] | None = None,
         color_label: str = "Angle",
+        flat_values: np.ndarray | None = None,
+        session_path: str | Path | None = None,
+        restore_session: bool = True,
+        session_settings: dict | None = None,
+        streamlines_file: str | Path | None = None,
+        opacity: float = 1.0,
+        quality: str = "interactive",
     ):
         self.streamlines_xyz = streamlines_xyz
         self.color_values = color_values
@@ -201,16 +216,48 @@ class StreamlineViewer:
         self.window_size = window_size
         self.lut = lut
         self.color_label = color_label
+        self.session_path = (
+            Path(session_path).expanduser().resolve() if session_path else None
+        )
+        self.restore_session = bool(restore_session)
+        self.session_settings = dict(session_settings or {})
+        self.streamlines_file = (
+            Path(streamlines_file).resolve() if streamlines_file else None
+        )
+        self.quality = quality.lower().strip()
+        if self.quality not in {"interactive", "publication"}:
+            raise ValueError("quality must be 'interactive' or 'publication'")
 
         # Scene
         self.scene = fury.window.Scene()
         self.current_bg = parse_background_color(background_color)
         self.scene.SetBackground(*self.current_bg)
+        self._setup_lighting()
 
         # thickness state
-        self.linewidth = max(1.0, float(line_width))  # used for both line and tube
-        self.spline_subdiv = spline_subdiv
+        self.linewidth = max(0.001, float(line_width))  # used for both line and tube
+        self.spline_subdiv = max(1, int(spline_subdiv))
+        self.actor_spline_subdiv = (
+            self.spline_subdiv if self.spline_subdiv > 1 else None
+        )
         self.tube_sides = max(3, int(tube_sides))
+        if self.quality == "publication":
+            self.material = {
+                "ambient": 0.30,
+                "diffuse": 0.80,
+                "specular": 0.25,
+                "opacity": float(np.clip(opacity, 0.05, 1.0)),
+            }
+        else:
+            self.material = {
+                "ambient": 0.45,
+                "diffuse": 0.70,
+                "specular": 0.12,
+                "opacity": float(np.clip(opacity, 0.05, 1.0)),
+            }
+        self.controls_panel = None
+        self.controls_visible = False
+        self.control_sliders = {}
 
         self.scale_bar = None
         self.scale_bar_on = False
@@ -220,18 +267,25 @@ class StreamlineViewer:
 
         # VTK/FURY objects
         self.showm: window.ShowManager | None = None
+        self._closing = False
 
         # clipped branch objects
         self.plane_rep = None
         self.plane_fn = None
         self.plane_widget = None
+        self.box_widget = None
+        self.box_rep = None
+        self.box_planes = vtk.vtkPlanes()
+        self.box_clipping_active = False
         self.mapper0 = None
         self.actor0 = None
 
         # precompute flat scalars for LUT mapping
-        self.flat_vals = np.concatenate(
-            [np.asarray(c).ravel() for c in self.color_values]
-        ).astype(np.float32)
+        if flat_values is None:
+            flat_values = np.concatenate(
+                [np.asarray(c).ravel() for c in self.color_values]
+            )
+        self.flat_vals = np.asarray(flat_values, dtype=np.float32).reshape(-1)
         if color_range is None:
             self.vmin = float(np.nanmin(self.flat_vals))
             self.vmax = float(np.nanmax(self.flat_vals))
@@ -240,8 +294,7 @@ class StreamlineViewer:
         self.lut.SetRange(self.vmin, self.vmax)
 
         # bounds and center from NumPy
-        mins = np.min([sl.min(axis=0) for sl in self.streamlines_xyz], axis=0)
-        maxs = np.max([sl.max(axis=0) for sl in self.streamlines_xyz], axis=0)
+        mins, maxs = _compute_streamline_bounds(self.streamlines_xyz)
         self.center = (mins + maxs) / 2.0
         self.bounds = [mins[0], maxs[0], mins[1], maxs[1], mins[2], maxs[2]]
 
@@ -258,7 +311,7 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
-                spline_subdiv=self.spline_subdiv,
+                spline_subdiv=self.actor_spline_subdiv,
                 lookup_colormap=self.lut,
                 tube_sides=self.tube_sides,
                 **_supported_actor_kwargs(actor.streamtube, lod=False),
@@ -268,6 +321,7 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,  # scalars
                 linewidth=self.linewidth,
+                spline_subdiv=self.actor_spline_subdiv,
                 lookup_colormap=self.lut,
                 **_supported_actor_kwargs(actor.line, lod=False),
             )
@@ -285,6 +339,7 @@ class StreamlineViewer:
             **_supported_actor_kwargs(actor.line, lod=False),
         )
         self.actor_fast.SetVisibility(False)
+        self.actor_fast.GetProperty().SetOpacity(self.material["opacity"])
         self.scene.add(self.actor_fast)
 
         # clipping plane setup, start disabled
@@ -308,10 +363,130 @@ class StreamlineViewer:
     def _style_streamline_actor(self):
         prop = self.actor0.GetProperty()
         prop.SetInterpolationToPhong()
-        prop.SetAmbient(0.45)  # raised from 0.1 → brighter unlit sides, less dark
-        prop.SetDiffuse(0.75)
-        prop.SetSpecular(0.15)
-        prop.SetSpecularPower(10)
+        prop.SetAmbient(self.material["ambient"])
+        prop.SetDiffuse(self.material["diffuse"])
+        prop.SetSpecular(self.material["specular"])
+        prop.SetSpecularPower(20 if self.quality == "publication" else 10)
+        prop.SetOpacity(self.material["opacity"])
+
+    def _setup_lighting(self):
+        """Use stable camera-relative key, fill and rim lights."""
+        try:
+            self.scene.RemoveAllLights()
+            headlight = vtk.vtkLight()
+            headlight.SetLightTypeToHeadlight()
+            headlight.SetIntensity(0.80)
+
+            fill = vtk.vtkLight()
+            fill.SetLightTypeToCameraLight()
+            fill.SetPosition(-1.0, 1.0, 0.5)
+            fill.SetFocalPoint(0.0, 0.0, 0.0)
+            fill.SetIntensity(0.35)
+
+            rim = vtk.vtkLight()
+            rim.SetLightTypeToCameraLight()
+            rim.SetPosition(1.0, -1.0, 0.75)
+            rim.SetFocalPoint(0.0, 0.0, 0.0)
+            rim.SetIntensity(0.25)
+
+            self.lights = [headlight, fill, rim]
+            for light in self.lights:
+                self.scene.AddLight(light)
+        except Exception:
+            self.lights = []
+
+    def _apply_material(self):
+        self._style_streamline_actor()
+        if self.actor_fast is not None:
+            self.actor_fast.GetProperty().SetOpacity(self.material["opacity"])
+        self._render_now()
+
+    def _set_material_value(self, name: str, value: float):
+        self.material[name] = float(value)
+        self._apply_material()
+
+    def _build_controls_panel(self):
+        panel = ui.Panel2D(
+            size=(280, 255),
+            position=(12, 12),
+            color=(0.08, 0.09, 0.12),
+            opacity=0.88,
+            has_border=True,
+            border_color=(0.55, 0.58, 0.65),
+            border_width=1,
+        )
+        title = ui.TextBlock2D(
+            text="FURY material controls (L)",
+            font_size=16,
+            bold=True,
+            color=(1, 1, 1),
+        )
+        panel.add_element(title, (12, 225))
+
+        specs = (
+            ("ambient", "Ambient", 0.0, 1.0),
+            ("diffuse", "Diffuse", 0.0, 1.0),
+            ("specular", "Specular", 0.0, 1.0),
+            ("opacity", "Opacity", 0.05, 1.0),
+        )
+        for row, (name, label_text, minimum, maximum) in enumerate(specs):
+            y = 185 - row * 52
+            label = ui.TextBlock2D(
+                text=label_text, font_size=13, color=(0.92, 0.94, 1.0)
+            )
+            slider = ui.LineSlider2D(
+                initial_value=self.material[name],
+                min_value=minimum,
+                max_value=maximum,
+                length=145,
+                line_width=3,
+                outer_radius=7,
+                font_size=12,
+                text_template="{value:.2f}",
+            )
+            slider.on_change = (
+                lambda current_slider, material_name=name: self._set_material_value(
+                    material_name, current_slider.value
+                )
+            )
+            panel.add_element(label, (12, y))
+            panel.add_element(slider, (180, y + 5), anchor="center")
+            self.control_sliders[name] = slider
+
+        self.controls_panel = panel
+        self.scene.add(panel)
+        panel.set_visibility(False)
+
+    def _toggle_controls_panel(self):
+        if self.controls_panel is None:
+            return
+        self.controls_visible = not self.controls_visible
+        self.controls_panel.set_visibility(self.controls_visible)
+        self._render_now()
+        print(f"Material controls {'ON' if self.controls_visible else 'OFF'}")
+
+    def _update_overlay_colors(self):
+        luminance = (
+            0.2126 * self.current_bg[0]
+            + 0.7152 * self.current_bg[1]
+            + 0.0722 * self.current_bg[2]
+        )
+        color = (1.0, 1.0, 1.0) if luminance < 0.5 else (0.0, 0.0, 0.0)
+        if getattr(self, "scalar_bar", None) is not None:
+            self.scalar_bar.GetTitleTextProperty().SetColor(*color)
+            self.scalar_bar.GetLabelTextProperty().SetColor(*color)
+            try:
+                self.scalar_bar.GetAnnotationTextProperty().SetColor(*color)
+            except Exception:
+                pass
+        if self.scale_bar is not None:
+            for axis_name in ("Bottom", "Left", "Right", "Top"):
+                try:
+                    axis = getattr(self.scale_bar, f"Get{axis_name}Axis")()
+                    axis.GetLabelTextProperty().SetColor(*color)
+                    axis.GetTitleTextProperty().SetColor(*color)
+                except Exception:
+                    pass
 
     def _add_origin_marker(self):
         bounds_size = np.array(
@@ -347,9 +522,11 @@ class StreamlineViewer:
         )
 
     def _add_scalar_bar(self):
-        self.scene.add(
-            fury.actor.scalar_bar(lookup_table=self.lut, title=self.color_label)
+        self.scalar_bar = fury.actor.scalar_bar(
+            lookup_table=self.lut, title=self.color_label
         )
+        self.scene.add(self.scalar_bar)
+        self._update_overlay_colors()
 
     def _render_now(self):
         try:
@@ -359,6 +536,237 @@ class StreamlineViewer:
         if self.showm is not None:
             self.showm.render()
 
+    def _save_screenshot(self, out_path: Path, scale: int = 1) -> tuple[int, int]:
+        """Capture the current viewer without creating another VTK window."""
+        if self.showm is None or not hasattr(self.showm, "window"):
+            raise RuntimeError("The interactive viewer is not initialized.")
+
+        render_window = self.showm.window
+        render_window.Render()
+
+        capture = vtk.vtkWindowToImageFilter()
+        capture.SetInput(render_window)
+        capture.SetInputBufferTypeToRGB()
+        if scale > 1:
+            capture.SetScale(int(scale))
+        capture.Update()
+
+        writer = vtk.vtkPNGWriter()
+        writer.SetFileName(str(out_path))
+        writer.SetInputConnection(capture.GetOutputPort())
+        writer.Write()
+
+        width, height, _ = capture.GetOutput().GetDimensions()
+        return int(width), int(height)
+
+    def _save_session(self, announce: bool = True) -> Path:
+        if self.session_path is None:
+            self.session_path = (Path.cwd() / "streamlines_session.json").resolve()
+
+        camera = self.scene.GetActiveCamera()
+        origin = [0.0, 0.0, 0.0]
+        normal = [1.0, 0.0, 0.0]
+        self.plane_rep.GetOrigin(origin)
+        self.plane_rep.GetNormal(normal)
+
+        window_size = list(self.window_size)
+        if self.showm is not None and hasattr(self.showm, "window"):
+            window_size = [int(value) for value in self.showm.window.GetSize()]
+
+        settings = dict(self.session_settings)
+        settings.update(
+            {
+                "line_width": float(self.linewidth),
+                "tube_thickness": float(self.linewidth),
+                "window_size": window_size,
+                "background_color": list(self.current_bg),
+                "opacity": float(self.material["opacity"]),
+                "quality": self.quality,
+            }
+        )
+        box_transform = None
+        if self.box_rep is not None:
+            transform = vtk.vtkTransform()
+            self.box_rep.GetTransform(transform)
+            matrix = transform.GetMatrix()
+            box_transform = [
+                matrix.GetElement(row, column)
+                for row in range(4)
+                for column in range(4)
+            ]
+        payload = {
+            "format": "cardiotensor-fury-session",
+            "version": 1,
+            "updated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "streamlines_file": (
+                str(self.streamlines_file) if self.streamlines_file else None
+            ),
+            "streamlines_size": (
+                self.streamlines_file.stat().st_size
+                if self.streamlines_file and self.streamlines_file.exists()
+                else None
+            ),
+            "settings": settings,
+            "view": {
+                "camera": {
+                    "position": list(camera.GetPosition()),
+                    "focal_point": list(camera.GetFocalPoint()),
+                    "view_up": list(camera.GetViewUp()),
+                    "clipping_range": list(camera.GetClippingRange()),
+                    "view_angle": float(camera.GetViewAngle()),
+                    "parallel_projection": bool(camera.GetParallelProjection()),
+                    "parallel_scale": float(camera.GetParallelScale()),
+                },
+                "clipping_plane": {
+                    "origin": origin,
+                    "normal": normal,
+                    "enabled": bool(self.clipping_active),
+                    "gizmo_visible": bool(
+                        self.plane_widget and self.plane_widget.GetEnabled()
+                    ),
+                },
+                "crop_box": {
+                    "transform": box_transform,
+                    "enabled": bool(self.box_clipping_active),
+                    "gizmo_visible": bool(
+                        self.box_widget and self.box_widget.GetEnabled()
+                    ),
+                },
+                "material": dict(self.material),
+                "controls_visible": bool(self.controls_visible),
+                "background_color": list(self.current_bg),
+                "scale_bar_visible": bool(self.scale_bar_on),
+                "window_size": window_size,
+            },
+        }
+
+        self.session_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = self.session_path.with_suffix(
+            self.session_path.suffix + ".tmp"
+        )
+        temporary_path.write_text(json.dumps(payload, indent=2) + "\n")
+        temporary_path.replace(self.session_path)
+        self.session_settings = settings
+        if announce:
+            print(f"Saved FURY session to {self.session_path}")
+        return self.session_path
+
+    def _restore_session(self) -> bool:
+        if self.session_path is None or not self.session_path.exists():
+            return False
+
+        try:
+            view = json.loads(self.session_path.read_text()).get("view", {})
+            camera_state = view.get("camera", {})
+            camera = self.scene.GetActiveCamera()
+            if camera_state.get("position"):
+                camera.SetPosition(*camera_state["position"])
+            if camera_state.get("focal_point"):
+                camera.SetFocalPoint(*camera_state["focal_point"])
+            if camera_state.get("view_up"):
+                camera.SetViewUp(*camera_state["view_up"])
+            if camera_state.get("view_angle") is not None:
+                camera.SetViewAngle(float(camera_state["view_angle"]))
+            if camera_state.get("parallel_projection") is not None:
+                camera.SetParallelProjection(bool(camera_state["parallel_projection"]))
+            if camera_state.get("parallel_scale") is not None:
+                camera.SetParallelScale(float(camera_state["parallel_scale"]))
+            if camera_state.get("clipping_range"):
+                camera.SetClippingRange(*camera_state["clipping_range"])
+
+            plane = view.get("clipping_plane", {})
+            if plane.get("origin"):
+                self.plane_rep.SetOrigin(*plane["origin"])
+            if plane.get("normal"):
+                self.plane_rep.SetNormal(*plane["normal"])
+            self.plane_rep.UpdatePlacement()
+            self._sync_plane_from_widget()
+
+            self.clipping_active = bool(plane.get("enabled", False))
+
+            if self.plane_widget is not None:
+                if plane.get("gizmo_visible", False):
+                    self.plane_widget.EnabledOn()
+                else:
+                    self.plane_widget.EnabledOff()
+
+            crop_box = view.get("crop_box", {})
+            transform_values = crop_box.get("transform")
+            if getattr(self, "box_rep", None) is not None and transform_values:
+                matrix = vtk.vtkMatrix4x4()
+                for row in range(4):
+                    for column in range(4):
+                        matrix.SetElement(
+                            row, column, transform_values[row * 4 + column]
+                        )
+                transform = vtk.vtkTransform()
+                transform.SetMatrix(matrix)
+                self.box_rep.SetTransform(transform)
+            self.box_clipping_active = bool(crop_box.get("enabled", False))
+            if getattr(self, "box_widget", None) is not None:
+                if crop_box.get("gizmo_visible", False):
+                    self.box_widget.EnabledOn()
+                else:
+                    self.box_widget.EnabledOff()
+            self._apply_clipping_planes()
+
+            saved_material = view.get("material", {})
+            if saved_material:
+                for name in self.material:
+                    if name in saved_material:
+                        self.material[name] = float(saved_material[name])
+                self._apply_material()
+                for name, slider in self.control_sliders.items():
+                    slider.value = self.material[name]
+            self.controls_visible = bool(view.get("controls_visible", False))
+            if getattr(self, "controls_panel", None) is not None:
+                self.controls_panel.set_visibility(self.controls_visible)
+
+            background = view.get("background_color")
+            if background:
+                self.current_bg = tuple(float(value) for value in background)
+                self.scene.SetBackground(*self.current_bg)
+                self._update_overlay_colors()
+
+            show_scale_bar = bool(view.get("scale_bar_visible", True))
+            if show_scale_bar and not self.scale_bar_on:
+                self.scene.add(self.scale_bar)
+                self.scale_bar_on = True
+            elif not show_scale_bar and self.scale_bar_on:
+                self.scene.rm(self.scale_bar)
+                self.scale_bar_on = False
+
+            if camera_state.get("clipping_range"):
+                camera.SetClippingRange(*camera_state["clipping_range"])
+            if self.showm is not None:
+                self.showm.render()
+            print(f"Restored FURY session from {self.session_path}")
+            return True
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as err:
+            print(f"Warning: could not restore session {self.session_path}: {err}")
+            return False
+
+    def _autosave_session(self, *_):
+        if self.session_path is None:
+            return
+        try:
+            self._save_session(announce=False)
+            print(f"Updated FURY session: {self.session_path}")
+        except (OSError, ValueError, TypeError) as err:
+            print(f"Warning: could not update session {self.session_path}: {err}")
+
+    def _close_window(self, *_):
+        """Save once, then restore VTK's normal window-close behavior."""
+        if self._closing:
+            return
+        self._closing = True
+        self._autosave_session()
+        for widget in (self.plane_widget, self.box_widget):
+            if widget is not None:
+                widget.EnabledOff()
+        if self.showm is not None:
+            self.showm.exit()
+
     def _sync_plane_from_widget(self, *_):
         origin = [0.0, 0.0, 0.0]
         normal = [1.0, 0.0, 0.0]
@@ -366,6 +774,83 @@ class StreamlineViewer:
         self.plane_rep.GetNormal(normal)
         self.plane_fn.SetOrigin(origin)
         self.plane_fn.SetNormal(normal)
+        if self.clipping_active:
+            self._apply_clipping_planes()
+
+    def _setup_box_widget(self):
+        self.box_rep = vtk.vtkBoxRepresentation()
+        self.box_rep.SetPlaceFactor(1.0)
+        self.box_rep.PlaceWidget(self.bounds)
+        try:
+            self.box_rep.GetOutlineProperty().SetColor(0.2, 0.8, 1.0)
+            self.box_rep.GetHandleProperty().SetColor(1.0, 0.75, 0.2)
+        except Exception:
+            pass
+
+        self.box_widget = vtk.vtkBoxWidget2()
+        self.box_widget.SetRepresentation(self.box_rep)
+        self.box_widget.SetInteractor(self.showm.iren)
+        self.box_widget.RotationEnabledOn()
+        self.box_widget.EnabledOff()
+        for event in (
+            vtk.vtkCommand.StartInteractionEvent,
+            vtk.vtkCommand.InteractionEvent,
+            vtk.vtkCommand.EndInteractionEvent,
+        ):
+            self.box_widget.AddObserver(event, self._sync_box_from_widget)
+
+    def _sync_box_from_widget(self, *_):
+        if self.box_rep is not None:
+            self.box_rep.GetPlanes(self.box_planes)
+        if self.box_clipping_active:
+            self._apply_clipping_planes()
+
+    def _apply_clipping_planes(self):
+        box_rep = getattr(self, "box_rep", None)
+        box_active = bool(getattr(self, "box_clipping_active", False))
+        if box_rep is not None:
+            box_rep.GetPlanes(self.box_planes)
+        for current_actor in (self.actor0, self.actor_fast):
+            if current_actor is None:
+                continue
+            mapper = current_actor.GetMapper()
+            mapper.RemoveAllClippingPlanes()
+            if self.clipping_active:
+                mapper.AddClippingPlane(self.plane_fn)
+            if box_active:
+                for plane_index in range(self.box_planes.GetNumberOfPlanes()):
+                    mapper.AddClippingPlane(self.box_planes.GetPlane(plane_index))
+
+    def _toggle_box_clipping(self):
+        self.box_clipping_active = not self.box_clipping_active
+        if self.box_widget is not None:
+            if self.box_clipping_active:
+                self.box_widget.EnabledOn()
+            else:
+                self.box_widget.EnabledOff()
+        self._apply_clipping_planes()
+        self._render_now()
+        state = "ON" if self.box_clipping_active else "OFF"
+        print(f"Rotatable crop box {state}")
+
+    def _toggle_box_gizmo(self):
+        if self.box_widget is None:
+            return
+        if self.box_widget.GetEnabled():
+            self.box_widget.EnabledOff()
+            print("Crop-box gizmo hidden; box clipping state unchanged")
+        else:
+            self.box_widget.EnabledOn()
+            print("Crop-box gizmo shown; drag faces or handles and rotate it")
+        self._render_now()
+
+    def _reset_box(self):
+        if self.box_rep is None:
+            return
+        self.box_rep.PlaceWidget(self.bounds)
+        self._sync_box_from_widget()
+        self._render_now()
+        print("Crop box reset to the full streamline bounds")
 
     def _add_scale_bar(self):
         self.scale_bar = vtk.vtkLegendScaleActor()
@@ -383,28 +868,12 @@ class StreamlineViewer:
 
     def _toggle_clipping(self):
         """Toggle clipping state."""
-        if self.clipping_active:
-            # Deactivate clipping
-            self.actor0.GetMapper().RemoveAllClippingPlanes()
-            self.actor_fast.GetMapper().RemoveAllClippingPlanes()
-            self.clipping_active = False
-            print("Clipping OFF")
-        else:
-            # Activate clipping
-            self.actor0.GetMapper().AddClippingPlane(self.plane_fn)
-            self.actor_fast.GetMapper().AddClippingPlane(self.plane_fn)
-            self.clipping_active = True
-            print("Clipping ON")
-
+        self.clipping_active = not self.clipping_active
+        self._apply_clipping_planes()
+        print(f"Clipping plane {'ON' if self.clipping_active else 'OFF'}")
         self._render_now()
 
     def _rebuild_unclipped_actor(self):
-        clipping_on = (
-            self.mapper0.GetNumberOfClippingPlanes() > 0
-            if self.mapper0 is not None
-            else False
-        )
-
         if self.actor0 is not None:
             try:
                 self.scene.rm(self.actor0)
@@ -416,7 +885,7 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
-                spline_subdiv=self.spline_subdiv,
+                spline_subdiv=self.actor_spline_subdiv,
                 tube_sides=self.tube_sides,
                 lookup_colormap=self.lut,
                 **_supported_actor_kwargs(actor.streamtube, lod=False),
@@ -426,6 +895,7 @@ class StreamlineViewer:
                 self.streamlines_xyz,
                 colors=self.flat_vals,
                 linewidth=self.linewidth,
+                spline_subdiv=self.actor_spline_subdiv,
                 lookup_colormap=self.lut,
                 **_supported_actor_kwargs(actor.line, lod=False),
             )
@@ -434,18 +904,56 @@ class StreamlineViewer:
         self._style_streamline_actor()
 
         self.mapper0 = self.actor0.GetMapper()
-        if clipping_on:
-            self.mapper0.RemoveAllClippingPlanes()
-            self.mapper0.AddClippingPlane(self.plane_fn)
+        self._apply_clipping_planes()
 
     # ---------------------------
     # key handling
     # ---------------------------
     def _on_keypress(self, obj, evt):
         key = obj.GetKeySym().lower()
+        control_pressed = (
+            bool(obj.GetControlKey()) if hasattr(obj, "GetControlKey") else False
+        )
+        shift_pressed = (
+            bool(obj.GetShiftKey()) if hasattr(obj, "GetShiftKey") else False
+        )
+
+        if key == "s" and control_pressed:
+            try:
+                self._save_session()
+            except (OSError, ValueError, TypeError) as err:
+                print(f"Failed to save session: {err}")
+            return
 
         if key == "o":
             self._toggle_clipping()
+
+        elif key == "c":
+            self._toggle_box_clipping()
+
+        elif key == "g":
+            self._toggle_box_gizmo()
+
+        elif key == "x":
+            self._reset_box()
+
+        elif key == "l":
+            self._toggle_controls_panel()
+
+        elif key in ("1", "kp_1"):
+            self._set_camera_preset("front")
+
+        elif key in ("2", "kp_2"):
+            self._set_camera_preset("side")
+
+        elif key in ("3", "kp_3"):
+            self._set_camera_preset("top")
+
+        elif key in ("4", "kp_4"):
+            self._set_camera_preset("isometric")
+
+        elif key in ("5", "kp_5"):
+            self._toggle_projection()
 
         elif key == "h":
             if self.plane_widget:
@@ -471,6 +979,7 @@ class StreamlineViewer:
                 else (1.0, 1.0, 1.0)
             )
             self.scene.SetBackground(*self.current_bg)
+            self._update_overlay_colors()
             self._render_now()
             print(f"Background set to {self.current_bg}")
 
@@ -490,17 +999,14 @@ class StreamlineViewer:
 
         elif key == "p":
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            out_path = Path.cwd() / f"view_{ts}_hires.png"
+            scale = 2 if shift_pressed else 1
+            suffix = "_2x" if scale == 2 else ""
+            out_path = Path.cwd() / f"view_{ts}{suffix}.png"
             try:
-                highres_size = (2000, 2000)
-                fury.window.record(
-                    scene=self.scene,
-                    out_path=str(out_path),
-                    size=highres_size,
-                    reset_camera=False,
-                )
+                width, height = self._save_screenshot(out_path, scale=scale)
                 print(
-                    f"Saved high-resolution screenshot to {out_path} ({highres_size[0]}x{highres_size[1]})"
+                    f"Saved screenshot to {out_path} "
+                    f"({width}x{height}, {scale}x viewer resolution)"
                 )
             except Exception as e:
                 print(f"Failed to save screenshot: {e}")
@@ -541,11 +1047,7 @@ class StreamlineViewer:
             self.actor0.SetVisibility(False)
             self.actor_fast.SetVisibility(True)
 
-            # Apply clipping only if it was previously enabled
-            if self.clipping_active:
-                mapper = self.actor_fast.GetMapper()
-                mapper.RemoveAllClippingPlanes()
-                mapper.AddClippingPlane(self.plane_fn)
+            self._apply_clipping_planes()
         except Exception:
             pass
         self._render_now()
@@ -556,11 +1058,7 @@ class StreamlineViewer:
             self.actor_fast.SetVisibility(False)  # Hide the fast actor
             self.actor0.SetVisibility(True)  # Show the full-res actor
 
-            # Apply clipping to the full-res actor if it was previously enabled
-            if self.clipping_active:
-                mapper = self.actor0.GetMapper()
-                mapper.RemoveAllClippingPlanes()
-                mapper.AddClippingPlane(self.plane_fn)
+            self._apply_clipping_planes()
         except Exception:
             pass
         self._render_now()
@@ -570,6 +1068,53 @@ class StreamlineViewer:
         self.scene.azimuth(15)
         self.scene.elevation(10)
         self.scene.zoom(1.1)
+
+    def _set_camera_preset(self, preset: str) -> None:
+        camera = self.scene.GetActiveCamera()
+        center = np.asarray(self.center, dtype=float)
+        diagonal = max(
+            1.0,
+            float(
+                np.linalg.norm(
+                    [
+                        self.bounds[1] - self.bounds[0],
+                        self.bounds[3] - self.bounds[2],
+                        self.bounds[5] - self.bounds[4],
+                    ]
+                )
+            ),
+        )
+        directions = {
+            "front": (np.array([0.0, -1.0, 0.0]), (0.0, 0.0, 1.0)),
+            "side": (np.array([1.0, 0.0, 0.0]), (0.0, 0.0, 1.0)),
+            "top": (np.array([0.0, 0.0, 1.0]), (0.0, 1.0, 0.0)),
+            "isometric": (np.array([1.0, -1.0, 1.0]), (0.0, 0.0, 1.0)),
+        }
+        direction, view_up = directions[preset]
+        direction /= np.linalg.norm(direction)
+        camera.SetFocalPoint(*center)
+        camera.SetPosition(*(center + 1.8 * diagonal * direction))
+        camera.SetViewUp(*view_up)
+        camera.OrthogonalizeViewUp()
+        self.scene.ResetCameraClippingRange()
+        self._render_now()
+        print(f"Camera preset: {preset}")
+
+    def _toggle_projection(self) -> None:
+        camera = self.scene.GetActiveCamera()
+        use_parallel = not bool(camera.GetParallelProjection())
+        camera.SetParallelProjection(use_parallel)
+        if use_parallel:
+            size = np.array(
+                [
+                    self.bounds[1] - self.bounds[0],
+                    self.bounds[3] - self.bounds[2],
+                    self.bounds[5] - self.bounds[4],
+                ]
+            )
+            camera.SetParallelScale(0.55 * float(np.max(size)))
+        self._render_now()
+        print(f"Projection: {'parallel' if use_parallel else 'perspective'}")
 
     def _record_orbit(
         self, video_path: str | Path, video_frames: int, video_fps: int
@@ -590,7 +1135,11 @@ class StreamlineViewer:
             f"Recording FURY orbit video: {n_frames} frames at {fps} fps -> {out_path}"
         )
 
-        with tempfile.TemporaryDirectory(prefix="cardiotensor_fury_orbit_") as tmpdir:
+        scratch_root = out_path.parent / ".cardiotensor_scratch"
+        scratch_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(
+            prefix="cardiotensor_fury_orbit_", dir=scratch_root
+        ) as tmpdir:
             tmpdir_path = Path(tmpdir)
             frame_paths = []
             try:
@@ -633,6 +1182,7 @@ class StreamlineViewer:
                 scene=self.scene, size=self.window_size, reset_camera=False
             )
             self.showm.initialize()
+            self._build_controls_panel()
 
             iren = self.showm.iren
             iren.SetDesiredUpdateRate(60.0)
@@ -640,7 +1190,7 @@ class StreamlineViewer:
 
             # ensure anti-alias looks good when idle
             try:
-                self.showm.renwin.SetMultiSamples(0)
+                self.showm.window.SetMultiSamples(0)
                 self.scene.enable_anti_aliasing("fxaa")
             except Exception:
                 pass
@@ -663,13 +1213,24 @@ class StreamlineViewer:
             self.plane_widget.AddObserver(
                 vtk.vtkCommand.EndInteractionEvent, self._sync_plane_from_widget
             )
+            self._setup_box_widget()
 
             self.showm.iren.AddObserver("KeyPressEvent", self._on_keypress)
+            # An ExitEvent observer replaces VTK's default TerminateApp callback,
+            # so our handler must save the session and explicitly end interaction.
+            self._closing = False
+            self.showm.iren.AddObserver("ExitEvent", self._close_window)
 
             self._set_default_camera()
+            if self.restore_session:
+                self._restore_session()
 
             print(
-                "Keys: O toggle plane, H hide gizmo, I flip side, R reset plane, +/- thickness, B background, S scale bar, P save PNG, V record orbit"
+                "Keys: O plane clipping, H plane gizmo, I flip plane, R reset plane; "
+                "C rotatable crop box, G box gizmo, X reset box; L material controls; "
+                "1 front, 2 side, 3 top, 4 isometric, 5 projection; +/- thickness; "
+                "B background, S scale bar, Ctrl+S session, P PNG, Shift+P 2x PNG, "
+                "V orbit"
             )
             self.showm.start()
         else:
@@ -718,6 +1279,13 @@ def show_streamlines(
     tube_sides: int = 9,
     color_range: tuple[float, float] | None = None,
     color_label: str = "Angle (deg)",
+    random_seed: int | None = None,
+    session_path: str | Path | None = None,
+    restore_session: bool = True,
+    session_settings: dict | None = None,
+    streamlines_file: str | Path | None = None,
+    opacity: float = 1.0,
+    quality: str = "interactive",
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
     full_mins, full_maxs = _compute_streamline_bounds(streamlines_xyz)
@@ -764,18 +1332,17 @@ def show_streamlines(
     if not streamlines_xyz:
         raise ValueError("No streamlines left after downsampling or filtering.")
 
+    rng = random.Random(random_seed)
     if subsample_factor > 1:
         print(f"Subsampling: keeping 1 in every {subsample_factor} streamlines")
         total = len(streamlines_xyz)
-        keep_idx = sorted(
-            random.sample(range(total), max(1, total // subsample_factor))
-        )
+        keep_idx = sorted(rng.sample(range(total), max(1, total // subsample_factor)))
         streamlines_xyz = [streamlines_xyz[i] for i in keep_idx]
         color_values = [color_values[i] for i in keep_idx]
 
     if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
         print(f"Limiting to max {max_streamlines} streamlines")
-        keep_idx = sorted(random.sample(range(len(streamlines_xyz)), max_streamlines))
+        keep_idx = sorted(rng.sample(range(len(streamlines_xyz)), max_streamlines))
         streamlines_xyz = [streamlines_xyz[i] for i in keep_idx]
         color_values = [color_values[i] for i in keep_idx]
 
@@ -806,6 +1373,14 @@ def show_streamlines(
         lut_range = (float(color_range[0]), float(color_range[1]))
         print(f"Colorbar range: min={lut_range[0]:.3f}, max={lut_range[1]:.3f}")
     print(f"Rendering mode: {mode}")
+    if int(spline_subdiv) <= 1:
+        print("Visual smoothing: off (original streamline points preserved)")
+    else:
+        print(
+            "Visual smoothing: VTK cardinal spline with "
+            f"{int(spline_subdiv)} segments per streamline"
+        )
+    print(f"FURY quality preset: {quality}")
 
     if colormap is None:
         lut = fury.actor.colormap_lookup_table(
@@ -831,6 +1406,13 @@ def show_streamlines(
         tube_sides=tube_sides,
         color_range=lut_range,
         color_label=color_label,
+        flat_values=flat_colors,
+        session_path=session_path,
+        restore_session=restore_session,
+        session_settings=session_settings,
+        streamlines_file=streamlines_file,
+        opacity=opacity,
+        quality=quality,
     )
     viewer.run(
         interactive=interactive,

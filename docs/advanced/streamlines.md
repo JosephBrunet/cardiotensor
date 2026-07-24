@@ -47,6 +47,121 @@ Generated files:
 
     Use `--bin` if the dataset is too big to fit in RAM. This will bin the eigenvectors and the maps.
 
+## Cluster Streamlines
+
+Use decreasing thresholds to run hierarchical QuickBundlesX:
+
+```console
+$ cardio-analysis-streamlines OUTPUT_PATH/streamlines.trk \
+    --quickbundles 5 2 1 \
+    --cluster-max-streamlines 50000 \
+    --cluster-min-size 10 \
+    --max-clusters 100 \
+    --outdir streamline_analysis
+```
+
+The thresholds use the physical coordinate unit stored in the TRK. New
+CardioTensor tractograms store millimetres. A single threshold runs
+QuickBundles; multiple decreasing thresholds run QuickBundlesX.
+
+For a legacy TRK stored in voxel coordinates, scale it to millimetres during
+analysis. For example, use the following for 16.495 µm voxels:
+
+```console
+$ cardio-analysis-streamlines streamlines.trk --voxel-size 0.016495 \
+    --quickbundles 5 2 1 --outdir streamline_analysis
+```
+
+The command writes:
+
+- `*_quickbundles_clusters.csv`: cluster sizes and centroid lengths.
+- `*_quickbundles_centroids.trk`: one representative centroid per cluster.
+- `*_quickbundles_members.trk`: every sampled full-resolution streamline from
+  the retained clusters, colored through its stored `cluster_id` field.
+- `*_quickbundles_membership.npz`: sampled source-streamline indices and their
+  cluster identifiers.
+
+`--cluster-min-size` first removes small clusters from the centroid and member
+TRK files. `--max-clusters 100` then keeps only the 100 largest surviving
+clusters in those TRKs. The CSV still contains every cluster, with
+`saved_centroid` indicating which representatives were written, and the
+membership NPZ retains every sampled assignment.
+
+Visualize the representative trajectories with:
+
+```console
+$ cardio-visualize-streamlines *_quickbundles_centroids.trk --color-by cluster_id
+```
+
+Visualize all sampled members of the retained clusters with:
+
+```console
+$ cardio-visualize-streamlines *_quickbundles_members.trk \
+    --color-by cluster_id --top-clusters 100 --subsample 5
+```
+
+`--top-clusters N` keeps every streamline belonging to the N largest stored
+clusters. It is a display-only filter and does not rerun or modify clustering.
+
+The member TRK is written through a second sequential input pass so the
+full-resolution trajectories do not all need to be copied into RAM.
+
+By default, clustering uses a reproducible reservoir sample of at most 50,000
+streamlines to keep memory bounded. Use `--cluster-max-streamlines 0` only when
+the complete tractogram comfortably fits in memory.
+
+## Compare Multiple Hearts
+
+Passing two or more tractograms automatically creates a cohort report. Use the
+same tracking, filtering, physical coordinate unit, and QuickBundles thresholds
+for every heart:
+
+```console
+$ cardio-analysis-streamlines heart1.trk heart2.trk heart3.trk heart4.trk \
+    --labels H1 H2 H3 H4 \
+    --min-points 250 \
+    --quickbundles 20 10 \
+    --cluster-points 30 \
+    --cluster-max-streamlines 100000 \
+    --cluster-min-size 10 \
+    --max-clusters 100 \
+    --outdir cohort_analysis
+```
+
+In addition to the per-metric and per-heart clustering files, this writes:
+
+- `heart_summary.csv`: one row per heart containing streamline counts, spatial
+  extent, and the mean, median, quartiles, and IQR of length, normalized length,
+  curvature, and tortuosity. When clustering is enabled it also contains cluster
+  count, top-10 coverage, entropy, normalized entropy, and effective number of
+  clusters.
+- `geometry_distributions.png/.pdf`: three ECDF panels for normalized length,
+  mean curvature, and tortuosity.
+- `heart_metric_summary.png/.pdf`: median and IQR for each heart.
+- `heart_distance_matrix.csv` and `heart_distance_heatmap.png/.pdf`: a
+  symmetric heart-to-heart distance based on the three geometry distributions.
+- `cluster_rank_abundance.png/.pdf`: cluster abundance and cumulative cluster
+  coverage. This file is created when `--quickbundles` is used.
+
+Streamline analysis does not create large system-temporary files. QuickBundles
+outputs and report figures are written directly to `--outdir`; use an absolute
+path on the data-processing filesystem when launching from another directory.
+If an analysis reads an unusual single-file TIFF that needs a fallback memmap,
+the file uses `.cardiotensor_scratch` beside that TIFF instead of system
+`/tmp`.
+
+Normalized length is streamline length divided by the tractogram bounding-box
+diagonal. The distance heatmap averages the one-dimensional Wasserstein distance
+for the three metrics after dividing each by its pooled IQR. A value of zero
+means identical sampled distributions; larger values indicate greater
+differences.
+
+Distribution plots and distances use the same reproducible sample size for
+every heart: at most 20,000 streamlines, or the size of the smallest eligible
+tractogram. Heart-level summary statistics use all eligible streamlines. The
+heart remains the biological replicate; individual streamlines should not be
+reported as independent samples.
+
 ## Visualize Streamlines
 
 ```console
@@ -62,6 +177,9 @@ Useful options:
 - `--min-length`: filter short streamlines.
 - `--crop-x`, `--crop-y`, `--crop-z`: spatial crop ranges.
 - `--screenshot`: save a PNG snapshot.
+- `--video`: save an orbit video. FURY frame files use
+  `.cardiotensor_scratch` beside the video rather than system `/tmp`, and are
+  removed after successful encoding.
 
 !!! note
 
