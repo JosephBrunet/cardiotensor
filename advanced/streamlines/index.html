@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -902,6 +902,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cluster-streamlines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Streamlines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compare-multiple-hearts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare Multiple Hearts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#visualize-streamlines" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1239,6 +1261,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cluster-streamlines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Streamlines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compare-multiple-hearts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare Multiple Hearts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#visualize-streamlines" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1383,8 +1427,98 @@
 <p class="admonition-title">Note</p>
 <p>Use <code>--bin</code> if the dataset is too big to fit in RAM. This will bin the eigenvectors and the maps.</p>
 </div>
+<h2 id="cluster-streamlines"><a class="toclink" href="#cluster-streamlines">Cluster Streamlines</a><a class="headerlink" href="#cluster-streamlines" title="Permanent link">&para;</a></h2>
+<p>Use decreasing thresholds to run hierarchical QuickBundlesX:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>cardio-analysis-streamlines<span class="w"> </span>OUTPUT_PATH/streamlines.trk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--quickbundles<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>--cluster-max-streamlines<span class="w"> </span><span class="m">50000</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>--cluster-min-size<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span>--max-clusters<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span>--outdir<span class="w"> </span>streamline_analysis
+</code></pre></div>
+<p>The thresholds use the physical coordinate unit stored in the TRK. New
+CardioTensor tractograms store millimetres. A single threshold runs
+QuickBundles; multiple decreasing thresholds run QuickBundlesX.</p>
+<p>For a legacy TRK stored in voxel coordinates, scale it to millimetres during
+analysis. For example, use the following for 16.495 µm voxels:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>cardio-analysis-streamlines<span class="w"> </span>streamlines.trk<span class="w"> </span>--voxel-size<span class="w"> </span><span class="m">0</span>.016495<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--quickbundles<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>--outdir<span class="w"> </span>streamline_analysis
+</code></pre></div>
+<p>The command writes:</p>
+<ul>
+<li><code>*_quickbundles_clusters.csv</code>: cluster sizes and centroid lengths.</li>
+<li><code>*_quickbundles_centroids.trk</code>: one representative centroid per cluster.</li>
+<li><code>*_quickbundles_members.trk</code>: every sampled full-resolution streamline from
+  the retained clusters, colored through its stored <code>cluster_id</code> field.</li>
+<li><code>*_quickbundles_membership.npz</code>: sampled source-streamline indices and their
+  cluster identifiers.</li>
+</ul>
+<p><code>--cluster-min-size</code> first removes small clusters from the centroid and member
+TRK files. <code>--max-clusters 100</code> then keeps only the 100 largest surviving
+clusters in those TRKs. The CSV still contains every cluster, with
+<code>saved_centroid</code> indicating which representatives were written, and the
+membership NPZ retains every sampled assignment.</p>
+<p>Visualize the representative trajectories with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>*_quickbundles_centroids.trk<span class="w"> </span>--color-by<span class="w"> </span>cluster_id
+</code></pre></div>
+<p>Visualize all sampled members of the retained clusters with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>*_quickbundles_members.trk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--color-by<span class="w"> </span>cluster_id<span class="w"> </span>--top-clusters<span class="w"> </span><span class="m">100</span><span class="w"> </span>--subsample<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<p><code>--top-clusters N</code> keeps every streamline belonging to the N largest stored
+clusters. It is a display-only filter and does not rerun or modify clustering.</p>
+<p>The member TRK is written through a second sequential input pass so the
+full-resolution trajectories do not all need to be copied into RAM.</p>
+<p>By default, clustering uses a reproducible reservoir sample of at most 50,000
+streamlines to keep memory bounded. Use <code>--cluster-max-streamlines 0</code> only when
+the complete tractogram comfortably fits in memory.</p>
+<h2 id="compare-multiple-hearts"><a class="toclink" href="#compare-multiple-hearts">Compare Multiple Hearts</a><a class="headerlink" href="#compare-multiple-hearts" title="Permanent link">&para;</a></h2>
+<p>Passing two or more tractograms automatically creates a cohort report. Use the
+same tracking, filtering, physical coordinate unit, and QuickBundles thresholds
+for every heart:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">$ </span>cardio-analysis-streamlines<span class="w"> </span>heart1.trk<span class="w"> </span>heart2.trk<span class="w"> </span>heart3.trk<span class="w"> </span>heart4.trk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--labels<span class="w"> </span>H1<span class="w"> </span>H2<span class="w"> </span>H3<span class="w"> </span>H4<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>--min-points<span class="w"> </span><span class="m">250</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>--quickbundles<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span>--cluster-points<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span>--cluster-max-streamlines<span class="w"> </span><span class="m">100000</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span>--cluster-min-size<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span>--max-clusters<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span>--outdir<span class="w"> </span>cohort_analysis
+</code></pre></div>
+<p>In addition to the per-metric and per-heart clustering files, this writes:</p>
+<ul>
+<li><code>heart_summary.csv</code>: one row per heart containing streamline counts, spatial
+  extent, and the mean, median, quartiles, and IQR of length, normalized length,
+  curvature, and tortuosity. When clustering is enabled it also contains cluster
+  count, top-10 coverage, entropy, normalized entropy, and effective number of
+  clusters.</li>
+<li><code>geometry_distributions.png/.pdf</code>: three ECDF panels for normalized length,
+  mean curvature, and tortuosity.</li>
+<li><code>heart_metric_summary.png/.pdf</code>: median and IQR for each heart.</li>
+<li><code>heart_distance_matrix.csv</code> and <code>heart_distance_heatmap.png/.pdf</code>: a
+  symmetric heart-to-heart distance based on the three geometry distributions.</li>
+<li><code>cluster_rank_abundance.png/.pdf</code>: cluster abundance and cumulative cluster
+  coverage. This file is created when <code>--quickbundles</code> is used.</li>
+</ul>
+<p>Streamline analysis does not create large system-temporary files. QuickBundles
+outputs and report figures are written directly to <code>--outdir</code>; use an absolute
+path on the data-processing filesystem when launching from another directory.
+If an analysis reads an unusual single-file TIFF that needs a fallback memmap,
+the file uses <code>.cardiotensor_scratch</code> beside that TIFF instead of system
+<code>/tmp</code>.</p>
+<p>Normalized length is streamline length divided by the tractogram bounding-box
+diagonal. The distance heatmap averages the one-dimensional Wasserstein distance
+for the three metrics after dividing each by its pooled IQR. A value of zero
+means identical sampled distributions; larger values indicate greater
+differences.</p>
+<p>Distribution plots and distances use the same reproducible sample size for
+every heart: at most 20,000 streamlines, or the size of the smallest eligible
+tractogram. Heart-level summary statistics use all eligible streamlines. The
+heart remains the biological replicate; individual streamlines should not be
+reported as independent samples.</p>
 <h2 id="visualize-streamlines"><a class="toclink" href="#visualize-streamlines">Visualize Streamlines</a><a class="headerlink" href="#visualize-streamlines" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>./parameters_example.conf<span class="w"> </span>--downsample<span class="w"> </span><span class="m">5</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>cardio-visualize-streamlines<span class="w"> </span>./parameters_example.conf<span class="w"> </span>--downsample<span class="w"> </span><span class="m">5</span>
 </code></pre></div>
 <p>Useful options:</p>
 <ul>
@@ -1395,6 +1529,9 @@
 <li><code>--min-length</code>: filter short streamlines.</li>
 <li><code>--crop-x</code>, <code>--crop-y</code>, <code>--crop-z</code>: spatial crop ranges.</li>
 <li><code>--screenshot</code>: save a PNG snapshot.</li>
+<li><code>--video</code>: save an orbit video. FURY frame files use
+  <code>.cardiotensor_scratch</code> beside the video rather than system <code>/tmp</code>, and are
+  removed after successful encoding.</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1461,7 +1598,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 6, 2026 18:36:04 UTC"><span class="timeago" datetime="2026-04-06T18:36:04+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 6, 2026 18:36:04 UTC">2026-04-06</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 24, 2026 21:32:02 UTC"><span class="timeago" datetime="2026-07-24T21:32:02+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 24, 2026 21:32:02 UTC">2026-07-24</span>
   </span>
 
     
@@ -1617,7 +1754,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.path", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.sections", "navigation.indexes", "navigation.tracking", "content.code.annotate", "toc.follow", "navigation.footer", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       

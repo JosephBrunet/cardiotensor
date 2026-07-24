@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1426,7 +1426,7 @@
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="na">TRUNCATE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">4</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="c1"># Padding to avoid border artifacts</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1"># Default value is TRUNCATE * RHO + 0.5</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1"># By default this includes the support of both Gaussian filtering stages.</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1"># VERTICAL_PADDING = 10</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1"># Number of slices to load into memory at a time during processing.</span>
@@ -1436,66 +1436,80 @@
 <a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="c1"># Enable GPU computation during the structure tensor calculation (True/False)</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="na">USE_GPU</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="c1"># Whether to save the orientation vectors (as .npy) (True/False)</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="c1"># Use for 3D vector/fiber visualisation</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="na">WRITE_VECTORS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="c1"># Specify the processing direction:</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="c1">#   - True: Process slices from the beginning (0) to the end.</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="c1">#   - False: Process slices from the end to the beginning.</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="na">REVERSE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">False</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="k">[ANGLE CALCULATION]</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="c1"># Whether to save the helical and intrusion angles and fractional anisotropy (True/False)</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="na">WRITE_ANGLES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="c1"># Choose which angle pair to compute:</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1">#   ha_ia  → Helical Angle / Intrusion Angle (standard myocardial architecture)</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="c1">#   az_el  → Azimuth / Elevation (generic vector orientation in 3D)</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="na">ANGLE_MODE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">ha_ia</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="c1"># Coordinates of points along the left ventricle axis.</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="c1"># The first point should be coordinates of the mitral valve point in the volume ([X, Y, Z])</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="c1"># The last point should be coordinates of the apex point in the volume ([X, Y, Z])</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="c1"># Intermediate points will be interpolated to create a curved centre line.</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="na">AXIS_POINTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">[104,110,116], [41,87,210], [68,95,162]</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="c1"># Store temporary eigenvalue/eigenvector volumes in memory-mapped files.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="c1"># Enable this when tensor outputs do not comfortably fit in RAM. Temporary</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="c1"># files default to OUTPUT_PATH/.cardiotensor_scratch, never the system /tmp.</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="c1"># Unsafe N_CHUNK values are reduced automatically from the available memory.</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="na">LOW_MEMORY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">False</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="c1"># Optional explicit scratch root on your data-processing filesystem.</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="c1"># LOW_MEMORY_DIR = /path/to/data-proposal/cardiotensor_scratch</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="c1"># Whether to save the orientation vectors (True/False)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="c1"># Use for 3D vector/fiber visualisation</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="na">WRITE_VECTORS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="c1"># Vector storage format: npy or zarr</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="c1"># Use zarr for compressed, chunked storage of very large volumes.</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="na">VECTOR_FORMAT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">zarr</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="c1"># Specify the processing direction:</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="c1">#   - True: Process slices from the beginning (0) to the end.</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="c1">#   - False: Process slices from the end to the beginning.</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="na">REVERSE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">False</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="k">[ANGLE CALCULATION]</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="c1"># Whether to save the helical and intrusion angles and fractional anisotropy (True/False)</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="na">WRITE_ANGLES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="k">[TEST]</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="c1"># Enable test mode:</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="c1">#   - True: Process and plot only a single slice for testing.</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="c1">#   - False: Perform the full processing on the entire volume.</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="na">TEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>
-<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="c1"># Specify the slice number to process when test mode is enabled.</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="na">N_SLICE_TEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">155</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>
-<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>
-<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a><span class="k">[OUTPUT]</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a><span class="c1"># Path to the folder where the results will be saved</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="na">OUTPUT_PATH</span><span class="w"> </span><span class="o">=</span><span class="s">./output</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>
-<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="c1"># Output file format for the results (e.g., jp2 or tif).</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a><span class="c1"># Default format is jp2</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="na">OUTPUT_FORMAT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">tif</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="c1"># Choose which angle pair to compute:</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="c1">#   ha_ia  → Helical Angle / Intrusion Angle (standard myocardial architecture)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="c1">#   az_el  → Azimuth / Elevation (generic vector orientation in 3D)</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="na">ANGLE_MODE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">ha_ia</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="c1"># Coordinates of points along the left ventricle axis.</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="c1"># The first point should be coordinates of the mitral valve point in the volume ([X, Y, Z])</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="c1"># The last point should be coordinates of the apex point in the volume ([X, Y, Z])</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a><span class="c1"># Intermediate points will be interpolated to create a curved centre line.</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a><span class="na">AXIS_POINTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">[104,110,116], [41,87,210], [68,95,162]</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>
+<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>
+<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="k">[TEST]</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a><span class="c1"># Enable test mode:</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="c1">#   - True: Process and plot only a single slice for testing.</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a><span class="c1">#   - False: Perform the full processing on the entire volume.</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="na">TEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>
-<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a><span class="c1"># Type of pixel values in the output file:</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="c1">#   - &quot;8bit&quot; for grayscale 8-bit images</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a><span class="c1">#   - &quot;rgb&quot; for 3-channel color images</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a><span class="na">OUTPUT_TYPE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8bit</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>
-<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a><span class="c1"># Optional colormaps for RGB output and test plots.</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a><span class="c1"># Use any Matplotlib colormap name, or helix_angle for the CardioTensor map.</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a><span class="c1"># COLORMAP applies to both angles unless COLORMAP_ANGLE1 or COLORMAP_ANGLE2 is set.</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a><span class="c1"># For ANGLE_MODE = az_el, defaults are helix_angle for AZ and viridis for EL.</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a><span class="c1"># COLORMAP =</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a><span class="c1"># COLORMAP_ANGLE1 =</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a><span class="c1"># COLORMAP_ANGLE2 =</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a><span class="c1"># Specify the slice number to process when test mode is enabled.</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="na">N_SLICE_TEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">155</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>
+<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>
+<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a><span class="k">[OUTPUT]</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a><span class="c1"># Path to the folder where the results will be saved</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a><span class="na">OUTPUT_PATH</span><span class="w"> </span><span class="o">=</span><span class="s">./output</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>
+<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a><span class="c1"># Output file format for the results (e.g., jp2 or tif).</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a><span class="c1"># Default format is jp2</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a><span class="na">OUTPUT_FORMAT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">tif</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>
+<a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a><span class="c1"># Type of pixel values in the output file:</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a><span class="c1">#   - &quot;8bit&quot; for grayscale 8-bit images</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a><span class="c1">#   - &quot;rgb&quot; for 3-channel color images</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a><span class="na">OUTPUT_TYPE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8bit</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>
+<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a><span class="c1"># Optional colormaps for RGB output and test plots.</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a><span class="c1"># Use any Matplotlib colormap name, or helix_angle for the CardioTensor map.</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a><span class="c1"># COLORMAP applies to both angles unless COLORMAP_ANGLE1 or COLORMAP_ANGLE2 is set.</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a><span class="c1"># For ANGLE_MODE = az_el, defaults are helix_angle for AZ and viridis for EL.</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a><span class="c1"># COLORMAP =</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a><span class="c1"># COLORMAP_ANGLE1 =</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a><span class="c1"># COLORMAP_ANGLE2 =</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Modify the configuration file as needed to fit your dataset.</p>
+<p>Modify the configuration file as needed to fit your dataset.
+Relative dataset, mask, and output paths are resolved from the directory
+containing the configuration file.</p>
 </div>
 <hr />
 <h2 id="explanation-of-parameters"><a class="toclink" href="#explanation-of-parameters">Explanation of Parameters</a><a class="headerlink" href="#explanation-of-parameters" title="Permanent link">&para;</a></h2>
@@ -1515,14 +1529,36 @@
 <li><strong><code>SIGMA</code></strong>: Noise scale before gradient computation. Helps reduce noise while preserving structures.</li>
 <li><strong><code>RHO</code></strong>: Integration scale for smoothing tensor components. Larger values yield smoother orientation fields.</li>
 <li><strong><code>TRUNCATE</code></strong>: Multiple of RHO for defining the gradient filter kernel size.</li>
-<li><strong><code>VERTICAL_PADDING (optional)</code></strong>: Extra padding (in voxels) to avoid edge artifacts. If not set, defaults to TRUNCATE * RHO + 0.5.</li>
+<li><strong><code>VERTICAL_PADDING (optional)</code></strong>: Extra padding (in voxels) to avoid edge
+  artifacts. If omitted, Cardiotensor includes the support radius of both the
+  <code>SIGMA</code> and <code>RHO</code> Gaussian filters.</li>
 <li><strong><code>N_CHUNK</code></strong>: Number of slices to process simultaneously.</li>
 <li><strong><code>USE_GPU</code></strong>: Enable GPU computation (requires CuPy).</li>
-<li><strong><code>WRITE_VECTORS</code></strong>: Save orientation 3rd vector as <code>.npy</code> files.</li>
+<li><strong><code>LOW_MEMORY</code></strong>: Store temporary tensor outputs on disk using memory maps.
+  This reduces RAM use but can be slower unless the temporary directory is on
+  fast node-local storage. Cardiotensor treats <code>N_CHUNK</code> as an upper bound and
+  reduces it when the padded chunk would exceed a conservative cgroup-aware
+  memory estimate.</li>
+<li><strong><code>LOW_MEMORY_DIR (optional)</code></strong>: Scratch root for tensor memory maps. If
+  omitted, CardioTensor uses <code>OUTPUT_PATH/.cardiotensor_scratch</code>; it never
+  falls back to the system <code>/tmp</code>. The required and available scratch
+  capacities are printed before calculation. Temporary task directories are
+  removed after normal completion. Because OOM and <code>SIGKILL</code> cannot run
+  cleanup code, inspect this scratch root after failed jobs and remove orphaned
+  <code>cardiotensor_tensor_*</code> directories.</li>
+<li><strong><code>WRITE_VECTORS</code></strong>: Save the orientation vector field.</li>
+<li><strong><code>VECTOR_FORMAT</code></strong>: Vector storage backend:<ul>
+<li><code>npy</code>: one <code>float32</code> file per Z slice in <code>eigen_vec/</code>.</li>
+<li><code>zarr</code> (default): compressed, chunked and sharded storage in <code>eigen_vec.zarr/</code>.
+  This is recommended for very large volumes and supports safe slice-level
+  restart tracking.</li>
+</ul>
+</li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Orientation vectors are saved in <code>float32</code> format and may consume significant disk space.</p>
+<p>Orientation vectors are saved in <code>float32</code> format. Zarr uses Blosc Zstd
+compression with bit-shuffle; zero-filled masked regions generally compress well.</p>
 </div>
 <ul>
 <li><strong><code>REVERSE</code></strong>: Process volume from end to start if set to <code>True</code>.</li>
@@ -1586,7 +1622,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 17, 2026 12:57:44 UTC"><span class="timeago" datetime="2026-06-17T12:57:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 17, 2026 12:57:44 UTC">2026-06-17</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 24, 2026 21:31:39 UTC"><span class="timeago" datetime="2026-07-24T21:31:39+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 24, 2026 21:31:39 UTC">2026-07-24</span>
   </span>
 
     
@@ -1742,7 +1778,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.path", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.sections", "navigation.indexes", "navigation.tracking", "content.code.annotate", "toc.follow", "navigation.footer", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       

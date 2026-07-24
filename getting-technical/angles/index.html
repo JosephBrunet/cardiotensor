@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -664,10 +664,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#coordinate-system" class="md-nav__link">
+  <a href="#local-components" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Coordinate System
+        Local Components
       
     </span>
   </a>
@@ -675,10 +675,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#helical-angle-ha" class="md-nav__link">
+  <a href="#helical-angle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Helical Angle (HA)
+        Helical Angle
       
     </span>
   </a>
@@ -686,10 +686,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#intrusion-angle-ia" class="md-nav__link">
+  <a href="#intrusion-angle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intrusion Angle (IA)
+        Intrusion Angle
       
     </span>
   </a>
@@ -697,10 +697,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#projection-bias" class="md-nav__link">
+  <a href="#projected-legacy-angles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Projection Bias
+        Projected Legacy Angles
       
     </span>
   </a>
@@ -1217,10 +1217,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#coordinate-system" class="md-nav__link">
+  <a href="#local-components" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Coordinate System
+        Local Components
       
     </span>
   </a>
@@ -1228,10 +1228,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#helical-angle-ha" class="md-nav__link">
+  <a href="#helical-angle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Helical Angle (HA)
+        Helical Angle
       
     </span>
   </a>
@@ -1239,10 +1239,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#intrusion-angle-ia" class="md-nav__link">
+  <a href="#intrusion-angle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intrusion Angle (IA)
+        Intrusion Angle
       
     </span>
   </a>
@@ -1250,10 +1250,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#projection-bias" class="md-nav__link">
+  <a href="#projected-legacy-angles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Projection Bias
+        Projected Legacy Angles
       
     </span>
   </a>
@@ -1340,43 +1340,38 @@
 
 
 <h1 id="angle-definitions"><a class="toclink" href="#angle-definitions">Angle Definitions</a><a class="headerlink" href="#angle-definitions" title="Permanent link">&para;</a></h1>
-<p>This page explains how helical and intrusion angles are calculated from the 3D eigenvector field derived by <code>cardiotensor</code>.</p>
-<p>By default, Cardiotensor reports <strong>unprojected 3D angles</strong>. The primary eigenvector is not first flattened onto a 2D plane before the angle is measured, because projection discards one component of the vector and can bias the resulting angle. Projection-based angles are available only for legacy comparison.</p>
-<h2 id="coordinate-system"><a class="toclink" href="#coordinate-system">Coordinate System</a><a class="headerlink" href="#coordinate-system" title="Permanent link">&para;</a></h2>
-<p>A transformation to a cylindrical coordinate system is defined for each voxel based on an approximation of the left ventricle (LV) centerline.</p>
+<p>Cardiotensor computes helical angle (HA) and intrusion angle (IA) from the local myocyte-axis eigenvector.</p>
+<p>By default, these are <strong>unprojected 3D angles</strong>. The vector is not flattened onto a 2D plane before measuring HA or IA, because projection removes one component of the vector and can bias the result.</p>
+<h2 id="local-components"><a class="toclink" href="#local-components">Local Components</a><a class="headerlink" href="#local-components" title="Permanent link">&para;</a></h2>
+<p>Cardiotensor expresses the vector in a centerline-based cylindrical frame for the left ventricle:</p>
 <ul>
-<li><strong>Radial (r)</strong>: outward from the LV center</li>
-<li><strong>Circumferential (θ)</strong>: tangential around the ventricle</li>
-<li><strong>Longitudinal (z)</strong>: base to apex direction</li>
+<li><strong>R</strong>: radial component, outward from the LV centerline</li>
+<li><strong>C</strong>: circumferential component, tangent around the ventricle</li>
+<li><strong>L</strong>: longitudinal component, along the LV axis</li>
 </ul>
-<p>To compute local fiber angles consistently, all eigenvectors are first rotated into this cylindrical coordinate frame. This alignment is performed using the Rodrigues rotation formula, which computes the minimal-angle rotation that maps the global reference axis (here the z-axis) onto the local longitudinal axis at each point. This allows a robust comparison of orientations across the myocardium.</p>
-<h2 id="helical-angle-ha"><a class="toclink" href="#helical-angle-ha">Helical Angle (HA)</a><a class="headerlink" href="#helical-angle-ha" title="Permanent link">&para;</a></h2>
-<p>The helical angle is defined as the angle between the primary myocyte-axis eigenvector \( \vec{v}_1 \) and the local circumferential plane.</p>
-<p>In local cylindrical coordinates, with radial component \(R\), circumferential component \(C\), and longitudinal component \(L\), the unprojected helical angle is:</p>
-<p>\[
-\mathrm{HA} = \arctan2\left(L, \sqrt{R^2 + C^2}\right)
-\]</p>
-<p>It captures the transmural variation of fiber orientation from epicardium to endocardium.</p>
-<p>Typical pattern:
-- ~−60° at epicardium
-- ~0° in mid-wall
-- ~+60° at endocardium</p>
-<h2 id="intrusion-angle-ia"><a class="toclink" href="#intrusion-angle-ia">Intrusion Angle (IA)</a><a class="headerlink" href="#intrusion-angle-ia" title="Permanent link">&para;</a></h2>
-<p>The intrusion angle is the angle between the primary myocyte-axis eigenvector \( \vec{v}_1 \) and the <strong>tangential plane</strong> (longitudinal + circumferential).</p>
-<p>Using the same local components, the unprojected intrusion angle is:</p>
-<p>\[
-\mathrm{IA} = \arctan2\left(R, \sqrt{C^2 + L^2}\right)
-\]</p>
-<p>It captures radial deviation of fiber aggregates and can help identify wall thickening or microstructural disruptions.</p>
-<h2 id="projection-bias"><a class="toclink" href="#projection-bias">Projection Bias</a><a class="headerlink" href="#projection-bias" title="Permanent link">&para;</a></h2>
-<p>Conventional projected angles are computed after removing one vector component, for example \(\arctan2(L, C)\) for projected helical angle or \(\arctan2(R, C)\) for projected intrusion angle. These projected quantities can differ from the true 3D orientation when the discarded component is large.</p>
-<p>Set <code>PROJECTED_ANGLES = True</code> only when you need legacy projected <code>HA_projected</code> and <code>IA_projected</code> maps for comparison with literature.</p>
-<p>This convention follows the projection-error discussion in Agger et al., "Anatomically correct assessment of the orientation of the cardiomyocytes using diffusion tensor imaging", <em>NMR in Biomedicine</em> (2020), <a href="https://doi.org/10.1002/nbm.4205">https://doi.org/10.1002/nbm.4205</a>.</p>
+<p>This is a practical LV cylindrical approximation. It should not be read as a full reproduction of anatomically corrected methods that explicitly model epicardial curvature.</p>
+<h2 id="helical-angle"><a class="toclink" href="#helical-angle">Helical Angle</a><a class="headerlink" href="#helical-angle" title="Permanent link">&para;</a></h2>
+<p>The helical angle measures how far the vector points out of the local horizontal, or short-axis, plane. That plane is spanned by the radial and circumferential directions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>HA = atan2(L, sqrt(R^2 + C^2))
+</code></pre></div>
+<p>Typical values are around -60 degrees at the epicardium, 0 degrees in the mid-wall, and +60 degrees at the endocardium.</p>
+<h2 id="intrusion-angle"><a class="toclink" href="#intrusion-angle">Intrusion Angle</a><a class="headerlink" href="#intrusion-angle" title="Permanent link">&para;</a></h2>
+<p>The intrusion angle measures radial deviation from the local tangential plane. That plane is spanned by the circumferential and longitudinal directions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>IA = atan2(R, sqrt(C^2 + L^2))
+</code></pre></div>
+<h2 id="projected-legacy-angles"><a class="toclink" href="#projected-legacy-angles">Projected Legacy Angles</a><a class="headerlink" href="#projected-legacy-angles" title="Permanent link">&para;</a></h2>
+<p>Set <code>PROJECTED_ANGLES = True</code> only when comparing with legacy projection-based maps:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>HA_projected = atan2(L, C)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>IA_projected = atan2(R, C)
+</code></pre></div>
+<p><code>IA_projected</code> corresponds to the projected transverse angle terminology often used in the literature.</p>
+<p>Projection-based angles can differ from the true 3D orientation when the discarded component is large. This projection bias is discussed in Agger et al., "Anatomically correct assessment of the orientation of the cardiomyocytes using diffusion tensor imaging", <em>NMR in Biomedicine</em> (2020), <a href="https://doi.org/10.1002/nbm.4205">https://doi.org/10.1002/nbm.4205</a>.</p>
 <h2 id="angle-ranges"><a class="toclink" href="#angle-ranges">Angle Ranges</a><a class="headerlink" href="#angle-ranges" title="Permanent link">&para;</a></h2>
-<p>Both angles are reported in degrees:
-- <strong>HA</strong>: −90° to +90°
-- <strong>IA</strong>: −90° to +90°</p>
-<p>Angles are defined in a left-handed cylindrical coordinate system aligned to the LV.</p>
+<p>Both angles are reported in degrees:</p>
+<ul>
+<li><strong>HA</strong>: -90 to +90 degrees</li>
+<li><strong>IA</strong>: -90 to +90 degrees</li>
+</ul>
 
 
 
@@ -1399,7 +1394,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 17, 2026 12:57:49 UTC"><span class="timeago" datetime="2026-06-17T12:57:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 17, 2026 12:57:49 UTC">2026-06-17</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="July 12, 2026 16:03:29 UTC"><span class="timeago" datetime="2026-07-12T16:03:29+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 12, 2026 16:03:29 UTC">2026-07-12</span>
   </span>
 
     
@@ -1555,7 +1550,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.path", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.sections", "navigation.indexes", "navigation.tracking", "content.code.annotate", "toc.follow", "navigation.footer", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       
