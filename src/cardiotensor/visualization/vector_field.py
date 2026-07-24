@@ -6,7 +6,6 @@ using FURY or exporting to VTK.
 """
 
 import math
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -99,8 +98,9 @@ def visualize_vector_field(
 
     vector_field_path = Path(vector_field_path)
     if not vector_field_path.exists():
-        print(f"❌ Vector field path does not exist: {vector_field_path}")
-        sys.exit(1)
+        raise FileNotFoundError(
+            f"Vector field path does not exist: {vector_field_path}"
+        )
 
     # Load input volume just for shape
     data_reader_vol = DataReader(vector_field_path)
@@ -112,11 +112,8 @@ def visualize_vector_field(
 
     # Downsample if needed
     if bin_factor > 1:
-        downsample_vector_volume(
+        vec_load_dir = downsample_vector_volume(
             vector_field_path, bin_factor, vector_field_path.parent
-        )
-        vec_load_dir = (
-            vector_field_path.parent / f"bin{bin_factor}" / vector_field_path.name
         )
         start_binned = start_idx // bin_factor
         end_binned = math.ceil(end_idx / bin_factor) if end_idx else None

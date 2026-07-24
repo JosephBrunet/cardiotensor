@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import cv2
@@ -105,9 +104,11 @@ def plot_label_and_limits(mode: str):
     if m == "FA":
         return "Fractional Anisotropy", 0.0, 1.0
     if m in {"HA", "IA", "EL"}:
-        name = {"HA": "Helical Angle", "IA": "Intrusion Angle", "EL": "Elevation Angle"}[
-            m
-        ]
+        name = {
+            "HA": "Helical Angle",
+            "IA": "Intrusion Angle",
+            "EL": "Elevation Angle",
+        }[m]
         return f"{name} (°)", -90.0, 90.0
     if m == "AZ":
         return "Azimuth (°)", 0.0, 360.0
@@ -158,12 +159,12 @@ class Window(QWidget):
         # Discover available modes, select default
         self.available_modes = discover_modes(self.output_path)
         if not self.available_modes:
-            sys.exit(
+            raise FileNotFoundError(
                 f"No angle or FA folders found in {self.output_path}. Expected one of HA, IA, EL, AZ, FA."
             )
         self.image_mode = (image_mode or self.available_modes[0]).upper()
         if self.image_mode not in self.available_modes:
-            sys.exit(
+            raise ValueError(
                 f"Requested mode {self.image_mode} not found. Available: {self.available_modes}"
             )
 

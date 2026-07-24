@@ -11,6 +11,36 @@ from numba import njit
 from cardiotensor.utils.am_utils import write_spatialgraph_am
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.downsampling import downsample_vector_volume, downsample_volume
+from cardiotensor.utils.image_io import open_zarr_vector_field
+
+
+def _fa_to_unit_interval(volume: np.ndarray) -> np.ndarray:
+    """Return FA as float32 in [0, 1] from scientific or integer image data."""
+    source = np.asarray(volume)
+    fa = source.astype(np.float32, copy=False)
+
+    if np.issubdtype(source.dtype, np.integer):
+        fa = fa / float(np.iinfo(source.dtype).max)
+    elif fa.size and np.nanmax(fa) > 1.0:
+        # Legacy float arrays may contain the pipeline's 0..255 image encoding.
+        fa = fa / 255.0
+
+    return np.clip(fa, 0.0, 1.0)
+
+
+def _select_seed_points(
+    seed_mask: np.ndarray, num_seeds: int, random_seed: int
+) -> np.ndarray:
+    """Select reproducible seed coordinates without storing all 3D coordinates."""
+    if num_seeds <= 0:
+        raise ValueError("num_seeds must be > 0")
+    valid_flat = np.flatnonzero(np.asarray(seed_mask).ravel())
+    if valid_flat.size == 0:
+        raise RuntimeError("No voxels above FA seed threshold")
+    if valid_flat.size > num_seeds:
+        rng = np.random.default_rng(random_seed)
+        valid_flat = rng.choice(valid_flat, size=num_seeds, replace=False)
+    return np.column_stack(np.unravel_index(valid_flat, seed_mask.shape))
 
 
 @njit(cache=True)
@@ -356,6 +386,13 @@ def generate_streamlines_from_vector_field(
     min_length_pts: int = 10,
     bidirectional: bool = True,
 ) -> list[list[tuple[float, float, float]]]:
+    if min_length_pts < 2:
+        print(
+            f"Minimum streamline length raised from {min_length_pts} to 2 points "
+            "because exported streamlines must contain an edge."
+        )
+        min_length_pts = 2
+
     all_streamlines: list[list[tuple[float, float, float]]] = []
     with alive_bar(len(seed_points), title="Tracing Streamlines") as bar:
         for zi, yi, xi in seed_points:
@@ -475,6 +512,7 @@ def generate_streamlines_from_params(
     voxel_sizes_zyx: tuple[float, float, float] = (1.0, 1.0, 1.0),
     save_trk_file: bool = True,
     angle_mode: str = "ha_ia",
+    random_seed: int = 0,
 ) -> None:
     """
     Generate streamlines from the eigenvector field, then export:
@@ -543,10 +581,34 @@ def generate_streamlines_from_params(
     end_y = full_shape[2] if end_y is None else end_y
     end_x = full_shape[3] if end_x is None else end_x
 
+    incomplete = []
+    if getattr(vec_probe, "volume_info", {}).get("type") == "zarr":
+        vector_store = open_zarr_vector_field(vector_field_dir.parent)
+        completed = np.asarray(vector_store.completed[:], dtype=bool)
+        completed_count = int(completed.sum())
+        if completed_count != full_shape[1]:
+            incomplete.append(
+                f"vectors: {completed_count}/{full_shape[1]} completed slices"
+            )
+
+    scalar_paths = {"FA": fa_dir, **discovered}
+    for name, path in scalar_paths.items():
+        scalar_depth = DataReader(path).shape[0]
+        if scalar_depth != full_shape[1]:
+            incomplete.append(f"{name}: {scalar_depth}/{full_shape[1]} output slices")
+
+    if incomplete:
+        details = "\n  - ".join(incomplete)
+        raise RuntimeError(
+            "Orientation outputs are incomplete. Wait for all cardio-tensor/SLURM "
+            f"jobs to finish before generating streamlines:\n  - {details}"
+        )
+
     # Binning
     if bin_factor > 1:
-        downsample_vector_volume(vector_field_dir, bin_factor, output_dir)
-        vec_load_dir = output_dir / f"bin{bin_factor}" / vector_field_dir.name
+        vec_load_dir = downsample_vector_volume(
+            vector_field_dir, bin_factor, output_dir, mask_path=mask_path
+        )
 
         downsample_volume(fa_dir, bin_factor, output_dir, subfolder="FA", out_ext="tif")
         fa_load_dir = output_dir / f"bin{bin_factor}" / "FA"
@@ -573,14 +635,20 @@ def generate_streamlines_from_params(
     # Load vector field
     print("Loading vector field")
     vec_reader = DataReader(vec_load_dir)
-    vector_field = vec_reader.load_volume(start_index=start_z_b, end_index=end_z_b)[
-        :, :, start_y_b:end_y_b, start_x_b:end_x_b
-    ]
+    vector_field = vec_reader.load_region(
+        start_index=start_z_b,
+        end_index=end_z_b,
+        start_y=start_y_b,
+        end_y=end_y_b,
+        start_x=start_x_b,
+        end_x=end_x_b,
+    )
     if vector_field.ndim == 4 and vector_field.shape[-1] == 3:
         print("Reordering vector field axes")
         vector_field = np.moveaxis(vector_field, -1, 0)
 
     # Mask
+    mask = None
     if mask_path:
         print("Loading mask")
         mask_reader = DataReader(mask_path)
@@ -599,20 +667,14 @@ def generate_streamlines_from_params(
         start_index=start_z_b, end_index=end_z_b
     )
     fa_volume = fa_volume[:, start_y_b:end_y_b, start_x_b:end_x_b]
+    fa_volume = _fa_to_unit_interval(fa_volume)
 
     # Seeds
     print("Selecting seeds")
-    seed_mask = fa_volume > (fa_seed_min * 255)
-    valid_indices = np.argwhere(seed_mask)
-    if valid_indices.size == 0:
-        raise RuntimeError("No voxels above FA seed threshold")
-    chosen = (
-        valid_indices
-        if len(valid_indices) <= num_seeds
-        else valid_indices[
-            np.random.choice(valid_indices.shape[0], num_seeds, replace=False)
-        ]
-    )
+    seed_mask = fa_volume > fa_seed_min
+    if mask is not None:
+        seed_mask &= mask > 0
+    chosen = _select_seed_points(seed_mask, num_seeds, random_seed)
 
     # Streamlines
     streamlines = generate_streamlines_from_vector_field(

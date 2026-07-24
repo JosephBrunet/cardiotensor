@@ -1,17 +1,32 @@
-import sys
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from os import PathLike
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 import numpy as np
-import psutil
-import SimpleITK as sitk
+import tifffile
+import zarr
 from alive_progress import alive_bar
-from dask import compute, delayed
 from skimage.measure import block_reduce
 
-from cardiotensor.utils.image_io import read_image_file
-from cardiotensor.utils.utils import get_available_cpu_count
+from cardiotensor.utils.image_io import _validate_zarr_vector_group, read_image_file
+from cardiotensor.utils.utils import (
+    get_available_cpu_count,
+    get_available_memory_bytes,
+)
+
+
+_MHD_DTYPES = {
+    "MET_FLOAT": np.float32,
+    "MET_DOUBLE": np.float64,
+    "MET_CHAR": np.int8,
+    "MET_UCHAR": np.uint8,
+    "MET_SHORT": np.int16,
+    "MET_USHORT": np.uint16,
+    "MET_INT": np.int32,
+    "MET_UINT": np.uint32,
+}
 
 
 # ---------------------------
@@ -122,8 +137,17 @@ class DataReader:
         if not self.path.exists():
             raise ValueError(f"The path does not exist: {self.path}")
 
-        # Case 1: Directory of images
-        if self.path.is_dir():
+        # Case 1: Cardiotensor Zarr vector field
+        if self.path.is_dir() and (self.path / "zarr.json").is_file():
+            group = zarr.open_group(store=str(self.path), mode="r")
+            _validate_zarr_vector_group(group)
+            vectors = group["vectors"]
+            volume_info["type"] = "zarr"
+            volume_info["shape"] = tuple(vectors.shape)
+            volume_info["dtype"] = np.dtype(vectors.dtype)
+
+        # Case 2: Directory of images
+        elif self.path.is_dir():
             volume_info["stack"] = True
             image_files = {
                 ext: sorted(self.path.glob(f"*.{ext}"))
@@ -168,20 +192,41 @@ class DataReader:
                     first_image.shape[1],
                 )
 
-        # Case 2: Single MHD file
-        elif self.path.is_file() and self.path.suffix == ".mhd":
+        # Case 3: Single MHD file
+        elif self.path.is_file() and self.path.suffix.lower() == ".mhd":
             volume_info["type"] = "mhd"
-            img = sitk.ReadImage(str(self.path))
-            arr = sitk.GetArrayFromImage(img)  # Z, Y, X
-            volume_info["shape"] = arr.shape
-            volume_info["dtype"] = arr.dtype
+            metadata = _read_mhd(self.path)
+            if int(metadata.get("NDims", 0)) != 3:
+                raise ValueError("Only 3D MHD volumes are supported")
+            try:
+                dtype = np.dtype(_MHD_DTYPES[metadata["ElementType"]])
+            except KeyError as exc:
+                raise NotImplementedError(
+                    f"ElementType {metadata.get('ElementType')} is not supported"
+                ) from exc
+            byte_order = ">" if metadata.get("BinaryDataByteOrderMSB", False) else "<"
+            dtype = dtype.newbyteorder(byte_order)
+            shape = tuple(reversed(metadata["DimSize"]))
+            channels = int(metadata.get("ElementNumberOfChannels", 1))
+            volume_info["shape"] = shape if channels == 1 else (*shape, channels)
+            volume_info["dtype"] = dtype
 
-        # Case 3: Single TIFF file storing a stack
+        # Case 4: Single TIFF file storing a stack
         elif self.path.is_file() and self.path.suffix.lower() in {".tif", ".tiff"}:
             volume_info["type"] = "tiff"
-            arr = _normalize_single_tiff_volume(self._custom_image_reader(self.path))
-            volume_info["shape"] = arr.shape
-            volume_info["dtype"] = arr.dtype
+            with tifffile.TiffFile(self.path) as tif:
+                series = tif.series[0]
+                shape = tuple(series.shape)
+                dtype = np.dtype(series.dtype)
+            if len(shape) == 2:
+                shape = (1, *shape)
+            elif len(shape) != 3 or shape[-1] in {3, 4}:
+                raise ValueError(
+                    f"Unsupported TIFF volume shape {shape}. "
+                    "Expected a 2D image or 3D grayscale stack."
+                )
+            volume_info["shape"] = shape
+            volume_info["dtype"] = dtype
 
         else:
             raise ValueError(f"Unsupported volume type for path: {self.path}")
@@ -193,6 +238,7 @@ class DataReader:
         start_index: int = 0,
         end_index: int | None = None,
         unbinned_shape: tuple[int, int, int] | None = None,
+        show_progress: bool = True,
     ) -> np.ndarray:
         """
         Loads the volume and resizes it to unbinned_shape if provided, using fast
@@ -204,12 +250,13 @@ class DataReader:
             start_index (int): Start index for slicing (for stacks).
             end_index (int): End index for slicing (for stacks). If None, loads the entire stack.
             unbinned_shape (tuple): Desired shape (Z, Y, X). If None, no resizing is done.
+            show_progress: Display the stack-loading progress bar.
 
         Returns:
             np.ndarray: Loaded volume.
         """
         if end_index is None:
-            end_index = self.shape[0]
+            end_index = self.shape[1] if len(self.shape) == 4 else self.shape[0]
 
         # Check memory available is enough
         effective_shape = list(self.shape)
@@ -217,14 +264,17 @@ class DataReader:
             effective_shape[0] = end_index - start_index
         elif len(effective_shape) == 4:
             effective_shape[1] = end_index - start_index
-        self.check_memory_requirement(tuple(effective_shape), self.dtype)
+        self.check_memory_requirement(
+            tuple(effective_shape), self.dtype, verbose=show_progress
+        )
 
         # Decide if resize is needed
         need_resize = False
         if unbinned_shape is not None and self.shape != unbinned_shape:
             need_resize = True
             zoom_factors = tuple(u / s for u, s in zip(unbinned_shape, self.shape))
-            print(f"Resample factors: {zoom_factors}")
+            if show_progress:
+                print(f"Resample factors: {zoom_factors}")
         else:
             zoom_factors = (1.0, 1.0, 1.0)
 
@@ -234,27 +284,65 @@ class DataReader:
             start_index = max(start_index, 0)
             end_index = int(end_index_ini / zoom_factors[0]) + 1
             end_index = min(end_index, self.shape[0])
-            print(f"Volume start index padded: {start_index} - end: {end_index}")
+            if show_progress:
+                print(f"Volume start index padded: {start_index} - end: {end_index}")
 
         # Load volume from stack or mhd
         if not self.volume_info["stack"]:
-            if self.volume_info["type"] == "mhd":
-                volume, _ = _load_raw_data_with_mhd(self.path)
-                volume = volume[start_index:end_index, :, :]
-            elif self.volume_info["type"] == "tiff":
-                volume = _normalize_single_tiff_volume(
-                    self._custom_image_reader(self.path)
+            if self.volume_info["type"] == "zarr":
+                group = zarr.open_group(store=str(self.path), mode="r")
+                volume = np.asarray(group["vectors"][:, start_index:end_index])
+            elif self.volume_info["type"] == "mhd":
+                volume, _ = _load_raw_data_with_mhd(
+                    self.path, start_index=start_index, end_index=end_index
                 )
-                volume = volume[start_index:end_index, :, :]
+            elif self.volume_info["type"] == "tiff":
+                with tifffile.TiffFile(self.path) as tif:
+                    series = tif.series[0]
+                    if len(series.pages) == self.shape[0]:
+                        volume = np.array(
+                            _normalize_single_tiff_volume(
+                                tif.asarray(
+                                    key=slice(start_index, end_index), series=series
+                                )
+                            ),
+                            copy=True,
+                            order="C",
+                        )
+                    else:
+                        scratch_root = self.path.parent / ".cardiotensor_scratch"
+                        scratch_root.mkdir(parents=True, exist_ok=True)
+                        with TemporaryDirectory(
+                            prefix="cardiotensor_tiff_", dir=scratch_root
+                        ) as tmpdir:
+                            mapped = series.asarray(
+                                out=str(Path(tmpdir) / "volume.memmap")
+                            )
+                            try:
+                                volume = np.array(
+                                    _normalize_single_tiff_volume(
+                                        mapped[start_index:end_index]
+                                    ),
+                                    copy=True,
+                                    order="C",
+                                )
+                            finally:
+                                mapped_file = getattr(mapped, "_mmap", None)
+                                if mapped_file is not None:
+                                    mapped_file.close()
             else:
                 raise ValueError(f"Unsupported volume type for path: {self.path}")
         else:
             volume = self._load_image_stack(
-                self.volume_info["file_list"], start_index, end_index
+                self.volume_info["file_list"],
+                start_index,
+                end_index,
+                show_progress=show_progress,
             )
 
         if need_resize:
-            print("Resizing with integer-only resampling...")
+            if show_progress:
+                print("Resizing with integer-only resampling...")
 
             _, y1, x1 = unbinned_shape
             z1 = end_index_ini - start_index_ini
@@ -318,15 +406,67 @@ class DataReader:
                     return f"/{d}"
                 return "x1"
 
-            print(
-                f"Applied integer resampling: Z {_fmt(kz, dz)}, Y {_fmt(ky, dy)}, X {_fmt(kx, dx)} -> resulting shape {volume.shape}"
-            )
+            if show_progress:
+                print(
+                    f"Applied integer resampling: Z {_fmt(kz, dz)}, "
+                    f"Y {_fmt(ky, dy)}, X {_fmt(kx, dx)} -> "
+                    f"resulting shape {volume.shape}"
+                )
 
             # Enforce exact shape
-            print(f"Fitting to exact unbinned shape: {unbinned_shape}")
+            if show_progress:
+                print(f"Fitting to exact unbinned shape: {unbinned_shape}")
             volume = _fit(volume, (z1, y1, x1), pad_value=0)
 
         return volume
+
+    def load_region(
+        self,
+        start_index: int = 0,
+        end_index: int | None = None,
+        start_y: int = 0,
+        end_y: int | None = None,
+        start_x: int = 0,
+        end_x: int | None = None,
+    ) -> np.ndarray:
+        """Load a Z/Y/X region, using direct chunk reads for Zarr vectors."""
+        is_vector = len(self.shape) == 4 and self.shape[0] == 3
+        depth = self.shape[1] if is_vector else self.shape[0]
+        height = self.shape[-2]
+        width = self.shape[-1]
+        end_index = depth if end_index is None else end_index
+
+        if not 0 <= start_index < end_index <= depth:
+            raise ValueError(
+                f"Invalid Z range [{start_index}, {end_index}) for depth {depth}"
+            )
+
+        y_slice = slice(start_y, end_y)
+        x_slice = slice(start_x, end_x)
+        y_start, y_stop, y_step = y_slice.indices(height)
+        x_start, x_stop, x_step = x_slice.indices(width)
+        if y_step != 1 or x_step != 1 or y_start >= y_stop or x_start >= x_stop:
+            raise ValueError("Y and X regions must be non-empty contiguous ranges")
+
+        if self.volume_info["type"] == "zarr":
+            region_shape = (
+                3,
+                end_index - start_index,
+                y_stop - y_start,
+                x_stop - x_start,
+            )
+            self.check_memory_requirement(region_shape, self.dtype)
+            group = zarr.open_group(store=str(self.path), mode="r")
+            return np.asarray(
+                group["vectors"][
+                    :, start_index:end_index, y_start:y_stop, x_start:x_stop
+                ]
+            )
+
+        volume = self.load_volume(start_index=start_index, end_index=end_index)
+        if is_vector:
+            return volume[:, :, y_start:y_stop, x_start:x_stop]
+        return volume[:, y_start:y_stop, x_start:x_stop]
 
     def _custom_image_reader(self, file_path: Path) -> np.ndarray:
         """
@@ -335,12 +475,16 @@ class DataReader:
         return read_image_file(file_path)
 
     def _load_image_stack(
-        self, file_list: list[Path], start_index: int, end_index: int
+        self,
+        file_list: list[Path],
+        start_index: int,
+        end_index: int,
+        show_progress: bool = True,
     ) -> np.ndarray:
         """
         Efficiently loads a stack of images into a 3D (or 4D for vector .npy) NumPy array
-        by preallocating the output and filling it in place. Uses batched dask
-        multiprocess reads and keeps slice order via indices.
+        by preallocating the output and filling it in place. The number of
+        in-flight reads is bounded so loaded slices are not duplicated in memory.
         """
 
         if end_index == 0:
@@ -409,30 +553,54 @@ class DataReader:
                     )
                 volume[z_idx, :, :] = arr
 
-        scheduler = "threads"
-        max_workers = min(32, get_available_cpu_count(default=8))
+        # Keep concurrent decoded slices within a small, predictable buffer.
+        # A single very large slice still gets one reader.
+        read_buffer_bytes = 2 * 1024**3
+        memory_workers = max(1, read_buffer_bytes // max(first.nbytes, 1))
+        max_workers = min(
+            32,
+            get_available_cpu_count(default=8),
+            memory_workers,
+        )
 
         # Fill the rest with a progress bar
-        with alive_bar(total_files, title="Loading Volume", length=40) as bar:
+        with alive_bar(
+            total_files,
+            title="Loading Volume",
+            length=40,
+            disable=not show_progress,
+        ) as bar:
             # We already placed index 0
             bar()  # account for the first already loaded slice
 
             if start_fill_idx < total_files:
-                delayed_reads = [
-                    delayed(read_image_file)(path) for path in paths[start_fill_idx:]
-                ]
-                arrays = compute(
-                    *delayed_reads,
-                    scheduler=scheduler,
-                    num_workers=max_workers,
-                )
-                for z_idx, arr in enumerate(arrays, start=start_fill_idx):
-                    _assign(z_idx, arr)
-                    bar()
+                indexed_paths = iter(enumerate(paths[start_fill_idx:], start_fill_idx))
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    pending = {}
+                    for _ in range(max_workers):
+                        try:
+                            z_idx, path = next(indexed_paths)
+                        except StopIteration:
+                            break
+                        pending[executor.submit(read_image_file, path)] = z_idx
+
+                    while pending:
+                        done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                        for future in done:
+                            z_idx = pending.pop(future)
+                            _assign(z_idx, future.result())
+                            bar()
+                            try:
+                                next_idx, next_path = next(indexed_paths)
+                            except StopIteration:
+                                continue
+                            pending[executor.submit(read_image_file, next_path)] = (
+                                next_idx
+                            )
 
         return volume
 
-    def check_memory_requirement(self, shape, dtype, safety_factor=0.8):
+    def check_memory_requirement(self, shape, dtype, safety_factor=0.8, verbose=True):
         """
         Check if the dataset can fit in available memory.
 
@@ -446,15 +614,19 @@ class DataReader:
         size_gb = n_bytes / (1024**3)
 
         # Check available memory
-        available_gb = psutil.virtual_memory().available / (1024**3)
+        available_gb = get_available_memory_bytes() / (1024**3)
 
-        print(
-            f"Dataset size: {size_gb:.2f} GB | Available memory: {available_gb:.2f} GB"
-        )
+        if verbose:
+            print(
+                f"Dataset size: {size_gb:.2f} GB | "
+                f"Available memory: {available_gb:.2f} GB"
+            )
 
         if size_gb > available_gb * safety_factor:
-            print("❌ Dataset is too large to safely load into memory.")
-            sys.exit(1)
+            raise MemoryError(
+                f"Dataset requires {size_gb:.2f} GB but only "
+                f"{available_gb:.2f} GB is available"
+            )
 
 
 def _read_mhd(filename: PathLike[str]) -> dict[str, Any]:
@@ -524,6 +696,8 @@ def _read_mhd(filename: PathLike[str]) -> dict[str, Any]:
 
 def _load_raw_data_with_mhd(
     filename: PathLike[str],
+    start_index: int = 0,
+    end_index: int | None = None,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Load a MHD file
@@ -532,59 +706,41 @@ def _load_raw_data_with_mhd(
     :returns: tuple with raw data and dictionary of meta data
     """
     meta_dict = _read_mhd(filename)
-    dim = int(meta_dict["NDims"])
-    if "ElementNumberOfChannels" in meta_dict:
-        element_channels = int(meta_dict["ElementNumberOfChannels"])
-    else:
-        element_channels = 1
+    if int(meta_dict.get("NDims", 0)) != 3:
+        raise ValueError("Only 3D MHD volumes are supported")
+    if meta_dict.get("CompressedData", False):
+        raise NotImplementedError("Compressed MHD data cannot be memory-mapped")
+    if not meta_dict.get("BinaryData", True):
+        raise NotImplementedError("ASCII MHD data is not supported")
 
-    if meta_dict["ElementType"] == "MET_FLOAT":
-        np_type = np.float32
-    elif meta_dict["ElementType"] == "MET_DOUBLE":
-        np_type = np.float64
-    elif meta_dict["ElementType"] == "MET_CHAR":
-        np_type = np.byte
-    elif meta_dict["ElementType"] == "MET_UCHAR":
-        np_type = np.ubyte
-    elif meta_dict["ElementType"] == "MET_SHORT":
-        np_type = np.int16
-    elif meta_dict["ElementType"] == "MET_USHORT":
-        np_type = np.ushort
-    elif meta_dict["ElementType"] == "MET_INT":
-        np_type = np.int32
-    elif meta_dict["ElementType"] == "MET_UINT":
-        np_type = np.uint32
-    else:
+    try:
+        np_type = np.dtype(_MHD_DTYPES[meta_dict["ElementType"]])
+    except KeyError as exc:
         raise NotImplementedError(
-            "ElementType " + meta_dict["ElementType"] + " not understood."
-        )
-    arr = list(meta_dict["DimSize"])
-
-    volume = np.prod(arr[0 : dim - 1])
+            f"ElementType {meta_dict.get('ElementType')} is not supported"
+        ) from exc
+    byte_order = ">" if meta_dict.get("BinaryDataByteOrderMSB", False) else "<"
+    np_type = np_type.newbyteorder(byte_order)
+    shape = tuple(reversed(meta_dict["DimSize"]))
+    element_channels = int(meta_dict.get("ElementNumberOfChannels", 1))
+    if element_channels > 1:
+        shape = (*shape, element_channels)
 
     pwd = Path(filename).parents[0].resolve()
     data_file = Path(meta_dict["ElementDataFile"])
+    if str(data_file).upper() == "LOCAL":
+        raise NotImplementedError("MHD files with embedded LOCAL data are unsupported")
     if not data_file.is_absolute():
         data_file = pwd / data_file
 
-    shape = (arr[dim - 1], volume, element_channels)
-    with open(data_file, "rb") as f:
-        data = np.fromfile(f, count=np.prod(shape), dtype=np_type)
-    data.shape = shape
+    depth = shape[0]
+    end_index = depth if end_index is None else end_index
+    if not 0 <= start_index < end_index <= depth:
+        raise ValueError(
+            f"Invalid MHD Z range [{start_index}, {end_index}) for depth {depth}"
+        )
 
-    # Adjust byte order in numpy array to match default system byte order
-    if "BinaryDataByteOrderMSB" in meta_dict:
-        sys_byteorder_msb = sys.byteorder == "big"
-        file_byteorder_ms = meta_dict["BinaryDataByteOrderMSB"]
-        if sys_byteorder_msb != file_byteorder_ms:
-            data = data.byteswap()
-
-    # Begin 3D fix
-    # arr.reverse()
-    if element_channels > 1:
-        data = data.reshape(arr + [element_channels])
-    else:
-        data = data.reshape(arr)
-    # End 3D fix
-
-    return (data, meta_dict)
+    # Copy-on-write keeps reads lazy and lets masking modify pages in memory
+    # without changing the source RAW file.
+    data = np.memmap(data_file, dtype=np_type, mode="c", shape=shape)
+    return data[start_index:end_index], meta_dict

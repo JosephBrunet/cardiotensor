@@ -11,7 +11,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -22,9 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "PyQt5",
-    "SimpleITK",
     "alive_progress",
-    "dask",
     "dipy",
     "fury",
     "glymur",
@@ -38,16 +35,17 @@ dependencies = [
     "psutil",
     "pyvista",
     "scikit-image",
-    "structure-tensor>=0.3.0",
+    "structure-tensor>=0.3.4",
     "tifffile",
     "tqdm",
+    "zarr>=3,<4",
 ]
 description = "Toolkit designed for quantifying and visualising 3D cardiomyocytes orientations in heart images"
 keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor, image processing"]
 license = {file = "LICENSE"}
 name = "cardiotensor"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 version = "1.1.9"
 
 [project.optional-dependencies]
@@ -121,7 +119,7 @@ testpaths = [
 [tool.ruff]
 fix = true
 force-exclude = true
-target-version = "py312"
+target-version = "py311"
 lint.select = ["F", "I", "UP"]
 lint.mccabe.max-complexity = 10
 lint.pep8-naming.classmethod-decorators = ["classmethod", "pydantic.validator"]

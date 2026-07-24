@@ -1,8 +1,10 @@
 import argparse
+import math
 import sys
 import time
 
 from cardiotensor.orientation.orientation_computation_pipeline import (
+    _safe_low_memory_chunk_size,
     compute_orientation,
 )
 from cardiotensor.utils.DataReader import DataReader
@@ -106,9 +108,12 @@ def script() -> None:
     axis_points = params.get("AXIS_POINTS", None)
     vertical_padding = params.get("VERTICAL_PADDING", None)
     write_vectors = params.get("WRITE_VECTORS", False)
+    vector_format = params.get("VECTOR_FORMAT", "zarr")
     write_angles = params.get("WRITE_ANGLES", True)
     angle_mode = params.get("ANGLE_MODE", "ha_ia")
     use_gpu = params.get("USE_GPU", True)
+    low_memory = params.get("LOW_MEMORY", False)
+    low_memory_dir = params.get("LOW_MEMORY_DIR", None)
     is_test = force_test or params.get("TEST", False)
     n_slice_test = params.get("N_SLICE_TEST", None)
     show_quiver = params.get("SHOW_QUIVER", True)
@@ -148,9 +153,12 @@ def script() -> None:
             axis_points=axis_points,
             vertical_padding=vertical_padding,
             write_vectors=write_vectors,
+            vector_format=vector_format,
             angle_mode=angle_mode,
             write_angles=write_angles,
             use_gpu=use_gpu,
+            low_memory=low_memory,
+            low_memory_dir=low_memory_dir,
             is_test=is_test,
             n_slice_test=n_slice_test,
             show_quiver=show_quiver,
@@ -163,6 +171,41 @@ def script() -> None:
         )
         print(f"--- {time.time() - t0:.1f} seconds (TEST mode) ---")
         return
+
+    if low_memory:
+        padding = math.ceil(
+            vertical_padding
+            if vertical_padding is not None
+            else int(sigma * truncate + 0.5) + int(rho * truncate + 0.5)
+        )
+        requested_chunk = min(n_chunk, end_index - start_index)
+        safe_chunk, requested_peak, safe_peak = _safe_low_memory_chunk_size(
+            requested_chunk,
+            total_slices,
+            data_reader.shape[-2],
+            data_reader.shape[-1],
+            data_reader.dtype,
+            padding=padding,
+            include_eigenvalues=write_angles,
+            has_mask=mask_path is not None,
+            write_angles=write_angles,
+            sigma=sigma,
+            rho=rho,
+            truncate=truncate,
+        )
+        if safe_chunk < requested_chunk:
+            print(
+                "⚠️  LOW_MEMORY adjusted N_CHUNK from "
+                f"{requested_chunk} to {safe_chunk}: conservative peak "
+                f"{requested_peak / 1024**3:.2f} GiB -> "
+                f"{safe_peak / 1024**3:.2f} GiB."
+            )
+        else:
+            print(
+                f"LOW_MEMORY chunk check: N_CHUNK={safe_chunk}, "
+                f"conservative peak={safe_peak / 1024**3:.2f} GiB."
+            )
+        n_chunk = safe_chunk
 
     # --- Build Chunks ---
     chunks: list[tuple[int, int]] = []
@@ -196,9 +239,12 @@ def script() -> None:
             axis_points=axis_points,
             vertical_padding=vertical_padding,
             write_vectors=write_vectors,
+            vector_format=vector_format,
             write_angles=write_angles,
             angle_mode=angle_mode,
             use_gpu=use_gpu,
+            low_memory=low_memory,
+            low_memory_dir=low_memory_dir,
             is_test=is_test,
             n_slice_test=n_slice_test,
             show_quiver=show_quiver,

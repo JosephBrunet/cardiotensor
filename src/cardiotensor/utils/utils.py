@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import psutil
 
 
 def get_available_cpu_count(default: int = 1) -> int:
@@ -22,6 +23,97 @@ def get_available_cpu_count(default: int = 1) -> int:
                 return count
 
     return os.cpu_count() or default
+
+
+def _memory_available_from_cgroup(
+    proc_cgroup_path: Path = Path("/proc/self/cgroup"),
+    cgroup_root: Path = Path("/sys/fs/cgroup"),
+) -> int | None:
+    """Return unused bytes in the process memory cgroup, when available."""
+
+    def read_pair(directory: Path, limit_name: str, usage_name: str) -> int | None:
+        try:
+            limit_text = (directory / limit_name).read_text().strip()
+            usage = int((directory / usage_name).read_text().strip())
+        except (OSError, ValueError):
+            return None
+        if limit_text == "max":
+            return None
+        try:
+            limit = int(limit_text)
+        except ValueError:
+            return None
+        return max(limit - usage, 0)
+
+    try:
+        entries = proc_cgroup_path.read_text().splitlines()
+    except OSError:
+        entries = []
+
+    for entry in entries:
+        parts = entry.split(":", maxsplit=2)
+        if len(parts) != 3:
+            continue
+        _, controllers, relative_path = parts
+        relative_path = relative_path.lstrip("/")
+
+        if not controllers:  # cgroup v2
+            available = read_pair(
+                cgroup_root / relative_path, "memory.max", "memory.current"
+            )
+            if available is not None:
+                return available
+        elif "memory" in controllers.split(","):  # cgroup v1
+            for base in (cgroup_root / "memory", cgroup_root):
+                available = read_pair(
+                    base / relative_path,
+                    "memory.limit_in_bytes",
+                    "memory.usage_in_bytes",
+                )
+                if available is not None:
+                    return available
+
+    # Common when the process sees a cgroup namespace rooted at its own group.
+    available = read_pair(cgroup_root, "memory.max", "memory.current")
+    if available is not None:
+        return available
+    return read_pair(
+        cgroup_root / "memory",
+        "memory.limit_in_bytes",
+        "memory.usage_in_bytes",
+    )
+
+
+def _memory_available_from_slurm() -> int | None:
+    """Estimate unused allocation from SLURM variables when cgroups are hidden."""
+    memory_mb = os.environ.get("SLURM_MEM_PER_NODE")
+    if memory_mb is None:
+        memory_per_cpu_mb = os.environ.get("SLURM_MEM_PER_CPU")
+        if memory_per_cpu_mb is not None:
+            try:
+                memory_mb = str(
+                    int(memory_per_cpu_mb) * get_available_cpu_count(default=1)
+                )
+            except ValueError:
+                return None
+    if memory_mb is None:
+        return None
+    try:
+        limit = int(memory_mb) * 1024**2
+    except ValueError:
+        return None
+    return max(limit - psutil.Process().memory_info().rss, 0)
+
+
+def get_available_memory_bytes() -> int:
+    """Return free memory visible to this process, respecting job limits."""
+    host_available = int(psutil.virtual_memory().available)
+    job_available = _memory_available_from_cgroup()
+    if job_available is None:
+        job_available = _memory_available_from_slurm()
+    return (
+        host_available if job_available is None else min(host_available, job_available)
+    )
 
 
 def get_gpu_count() -> int:
@@ -100,8 +192,9 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         ValueError: If expected numerical or array values are incorrectly formatted.
     """
 
-    file_path = str(Path(file_path).resolve())  # Ensure the file path is absolute
-    if not os.path.exists(file_path):
+    config_path = Path(file_path).resolve()
+    file_path = str(config_path)
+    if not config_path.exists():
         raise FileNotFoundError(f"The configuration file {file_path} does not exist.")
 
     if not file_path.endswith(".conf"):
@@ -109,6 +202,12 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
 
     config = configparser.ConfigParser()
     config.read(file_path)
+
+    def resolve_path(value: str) -> str:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = config_path.parent / path
+        return str(path.resolve())
 
     def parse_coordinates(section: str, option: str, fallback: str = ""):
         """
@@ -138,12 +237,12 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
             ) from e
 
     # Read the two paths
-    images_path = config.get("DATASET", "IMAGES_PATH").strip()
+    images_path = resolve_path(config.get("DATASET", "IMAGES_PATH").strip())
     mask_path = config.get("DATASET", "MASK_PATH", fallback=None)
     if mask_path == "":
         mask_path = None
     if mask_path is not None:
-        mask_path = mask_path.strip()
+        mask_path = resolve_path(mask_path.strip())
 
     # Existence check (file or directory)
     if not os.path.exists(images_path):
@@ -155,15 +254,22 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
     output_dir = config.get("OUTPUT", "OUTPUT_PATH", fallback="").strip()
     if not output_dir:
         output_dir = "./output"  # Default output directory if not specified
+    output_dir = resolve_path(output_dir)
+    low_memory_dir = config.get(
+        "STRUCTURE TENSOR CALCULATION", "LOW_MEMORY_DIR", fallback=""
+    ).strip()
+    low_memory_dir = (
+        resolve_path(os.path.expandvars(low_memory_dir)) if low_memory_dir else None
+    )
 
-    return {
+    params = {
         # DATASET
         "IMAGES_PATH": images_path,
         "MASK_PATH": mask_path,
         "VOXEL_SIZE": config.getfloat("DATASET", "VOXEL_SIZE", fallback=1.0),
         # STRUCTURE TENSOR CALCULATION
-        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=3.0),
-        "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=1.0),
+        "SIGMA": config.getfloat("STRUCTURE TENSOR CALCULATION", "SIGMA", fallback=1.0),
+        "RHO": config.getfloat("STRUCTURE TENSOR CALCULATION", "RHO", fallback=3.0),
         "TRUNCATE": config.getfloat(
             "STRUCTURE TENSOR CALCULATION", "TRUNCATE", fallback=4.0
         ),
@@ -176,9 +282,18 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "USE_GPU": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "USE_GPU", fallback=False
         ),
+        "LOW_MEMORY": config.getboolean(
+            "STRUCTURE TENSOR CALCULATION", "LOW_MEMORY", fallback=False
+        ),
+        "LOW_MEMORY_DIR": low_memory_dir,
         "WRITE_VECTORS": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "WRITE_VECTORS", fallback=False
         ),
+        "VECTOR_FORMAT": config.get(
+            "STRUCTURE TENSOR CALCULATION", "VECTOR_FORMAT", fallback="zarr"
+        )
+        .strip()
+        .lower(),
         "REVERSE": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "REVERSE", fallback=False
         ),
@@ -209,11 +324,15 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "COLORMAP_ANGLE1": config.get("OUTPUT", "COLORMAP_ANGLE1", fallback=None),
         "COLORMAP_ANGLE2": config.get("OUTPUT", "COLORMAP_ANGLE2", fallback=None),
     }
+    if not params["WRITE_VECTORS"] and not params["WRITE_ANGLES"]:
+        raise ValueError("At least one of WRITE_VECTORS or WRITE_ANGLES must be True")
+    return params
 
 
 def remove_corrupted_files(file_paths, size_threshold=200):
     import warnings
 
+    removed_files = []
     for file_path in file_paths:
         if os.path.exists(file_path) and os.path.getsize(file_path) < size_threshold:
             warnings.warn(
@@ -222,6 +341,9 @@ def remove_corrupted_files(file_paths, size_threshold=200):
                 stacklevel=2,
             )
             os.remove(file_path)
+            removed_files.append(file_path)
+
+    return removed_files
 
 
 def convert_to_8bit(
@@ -244,12 +366,14 @@ def convert_to_8bit(
     Returns:
         np.ndarray: 8-bit converted image.
     """
-    # Compute percentiles
-    minimum, maximum = np.nanpercentile(img, (perc_min, perc_max))
-
-    # Override percentiles with explicit min/max if provided
     if min_value is not None and max_value is not None:
         minimum, maximum = min_value, max_value
+    else:
+        minimum, maximum = np.nanpercentile(img, (perc_min, perc_max))
+        if min_value is not None:
+            minimum = min_value
+        if max_value is not None:
+            maximum = max_value
 
     # Avoid division by zero
     if maximum == minimum:
