@@ -4,12 +4,20 @@ import os
 import re
 import shlex
 import subprocess
-import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
+from cardiotensor.orientation.orientation_computation_pipeline import (
+    _safe_low_memory_chunk_size,
+)
 from cardiotensor.utils.DataReader import DataReader
+from cardiotensor.utils.image_io import (
+    initialize_zarr_vector_field,
+    normalize_vector_format,
+    open_zarr_vector_field,
+    vector_field_path,
+)
 from cardiotensor.utils.utils import read_conf_file
 
 
@@ -90,6 +98,7 @@ echo SLURM_TASKS_PER_NODE: ${{SLURM_TASKS_PER_NODE:-<unset>}}
 echo SLURM_NTASKS_PER_NODE: ${{SLURM_NTASKS_PER_NODE:-<unset>}}
 echo SLURM_MEM_PER_CPU: ${{SLURM_MEM_PER_CPU:-<unset>}}
 echo SLURM_MEM_PER_NODE: ${{SLURM_MEM_PER_NODE:-<unset>}}
+echo TMPDIR: ${{TMPDIR:-/tmp}}
 echo ------------------------------------------------------
 
 IMAGES_PER_JOB={chunk_size}
@@ -134,12 +143,10 @@ cardio-tensor {conf_file_quoted} --start_index "$START_INDEX" --end_index "$END_
             check=True,
         )
     except subprocess.CalledProcessError as exc:
-        print(f"⚠️ Failed to submit SLURM script {job_filename}", flush=True)
-        if exc.stdout:
-            print(exc.stdout, flush=True)
-        if exc.stderr:
-            print(exc.stderr, flush=True)
-        sys.exit(1)
+        details = (exc.stderr or exc.stdout or str(exc)).strip()
+        raise RuntimeError(
+            f"Failed to submit SLURM script {job_filename}: {details}"
+        ) from exc
 
     stdout = result.stdout.strip()
     match = re.search(r"Submitted batch job\s+(\d+)", stdout)
@@ -186,11 +193,7 @@ def slurm_launcher(
     dry_run : bool
         If True, generate scripts but do not submit jobs.
     """
-    try:
-        params = read_conf_file(conf_file_path)
-    except Exception as err:
-        print(f"⚠️ Error reading parameter file '{conf_file_path}': {err}", flush=True)
-        sys.exit(1)
+    params = read_conf_file(conf_file_path)
 
     volume_path = params.get("IMAGES_PATH", "")
     output_dir = params.get("OUTPUT_PATH", "./output")
@@ -198,10 +201,13 @@ def slurm_launcher(
     angle_mode = str(params.get("ANGLE_MODE", "ha_ia")).strip().lower()
     write_angles = bool(params.get("WRITE_ANGLES", True))
     write_vectors = bool(params.get("WRITE_VECTORS", False))
+    vector_format = normalize_vector_format(params.get("VECTOR_FORMAT", "zarr"))
+    projected = bool(params.get("PROJECTED_ANGLES", False))
+    low_memory = bool(params.get("LOW_MEMORY", False))
     is_test = bool(params.get("TEST", False))
 
     if is_test:
-        sys.exit(
+        raise ValueError(
             "Test mode is enabled. Disable TEST in the configuration for SLURM runs."
         )
 
@@ -232,6 +238,8 @@ def slurm_launcher(
     total_slices = int(data_reader.shape[0])
     if total_slices <= 0:
         raise ValueError(f"Dataset at {volume_path} contains no slices.")
+    if write_vectors and vector_format == "zarr" and not dry_run:
+        initialize_zarr_vector_field(output_dir, tuple(data_reader.shape))
 
     first = max(0, int(start_index))
     last_exclusive = total_slices if end_index is None else int(end_index)
@@ -244,6 +252,48 @@ def slurm_launcher(
         )
 
     window_len = last_exclusive - first
+    if low_memory:
+        sigma = float(params.get("SIGMA", 1.0))
+        rho = float(params.get("RHO", 3.0))
+        truncate = float(params.get("TRUNCATE", 4.0))
+        vertical_padding = params.get("VERTICAL_PADDING", None)
+        padding = math.ceil(
+            vertical_padding
+            if vertical_padding is not None
+            else int(sigma * truncate + 0.5) + int(rho * truncate + 0.5)
+        )
+        requested_chunk = min(chunk_size, window_len)
+        safe_chunk, requested_peak, safe_peak = _safe_low_memory_chunk_size(
+            requested_chunk,
+            total_slices,
+            data_reader.shape[-2],
+            data_reader.shape[-1],
+            data_reader.dtype,
+            padding=padding,
+            include_eigenvalues=write_angles,
+            has_mask=params.get("MASK_PATH") is not None,
+            write_angles=write_angles,
+            sigma=sigma,
+            rho=rho,
+            truncate=truncate,
+            available_memory_bytes=mem_gb * 1024**3,
+            cpu_count=cpus_per_task,
+        )
+        if safe_chunk < requested_chunk:
+            print(
+                "LOW_MEMORY adjusted SLURM chunk_size from "
+                f"{requested_chunk} to {safe_chunk} for {mem_gb} GiB: "
+                f"conservative peak {requested_peak / 1024**3:.2f} GiB -> "
+                f"{safe_peak / 1024**3:.2f} GiB.",
+                flush=True,
+            )
+            chunk_size = safe_chunk
+        else:
+            print(
+                f"LOW_MEMORY validated chunk_size={chunk_size}: conservative peak "
+                f"{safe_peak / 1024**3:.2f} GiB for {mem_gb} GiB requested.",
+                flush=True,
+            )
     print(
         f"Processing slice window [{first}, {last_exclusive}) "
         f"(len={window_len}) out of 0..{total_slices}",
@@ -269,6 +319,31 @@ def slurm_launcher(
         return out
 
     intervals = build_intervals(first, last_exclusive, chunk_size)
+    all_intervals = intervals
+    intervals = [
+        interval
+        for interval in all_intervals
+        if not is_chunk_done(
+            output_dir,
+            *interval,
+            output_format=output_format,
+            angle_mode=angle_mode,
+            write_angles=write_angles,
+            write_vectors=write_vectors,
+            vector_format=vector_format,
+            projected=projected,
+        )
+    ]
+    skipped_jobs = len(all_intervals) - len(intervals)
+    print(
+        f"Output check: {skipped_jobs} complete job(s) skipped, "
+        f"{len(intervals)} job(s) needed",
+        flush=True,
+    )
+    if not intervals:
+        print("All requested outputs already exist. Nothing to submit.", flush=True)
+        return
+
     n_jobs_total = len(intervals)
     print(
         f"Splitting data into {n_jobs_total} jobs of up to {chunk_size} slices each",
@@ -276,10 +351,16 @@ def slurm_launcher(
     )
 
     max_tasks_per_array = 999
-    batched = [
-        intervals[i : i + max_tasks_per_array]
-        for i in range(0, n_jobs_total, max_tasks_per_array)
-    ]
+    batched: list[list[tuple[int, int]]] = []
+    for interval in intervals:
+        if (
+            not batched
+            or len(batched[-1]) >= max_tasks_per_array
+            or batched[-1][-1][1] != interval[0]
+        ):
+            batched.append([interval])
+        else:
+            batched[-1].append(interval)
     print(
         f"Launching {len(batched)} array batch(es) "
         f"(tasks per batch: {[len(batch) for batch in batched]})",
@@ -324,6 +405,8 @@ def slurm_launcher(
         angle_mode=angle_mode,
         write_angles=write_angles,
         write_vectors=write_vectors,
+        vector_format=vector_format,
+        projected=projected,
     )
 
     elapsed = time.time() - start_t
@@ -371,32 +454,29 @@ def monitor_job_output(
     angle_mode: str = "ha_ia",
     write_angles: bool = True,
     write_vectors: bool = False,
+    vector_format: str = "zarr",
     poll_interval_sec: int = 60,
+    projected: bool = False,
 ) -> None:
     """
-    Monitor output progress for the requested index range.
+    Monitor every requested output for the requested index range.
 
-    The monitor tracks one representative output per slice:
-    - HA or AZ image when `write_angles=True`
-    - eigen_vec when only vectors are written
+    Completion requires both angle outputs, FA, and vectors when enabled.
     """
     total_images = end_index_exclusive - start_index
     if total_images <= 0:
         return
 
-    if write_angles:
-        if angle_mode == "az_el":
-            mode_prefix = "AZ"
-        else:
-            mode_prefix = "HA"
-        folder = os.path.join(output_directory, mode_prefix)
-        extension = output_format
-        prefix = mode_prefix
-    elif write_vectors:
-        folder = os.path.join(output_directory, "eigen_vec")
-        extension = "npy"
-        prefix = "eigen_vec"
+    vector_format = normalize_vector_format(vector_format)
+    mode = angle_mode.strip().lower()
+    if mode == "az_el":
+        angle_names = ("AZ", "EL")
+    elif mode == "ha_ia":
+        angle_names = ("HA_projected", "IA_projected") if projected else ("HA", "IA")
     else:
+        raise ValueError("ANGLE_MODE must be 'ha_ia' or 'az_el'")
+
+    if not write_angles and not write_vectors:
         print(
             "No angle/vector outputs requested; skipping monitor (nothing to track).",
             flush=True,
@@ -404,36 +484,68 @@ def monitor_job_output(
         return
 
     print(
-        f"Monitoring outputs in {folder} for range [{start_index}, {end_index_exclusive})",
+        f"Monitoring all requested outputs for range "
+        f"[{start_index}, {end_index_exclusive})",
         flush=True,
     )
 
-    start_t = time.time()
-    prev_count = _count_files_in_range(
-        folder, prefix, extension, start_index, end_index_exclusive
-    )
-    while True:
-        current_count = _count_files_in_range(
-            folder, prefix, extension, start_index, end_index_exclusive
-        )
-        processed = current_count
-        remaining = max(total_images - processed, 0)
-        print(f"{processed}/{total_images} processed", flush=True)
+    def count_completed() -> dict[str, int]:
+        counts = {}
+        if write_angles:
+            for name in (*angle_names, "FA"):
+                counts[name] = _count_files_in_range(
+                    os.path.join(output_directory, name),
+                    name,
+                    output_format,
+                    start_index,
+                    end_index_exclusive,
+                )
 
-        if processed >= total_images:
+        if write_vectors:
+            if vector_format == "zarr":
+                store = open_zarr_vector_field(output_directory)
+                counts["Zarr vectors"] = int(
+                    store.completed_range(start_index, end_index_exclusive).sum()
+                )
+            else:
+                counts["NPY vectors"] = _count_files_in_range(
+                    str(vector_field_path(output_directory, "npy")),
+                    "eigen_vec",
+                    "npy",
+                    start_index,
+                    end_index_exclusive,
+                )
+        return counts
+
+    start_t = time.time()
+    previous_total = None
+    while True:
+        counts = count_completed()
+        print(
+            " | ".join(
+                f"{name}: {min(count, total_images)}/{total_images}"
+                for name, count in counts.items()
+            ),
+            flush=True,
+        )
+
+        if all(count >= total_images for count in counts.values()):
             break
 
-        delta = current_count - prev_count
-        if delta > 0:
+        current_total = sum(counts.values())
+        target_total = total_images * len(counts)
+        remaining = max(target_total - current_total, 0)
+        delta = 0 if previous_total is None else max(current_total - previous_total, 0)
+        if delta:
             rate_per_min = delta * (60.0 / max(poll_interval_sec, 1))
             eta_min = remaining / rate_per_min if rate_per_min > 0 else float("inf")
             print(
-                f"{delta} new files in last {poll_interval_sec}s. "
+                f"{delta} new outputs in last {poll_interval_sec}s. "
                 f"Approx. {eta_min:.2f} minutes remaining.",
                 flush=True,
             )
 
-        prev_count = current_count
+        previous_total = current_total
         print(f"Elapsed time (s): {time.time() - start_t:.1f}", flush=True)
         print(f"Waiting {poll_interval_sec} seconds...\n", flush=True)
         time.sleep(poll_interval_sec)
@@ -445,23 +557,47 @@ def is_chunk_done(
     end: int,
     output_format: str = "jp2",
     angle_mode: str = "ha_ia",
+    write_angles: bool = True,
+    write_vectors: bool = False,
+    vector_format: str = "zarr",
+    projected: bool = False,
 ) -> bool:
-    """
-    Check if all output files for a given chunk [start, end) are already present.
-    """
+    """Return True when every requested output exists for [start, end)."""
     ext = output_format.lstrip(".")
     mode = angle_mode.lower().strip()
     if mode == "az_el":
         angle1, angle2 = "AZ", "EL"
     else:
-        angle1, angle2 = "HA", "IA"
+        angle1, angle2 = (
+            ("HA_projected", "IA_projected") if projected else ("HA", "IA")
+        )
+
+    vector_format = normalize_vector_format(vector_format)
+    zarr_completed = None
+    if write_vectors and vector_format == "zarr":
+        try:
+            zarr_completed = open_zarr_vector_field(output_dir).completed_range(
+                start, end
+            )
+        except (FileNotFoundError, KeyError, ValueError):
+            return False
 
     for idx in range(start, end):
-        expected_files = [
-            f"{output_dir}/{angle1}/{angle1}_{idx:06d}.{ext}",
-            f"{output_dir}/{angle2}/{angle2}_{idx:06d}.{ext}",
-            f"{output_dir}/FA/FA_{idx:06d}.{ext}",
-        ]
+        expected_files = []
+        if write_angles:
+            expected_files.extend(
+                [
+                    f"{output_dir}/{angle1}/{angle1}_{idx:06d}.{ext}",
+                    f"{output_dir}/{angle2}/{angle2}_{idx:06d}.{ext}",
+                    f"{output_dir}/FA/FA_{idx:06d}.{ext}",
+                ]
+            )
+        if write_vectors and vector_format == "npy":
+            expected_files.append(
+                str(vector_field_path(output_dir, "npy") / f"eigen_vec_{idx:06d}.npy")
+            )
         if not all(os.path.exists(path) for path in expected_files):
+            return False
+        if zarr_completed is not None and not zarr_completed[idx - start]:
             return False
     return True

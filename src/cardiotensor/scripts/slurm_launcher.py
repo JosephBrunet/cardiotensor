@@ -92,21 +92,24 @@ def script() -> None:
     args = parser.parse_args()
     conf_file_path = args.conf_file_path
 
-    slurm_launcher(
-        conf_file_path,
-        start_index=args.start_index,
-        end_index=args.end_index,
-        chunk_size=args.chunk_size,
-        partition=args.partition,
-        time_limit=args.time_limit,
-        cpus_per_task=args.cpus_per_task,
-        mem_gb=args.mem_gb,
-        array_parallel=args.array_parallel,
-        log_dir=args.log_dir,
-        submit_dir=args.submit_dir,
-        monitor=not args.no_monitor,
-        dry_run=args.dry_run,
-    )
+    try:
+        slurm_launcher(
+            conf_file_path,
+            start_index=args.start_index,
+            end_index=args.end_index,
+            chunk_size=args.chunk_size,
+            partition=args.partition,
+            time_limit=args.time_limit,
+            cpus_per_task=args.cpus_per_task,
+            mem_gb=args.mem_gb,
+            array_parallel=args.array_parallel,
+            log_dir=args.log_dir,
+            submit_dir=args.submit_dir,
+            monitor=not args.no_monitor,
+            dry_run=args.dry_run,
+        )
+    except Exception as err:
+        parser.exit(1, f"Error: {err}\n")
 
 
 if __name__ == "__main__":
