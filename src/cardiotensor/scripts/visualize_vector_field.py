@@ -17,6 +17,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+from cardiotensor.utils.image_io import vector_field_path
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.vector_field import visualize_vector_field
 
@@ -24,7 +25,7 @@ from cardiotensor.visualization.vector_field import visualize_vector_field
 def _discover_color_folders(output_dir: Path) -> list[str]:
     candidates = []
     for path in sorted(output_dir.iterdir()):
-        if not path.is_dir() or path.name == "eigen_vec":
+        if not path.is_dir() or path.name in {"eigen_vec", "eigen_vec.zarr"}:
             continue
         try:
             if any(
@@ -143,7 +144,9 @@ def script():
 
     # Call visualization function (handles both plotting and VTK export)
     visualize_vector_field(
-        vector_field_path=output_dir / "eigen_vec",
+        vector_field_path=vector_field_path(
+            output_dir, params.get("VECTOR_FORMAT", "zarr")
+        ),
         color_volume_path=output_dir / color_volume_dir,
         mask_path=mask_path,
         downsample=args.downsample,
