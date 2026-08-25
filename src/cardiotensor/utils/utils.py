@@ -3,6 +3,7 @@ import configparser
 import os
 import platform
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -117,26 +118,48 @@ def get_available_memory_bytes() -> int:
 
 
 def get_gpu_count() -> int:
-    """Return the number of visible NVIDIA GPUs, or 0 if none are detected."""
+    """Return the number of usable visible NVIDIA GPUs.
+
+    CuPy is deliberately exercised in a subprocess. Initializing CUDA in this
+    process before ``structure_tensor`` forks its GPU workers leaves the workers
+    with an invalid inherited CUDA context on Linux.
+    """
 
     def _cupy_gpu_count(max_count: int | None = None) -> int:
+        probe = """
+import sys
+import cupy as cp
+
+limit = int(sys.argv[1])
+count = int(cp.cuda.runtime.getDeviceCount())
+if limit >= 0:
+    count = min(count, limit)
+
+usable = 0
+for device_id in range(count):
+    try:
+        with cp.cuda.Device(device_id):
+            cp.arange(2, dtype=cp.float32).sum().item()
+        usable += 1
+    except Exception:
+        pass
+print(usable)
+"""
         try:
-            import cupy as cp
-
-            count = int(cp.cuda.runtime.getDeviceCount())
-            if max_count is not None:
-                count = min(count, max_count)
-
-            # Make sure the devices can actually be selected by CuPy.
-            usable = 0
-            for device_id in range(count):
-                try:
-                    cp.cuda.Device(device_id).use()
-                    usable += 1
-                except Exception:
-                    pass
-            return usable
-        except Exception:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    probe,
+                    str(max_count if max_count is not None else -1),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=60,
+            )
+            return int(result.stdout.strip().splitlines()[-1])
+        except (OSError, subprocess.SubprocessError, ValueError, IndexError):
             return 0
 
     if os.environ.get("SLURM_JOB_ID"):
@@ -282,6 +305,11 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "USE_GPU": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "USE_GPU", fallback=False
         ),
+        "GPU_WORKERS_PER_DEVICE": config.getint(
+            "STRUCTURE TENSOR CALCULATION",
+            "GPU_WORKERS_PER_DEVICE",
+            fallback=1,
+        ),
         "LOW_MEMORY": config.getboolean(
             "STRUCTURE TENSOR CALCULATION", "LOW_MEMORY", fallback=False
         ),
@@ -324,6 +352,8 @@ def read_conf_file(file_path: str) -> dict[str, Any]:
         "COLORMAP_ANGLE1": config.get("OUTPUT", "COLORMAP_ANGLE1", fallback=None),
         "COLORMAP_ANGLE2": config.get("OUTPUT", "COLORMAP_ANGLE2", fallback=None),
     }
+    if params["GPU_WORKERS_PER_DEVICE"] < 1:
+        raise ValueError("GPU_WORKERS_PER_DEVICE must be at least 1")
     if not params["WRITE_VECTORS"] and not params["WRITE_ANGLES"]:
         raise ValueError("At least one of WRITE_VECTORS or WRITE_ANGLES must be True")
     return params

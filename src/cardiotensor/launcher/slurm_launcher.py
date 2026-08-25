@@ -30,6 +30,7 @@ def submit_job_to_slurm(
     partition: str | None,
     time_limit: str,
     cpus_per_task: int,
+    gpus: int,
     mem_gb: int,
     array_parallel: int,
     log_dir: str,
@@ -71,10 +72,11 @@ def submit_job_to_slurm(
         if partition is not None and partition.strip() != ""
         else ""
     )
+    gpu_line = f"#SBATCH --gres=gpu:{gpus}\n" if gpus > 0 else ""
 
     slurm_script_content = f"""#!/bin/bash -l
 #SBATCH --output={log_dir_path}/slurm-%x-%A_%a.out
-{partition_line}#SBATCH --nodes=1
+{partition_line}{gpu_line}#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task={cpus_per_task}
 #SBATCH --mem={mem_gb}G
@@ -98,6 +100,8 @@ echo SLURM_TASKS_PER_NODE: ${{SLURM_TASKS_PER_NODE:-<unset>}}
 echo SLURM_NTASKS_PER_NODE: ${{SLURM_NTASKS_PER_NODE:-<unset>}}
 echo SLURM_MEM_PER_CPU: ${{SLURM_MEM_PER_CPU:-<unset>}}
 echo SLURM_MEM_PER_NODE: ${{SLURM_MEM_PER_NODE:-<unset>}}
+echo SLURM_JOB_GPUS: ${{SLURM_JOB_GPUS:-<unset>}}
+echo CUDA_VISIBLE_DEVICES: ${{CUDA_VISIBLE_DEVICES:-<unset>}}
 echo TMPDIR: ${{TMPDIR:-/tmp}}
 echo ------------------------------------------------------
 
@@ -120,6 +124,7 @@ fi
 echo "Start index (inclusive): $START_INDEX"
 echo "End index (exclusive):   $END_INDEX"
 echo "Requested memory (GB):   {mem_gb}"
+echo "Requested GPUs:          {gpus}"
 
 # Fix Qt headless error
 export QT_QPA_PLATFORM=offscreen
@@ -170,6 +175,7 @@ def slurm_launcher(
     partition: str | None = None,
     time_limit: str | None = None,
     cpus_per_task: int | None = None,
+    gpus: int = 0,
     mem_gb: int | None = None,
     array_parallel: int | None = None,
     log_dir: str | None = None,
@@ -218,6 +224,7 @@ def slurm_launcher(
         partition = None
     time_limit = "2:00:00" if time_limit is None else str(time_limit).strip()
     cpus_per_task = 8 if cpus_per_task is None else int(cpus_per_task)
+    gpus = int(gpus)
     mem_gb = 64 if mem_gb is None else int(mem_gb)
     array_parallel = 100 if array_parallel is None else int(array_parallel)
     default_log_dir = os.path.join(output_dir, "slurm", "log")
@@ -229,6 +236,8 @@ def slurm_launcher(
         raise ValueError("chunk_size must be > 0")
     if cpus_per_task <= 0:
         raise ValueError("cpus_per_task must be > 0")
+    if gpus < 0:
+        raise ValueError("gpus must be >= 0")
     if mem_gb <= 0:
         raise ValueError("mem_gb must be > 0")
     if array_parallel <= 0:
@@ -302,7 +311,7 @@ def slurm_launcher(
     print(
         "SLURM settings: "
         f"partition={partition}, time_limit={time_limit}, cpus_per_task={cpus_per_task}, "
-        f"mem_gb={mem_gb}, array_parallel={array_parallel}, chunk_size={chunk_size}",
+        f"gpus={gpus}, mem_gb={mem_gb}, array_parallel={array_parallel}, chunk_size={chunk_size}",
         flush=True,
     )
     print(f"SLURM paths: log_dir={log_dir}, submit_dir={submit_dir}", flush=True)
@@ -380,6 +389,7 @@ def slurm_launcher(
             partition=partition,
             time_limit=time_limit,
             cpus_per_task=cpus_per_task,
+            gpus=gpus,
             mem_gb=mem_gb,
             array_parallel=array_parallel,
             log_dir=log_dir,

@@ -142,6 +142,7 @@ def calculate_structure_tensor(
     devices: list[str] | None = None,
     block_size: int = 200,
     use_gpu: bool = False,
+    gpu_workers_per_device: int = 1,
     dtype: type = np.float32,
     return_eigenvalues: bool = True,
     memmap_dir: str | os.PathLike[str] | None = None,
@@ -156,6 +157,7 @@ def calculate_structure_tensor(
         devices (Optional[list[str]]): List of devices for parallel processing (e.g., ['cpu', 'cuda:0']).
         block_size (int): Size of the blocks for processing. Default is 200.
         use_gpu (bool): If True, uses GPU for calculations. Default is False.
+        gpu_workers_per_device: Worker processes assigned to each visible GPU.
         dtype: Output dtype for eigenvalues and eigenvectors.
         return_eigenvalues: If False, do not allocate the eigenvalue volume.
         memmap_dir: Optional scratch directory for disk-backed tensor outputs.
@@ -168,6 +170,8 @@ def calculate_structure_tensor(
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     num_cpus = get_available_cpu_count(default=4)
+    if gpu_workers_per_device < 1:
+        raise ValueError("gpu_workers_per_device must be at least 1")
 
     devices = devices or []
     num_gpus = 0
@@ -185,10 +189,15 @@ def calculate_structure_tensor(
 
     if not devices:
         if use_gpu and num_gpus > 0:
-            print(f"Using {num_gpus} GPUs for computation")
-            devices = []
-            for i in range(num_gpus):
-                devices.extend([f"cuda:{i}"] * 16)
+            print(
+                f"Using {num_gpus} GPU(s) with "
+                f"{gpu_workers_per_device} worker(s) per GPU"
+            )
+            devices = [
+                f"cuda:{device_id}"
+                for device_id in range(num_gpus)
+                for _ in range(gpu_workers_per_device)
+            ]
         else:
             print(f"Using {num_cpus} CPU for computation")
             devices = ["cpu"] * num_cpus
@@ -197,7 +206,10 @@ def calculate_structure_tensor(
     print(f"---  Volume shape: {volume.shape}")
     print(f"---  sigma: {sigma}, rho: {rho}, Block size: {block_size}")
     if use_gpu and num_gpus > 0:
-        device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
+        device_str = (
+            f"{len(devices)} worker{'s' if len(devices) > 1 else ''} "
+            f"across {num_gpus} GPU{'s' if num_gpus > 1 else ''}"
+        )
     else:
         device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
     print(f"---  Devices: {device_str}")

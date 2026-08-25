@@ -78,6 +78,7 @@ def test_read_conf_file(tmp_path):
         "VERTICAL_PADDING = 10.0\n"
         "N_CHUNK = 50\n"
         "USE_GPU = True\n"
+        "GPU_WORKERS_PER_DEVICE = 2\n"
         "LOW_MEMORY = True\n"
         "LOW_MEMORY_DIR = scratch\n"
         "WRITE_VECTORS = True\n"
@@ -109,6 +110,7 @@ def test_read_conf_file(tmp_path):
     assert pytest.approx(config["RHO"]) == 1.5
     assert config["N_CHUNK"] == 50
     assert config["USE_GPU"] is True
+    assert config["GPU_WORKERS_PER_DEVICE"] == 2
     assert config["LOW_MEMORY"] is True
     assert config["LOW_MEMORY_DIR"] == str(tmp_path / "scratch")
     assert config["WRITE_VECTORS"] is True

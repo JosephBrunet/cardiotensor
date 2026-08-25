@@ -160,3 +160,86 @@ def test_slurm_skips_complete_chunks(tmp_path: Path, monkeypatch, capsys):
     scripts = list((tmp_path / "submit").glob("*.slurm"))
     assert len(scripts) == 1
     assert "START_INDEX_BASE=2" in scripts[0].read_text()
+
+
+def test_slurm_gpu_request_is_written_to_script(tmp_path, monkeypatch, capsys):
+    params = {
+        "IMAGES_PATH": "volume",
+        "OUTPUT_PATH": str(tmp_path / "output"),
+        "OUTPUT_FORMAT": "tif",
+        "ANGLE_MODE": "ha_ia",
+        "WRITE_ANGLES": True,
+        "WRITE_VECTORS": False,
+        "USE_GPU": True,
+        "N_CHUNK": 2,
+        "TEST": False,
+    }
+
+    class FakeReader:
+        shape = (4, 8, 8)
+        dtype = np.dtype(np.uint16)
+
+        def __init__(self, path):
+            pass
+
+    monkeypatch.setattr(
+        "cardiotensor.launcher.slurm_launcher.read_conf_file", lambda _: params
+    )
+    monkeypatch.setattr(
+        "cardiotensor.launcher.slurm_launcher.DataReader", FakeReader
+    )
+
+    slurm_launcher(
+        "parameters.conf",
+        chunk_size=2,
+        gpus=2,
+        log_dir=str(tmp_path / "logs"),
+        submit_dir=str(tmp_path / "submit"),
+        monitor=False,
+        dry_run=True,
+    )
+
+    script = next((tmp_path / "submit").glob("*.slurm")).read_text()
+    assert "#SBATCH --gres=gpu:2" in script
+    assert "echo SLURM_JOB_GPUS: ${SLURM_JOB_GPUS:-<unset>}" in script
+    assert 'echo "Requested GPUs:          2"' in script
+    assert "gpus=2" in capsys.readouterr().out
+
+
+def test_slurm_zero_gpus_omits_gpu_resource(tmp_path, monkeypatch):
+    params = {
+        "IMAGES_PATH": "volume",
+        "OUTPUT_PATH": str(tmp_path / "output"),
+        "OUTPUT_FORMAT": "tif",
+        "ANGLE_MODE": "ha_ia",
+        "WRITE_ANGLES": True,
+        "WRITE_VECTORS": False,
+        "N_CHUNK": 2,
+        "TEST": False,
+    }
+
+    class FakeReader:
+        shape = (2, 8, 8)
+        dtype = np.dtype(np.uint16)
+
+        def __init__(self, path):
+            pass
+
+    monkeypatch.setattr(
+        "cardiotensor.launcher.slurm_launcher.read_conf_file", lambda _: params
+    )
+    monkeypatch.setattr(
+        "cardiotensor.launcher.slurm_launcher.DataReader", FakeReader
+    )
+
+    slurm_launcher(
+        "parameters.conf",
+        gpus=0,
+        log_dir=str(tmp_path / "logs"),
+        submit_dir=str(tmp_path / "submit"),
+        monitor=False,
+        dry_run=True,
+    )
+
+    script = next((tmp_path / "submit").glob("*.slurm")).read_text()
+    assert "#SBATCH --gres=gpu:" not in script

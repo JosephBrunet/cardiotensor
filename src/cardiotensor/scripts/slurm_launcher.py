@@ -56,6 +56,12 @@ def script() -> None:
         help="SLURM CPUs per task.",
     )
     parser.add_argument(
+        "--gpus",
+        type=int,
+        default=0,
+        help="GPUs requested per SLURM array task (0 disables GPU requests).",
+    )
+    parser.add_argument(
         "--mem_gb",
         type=int,
         default=64,
@@ -101,6 +107,7 @@ def script() -> None:
             partition=args.partition,
             time_limit=args.time_limit,
             cpus_per_task=args.cpus_per_task,
+            gpus=args.gpus,
             mem_gb=args.mem_gb,
             array_parallel=args.array_parallel,
             log_dir=args.log_dir,

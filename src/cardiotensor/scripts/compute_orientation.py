@@ -112,6 +112,7 @@ def script() -> None:
     write_angles = params.get("WRITE_ANGLES", True)
     angle_mode = params.get("ANGLE_MODE", "ha_ia")
     use_gpu = params.get("USE_GPU", True)
+    gpu_workers_per_device = params.get("GPU_WORKERS_PER_DEVICE", 1)
     low_memory = params.get("LOW_MEMORY", False)
     low_memory_dir = params.get("LOW_MEMORY_DIR", None)
     is_test = force_test or params.get("TEST", False)
@@ -157,6 +158,7 @@ def script() -> None:
             angle_mode=angle_mode,
             write_angles=write_angles,
             use_gpu=use_gpu,
+            gpu_workers_per_device=gpu_workers_per_device,
             low_memory=low_memory,
             low_memory_dir=low_memory_dir,
             is_test=is_test,
@@ -243,6 +245,7 @@ def script() -> None:
             write_angles=write_angles,
             angle_mode=angle_mode,
             use_gpu=use_gpu,
+            gpu_workers_per_device=gpu_workers_per_device,
             low_memory=low_memory,
             low_memory_dir=low_memory_dir,
             is_test=is_test,
