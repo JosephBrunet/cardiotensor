@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 from alive_progress import alive_bar
 from matplotlib import pyplot as plt
+from scipy import ndimage as ndi
 
 # from memory_profiler import profile
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
@@ -426,6 +427,7 @@ def compute_orientation(
     angle_mode: str = "ha_ia",
     write_angles: bool = True,
     use_gpu: bool = True,
+    gpu_workers_per_device: int = 1,
     is_test: bool = False,
     n_slice_test: int | None = None,
     show_quiver: bool = True,
@@ -461,6 +463,7 @@ def compute_orientation(
         write_angles: Whether to save HA/IA/FA maps.
         projected: If True in ha_ia mode, write projected HA/IA legacy maps.
         use_gpu: Use GPU acceleration for tensor computation.
+        gpu_workers_per_device: Worker processes assigned to each visible GPU.
         is_test: If True, runs in test mode and outputs plots.
         n_slice_test: Number of slices to process in test mode.
         show_quiver: If True, overlay the vector field on the test-slice figure.
@@ -474,6 +477,8 @@ def compute_orientation(
     # --- Sanity checks ---
     if sigma > rho:
         raise ValueError("sigma must be <= rho")
+    if gpu_workers_per_device < 1:
+        raise ValueError("gpu_workers_per_device must be at least 1")
     if not write_vectors and not write_angles:
         raise ValueError("At least one of write_vectors or write_angles must be True")
     vector_format = normalize_vector_format(vector_format)
@@ -514,6 +519,7 @@ Parameters:
     - Vector format:  {vector_format}
     - Low memory:     {low_memory}
     - Use GPU:        {use_gpu}
+    - GPU workers:    {gpu_workers_per_device} per device
     - Test mode:      {is_test}
     - Show quiver:    {show_quiver}
     - Colormap:       {colormap or "[default]"}
@@ -617,9 +623,29 @@ Parameters:
                 f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
             )
 
+        # Preserve the original mask for final output clipping, but use an
+        # automatically dilated mask during tensor filtering. This prevents the
+        # Gaussian support from seeing artificial zeros at the anatomical edge.
         invalid_mask = mask == 0
-        volume[invalid_mask] = 0
-        del mask
+        mask_dilation_voxels = (
+            int(sigma * truncate + 0.5) + int(rho * truncate + 0.5)
+        )
+        if mask_dilation_voxels > 0:
+            computation_mask = ndi.maximum_filter(
+                ~invalid_mask,
+                size=2 * mask_dilation_voxels + 1,
+                mode="constant",
+                cval=0,
+            )
+            print(
+                "Automatic structure-tensor mask dilation: "
+                f"{mask_dilation_voxels} image-grid voxel(s) "
+                f"(sigma={sigma:g}, rho={rho:g}, truncate={truncate:g})"
+            )
+        else:
+            computation_mask = ~invalid_mask
+        volume[~computation_mask] = 0
+        del computation_mask, mask
 
     print("\n" + "-" * 40)
     print("CALCULATING STRUCTURE TENSOR")
@@ -669,6 +695,7 @@ Parameters:
         rho,
         truncate=truncate,
         use_gpu=use_gpu,
+        gpu_workers_per_device=gpu_workers_per_device,
         return_eigenvalues=need_eigenvalues,
         memmap_dir=None if tensor_scratch is None else tensor_scratch.name,
     )
