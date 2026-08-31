@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 from alive_progress import alive_bar
 from matplotlib import pyplot as plt
+from scipy import ndimage as ndi
 
 # from memory_profiler import profile
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
@@ -622,9 +623,29 @@ Parameters:
                 f"Mask shape {mask.shape} does not match volume shape {volume.shape}"
             )
 
+        # Preserve the original mask for final output clipping, but use an
+        # automatically dilated mask during tensor filtering. This prevents the
+        # Gaussian support from seeing artificial zeros at the anatomical edge.
         invalid_mask = mask == 0
-        volume[invalid_mask] = 0
-        del mask
+        mask_dilation_voxels = (
+            int(sigma * truncate + 0.5) + int(rho * truncate + 0.5)
+        )
+        if mask_dilation_voxels > 0:
+            computation_mask = ndi.maximum_filter(
+                ~invalid_mask,
+                size=2 * mask_dilation_voxels + 1,
+                mode="constant",
+                cval=0,
+            )
+            print(
+                "Automatic structure-tensor mask dilation: "
+                f"{mask_dilation_voxels} image-grid voxel(s) "
+                f"(sigma={sigma:g}, rho={rho:g}, truncate={truncate:g})"
+            )
+        else:
+            computation_mask = ~invalid_mask
+        volume[~computation_mask] = 0
+        del computation_mask, mask
 
     print("\n" + "-" * 40)
     print("CALCULATING STRUCTURE TENSOR")
