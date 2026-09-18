@@ -144,3 +144,19 @@ def test_zarr_region_read_does_not_load_full_slices(tmp_path: Path, monkeypatch)
     region = reader.load_region(1, 3, start_y=2, end_y=5, start_x=1, end_x=6)
 
     np.testing.assert_array_equal(region, full[:, 1:3, 2:5, 1:6])
+
+
+@pytest.mark.parametrize("target_depth,start,end", [
+    (80, 0, 10), (80, 16, 26), (80, 19, 35), (80, 73, 80),
+    (79, 65, 79), (5, 1, 4), (10, 3, 8), (80, 16, None),
+])
+def test_resampled_slice_matches_full_volume(tmp_path, target_depth, start, end):
+    # Distinct planes expose Z shifts; Y/X also require integer resampling.
+    stack = np.arange(10 * 6 * 7, dtype=np.uint16).reshape(10, 6, 7)
+    path = tmp_path / "mask.tif"
+    tifffile.imwrite(path, stack, photometric="minisblack")
+    reader = DataReader(path)
+    target = (target_depth, 12, 14)
+    full = reader.load_volume(0, target_depth, unbinned_shape=target)
+    partial = reader.load_volume(start, end, unbinned_shape=target)
+    np.testing.assert_array_equal(partial, full[start:end])

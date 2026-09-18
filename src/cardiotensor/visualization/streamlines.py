@@ -4,6 +4,7 @@ import matplotlib.cm as cm
 import numpy as np
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.streamlines_io_utils import load_trk_streamlines
 
 ANGLE_RANGES = {
@@ -49,6 +50,37 @@ def _compute_az_el_from_streamlines(
     return az_list, el_list
 
 
+def _streamlines_intersect_mask(
+    streamlines_xyz: list[np.ndarray], mask_path: str | Path, trk_path: Path
+) -> list[bool]:
+    """Return True for streamlines containing a point in a binary mask."""
+    import nibabel as nib
+
+    trk = nib.streamlines.load(str(trk_path))
+    dimensions = tuple(int(value) for value in trk.header["dimensions"])
+    if len(dimensions) != 3 or any(value <= 0 for value in dimensions):
+        raise ValueError(f"Invalid TRK dimensions: {dimensions}")
+    target_zyx = dimensions[::-1]
+    rasmm_to_voxel = np.linalg.inv(
+        np.asarray(trk.header["voxel_to_rasmm"], dtype=np.float64)
+    )
+    reader = DataReader(mask_path)
+    mask = reader.load_volume(0, target_zyx[0], unbinned_shape=target_zyx) > 0
+    hits = []
+    for streamline in streamlines_xyz:
+        points = np.asarray(streamline, dtype=np.float64)
+        homogeneous = np.column_stack((points, np.ones(len(points))))
+        indices = np.rint((homogeneous @ rasmm_to_voxel.T)[:, :3]).astype(np.int64)
+        x, y, z = indices.T
+        inside = (
+            (z >= 0) & (z < mask.shape[0]) & (y >= 0) & (y < mask.shape[1])
+            & (x >= 0) & (x < mask.shape[2])
+        )
+        hits.append(bool(np.any(mask[z[inside], y[inside], x[inside]])))
+    print(f"Mask highlight: {sum(hits):,}/{len(hits):,} streamlines intersect {mask_path}")
+    return hits
+
+
 def visualize_streamlines(
     streamlines_file: str | Path,
     color_by: str = "ha",  # {"ha","ia","az","el","elevation","azimuth"}
@@ -80,6 +112,8 @@ def visualize_streamlines(
     restore_session: bool = True,
     session_settings: dict | None = None,
     fury_quality: str = "interactive",
+    highlight_mask: str | Path | None = None,
+    other_opacity: float = 0.05,
 ):
     """
     Visualize .trk streamlines with per-point angle-based coloring.
@@ -92,6 +126,8 @@ def visualize_streamlines(
     mode
         "tube" for explicit tube geometry or "line" for faster line rendering.
     """
+    if not 0.0 <= other_opacity <= 1.0:
+        raise ValueError("other_opacity must be between 0 and 1")
     p = Path(streamlines_file)
     if not p.exists():
         raise FileNotFoundError(f"Streamlines file not found: {p}")
@@ -166,6 +202,12 @@ def visualize_streamlines(
             name: [values[index] for index in keep]
             for name, values in attrs.items()
         }
+
+    highlight_flags = (
+        _streamlines_intersect_mask(streamlines_xyz, highlight_mask, p)
+        if highlight_mask is not None
+        else None
+    )
 
     # ---- Inform the user of available stored scalar fields ----
     available = list(attrs.keys())
@@ -287,8 +329,12 @@ def visualize_streamlines(
             streamlines_file=p,
             opacity=pyvista_opacity,
             quality=fury_quality,
+            highlight_flags=highlight_flags,
+            other_opacity=other_opacity,
         )
     elif backend == "pyvista":
+        if highlight_mask is not None:
+            raise ValueError("--highlight-mask currently requires --backend fury")
         from cardiotensor.visualization.pyvista_plotting_streamlines import (
             show_streamlines_pyvista,
         )

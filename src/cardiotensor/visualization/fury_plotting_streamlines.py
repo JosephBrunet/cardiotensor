@@ -209,6 +209,8 @@ class StreamlineViewer:
         streamlines_file: str | Path | None = None,
         opacity: float = 1.0,
         quality: str = "interactive",
+        highlight_flags: list[bool] | None = None,
+        other_opacity: float = 0.05,
     ):
         self.streamlines_xyz = streamlines_xyz
         self.color_values = color_values
@@ -225,6 +227,11 @@ class StreamlineViewer:
             Path(streamlines_file).resolve() if streamlines_file else None
         )
         self.quality = quality.lower().strip()
+        if highlight_flags is not None and len(highlight_flags) != len(streamlines_xyz):
+            raise ValueError("highlight_flags must match streamlines")
+        self.highlight_flags = highlight_flags
+        self.other_opacity = float(other_opacity)
+        self.actor_highlight = None
         if self.quality not in {"interactive", "publication"}:
             raise ValueError("quality must be 'interactive' or 'publication'")
 
@@ -328,6 +335,30 @@ class StreamlineViewer:
 
         self.scene.add(self.actor0)
         self._style_streamline_actor()
+        if self.highlight_flags is not None:
+            self.actor0.GetProperty().SetOpacity(self.other_opacity)
+            selected = [i for i, hit in enumerate(self.highlight_flags) if hit]
+            if selected:
+                selected_streamlines = [self.streamlines_xyz[i] for i in selected]
+                selected_values = np.concatenate(
+                    [np.asarray(self.color_values[i]).ravel() for i in selected]
+                ).astype(np.float32)
+                maker = actor.streamtube if self.mode == "tube" else actor.line
+                kwargs = dict(
+                    colors=selected_values, linewidth=self.linewidth,
+                    spline_subdiv=self.actor_spline_subdiv,
+                    lookup_colormap=self.lut,
+                )
+                if self.mode == "tube":
+                    kwargs["tube_sides"] = self.tube_sides
+                self.actor_highlight = maker(selected_streamlines, **kwargs)
+                prop = self.actor_highlight.GetProperty()
+                prop.SetInterpolationToPhong()
+                prop.SetAmbient(self.material["ambient"])
+                prop.SetDiffuse(self.material["diffuse"])
+                prop.SetSpecular(self.material["specular"])
+                prop.SetOpacity(1.0)
+                self.scene.add(self.actor_highlight)
 
         # fast actor for interaction (cheap line rendering)
         self.actor_fast = actor.line(
@@ -399,6 +430,14 @@ class StreamlineViewer:
         self._style_streamline_actor()
         if self.actor_fast is not None:
             self.actor_fast.GetProperty().SetOpacity(self.material["opacity"])
+        if self.highlight_flags is not None:
+            self.actor0.GetProperty().SetOpacity(self.other_opacity)
+        if self.actor_highlight is not None:
+            prop = self.actor_highlight.GetProperty()
+            prop.SetAmbient(self.material["ambient"])
+            prop.SetDiffuse(self.material["diffuse"])
+            prop.SetSpecular(self.material["specular"])
+            prop.SetOpacity(1.0)
         self._render_now()
 
     def _set_material_value(self, name: str, value: float):
@@ -810,7 +849,7 @@ class StreamlineViewer:
         box_active = bool(getattr(self, "box_clipping_active", False))
         if box_rep is not None:
             box_rep.GetPlanes(self.box_planes)
-        for current_actor in (self.actor0, self.actor_fast):
+        for current_actor in (self.actor0, self.actor_fast, self.actor_highlight):
             if current_actor is None:
                 continue
             mapper = current_actor.GetMapper()
@@ -879,6 +918,12 @@ class StreamlineViewer:
                 self.scene.rm(self.actor0)
             except Exception:
                 pass
+        if self.actor_highlight is not None:
+            try:
+                self.scene.rm(self.actor_highlight)
+            except Exception:
+                pass
+            self.actor_highlight = None
 
         if self.mode == "tube":
             self.actor0 = actor.streamtube(
@@ -904,6 +949,31 @@ class StreamlineViewer:
         self._style_streamline_actor()
 
         self.mapper0 = self.actor0.GetMapper()
+        if self.highlight_flags is not None:
+            self.actor0.GetProperty().SetOpacity(self.other_opacity)
+            selected = [i for i, hit in enumerate(self.highlight_flags) if hit]
+            if selected:
+                selected_streamlines = [self.streamlines_xyz[i] for i in selected]
+                selected_values = np.concatenate(
+                    [np.asarray(self.color_values[i]).ravel() for i in selected]
+                ).astype(np.float32)
+                maker = actor.streamtube if self.mode == "tube" else actor.line
+                kwargs = dict(
+                    colors=selected_values, linewidth=self.linewidth,
+                    spline_subdiv=self.actor_spline_subdiv,
+                    lookup_colormap=self.lut,
+                )
+                if self.mode == "tube":
+                    kwargs["tube_sides"] = self.tube_sides
+                self.actor_highlight = maker(selected_streamlines, **kwargs)
+                prop = self.actor_highlight.GetProperty()
+                prop.SetInterpolationToPhong()
+                prop.SetAmbient(self.material["ambient"])
+                prop.SetDiffuse(self.material["diffuse"])
+                prop.SetSpecular(self.material["specular"])
+                prop.SetOpacity(1.0)
+                self.scene.add(self.actor_highlight)
+
         self._apply_clipping_planes()
 
     # ---------------------------
@@ -1028,6 +1098,8 @@ class StreamlineViewer:
                 self._rebuild_unclipped_actor()
             else:
                 self.actor0.GetProperty().SetLineWidth(self.linewidth)
+                if self.actor_highlight is not None:
+                    self.actor_highlight.GetProperty().SetLineWidth(self.linewidth)
             self._render_now()
             print(f"Thickness up, lw={self.linewidth:.2f}")
 
@@ -1037,6 +1109,8 @@ class StreamlineViewer:
                 self._rebuild_unclipped_actor()
             else:
                 self.actor0.GetProperty().SetLineWidth(self.linewidth)
+                if self.actor_highlight is not None:
+                    self.actor_highlight.GetProperty().SetLineWidth(self.linewidth)
             self._render_now()
             print(f"Thickness down, lw={self.linewidth:.2f}")
 
@@ -1045,6 +1119,8 @@ class StreamlineViewer:
         try:
             # Hide the full-res actor and show the low-res actor
             self.actor0.SetVisibility(False)
+            if self.actor_highlight is not None:
+                self.actor_highlight.SetVisibility(False)
             self.actor_fast.SetVisibility(True)
 
             self._apply_clipping_planes()
@@ -1057,6 +1133,8 @@ class StreamlineViewer:
         try:
             self.actor_fast.SetVisibility(False)  # Hide the fast actor
             self.actor0.SetVisibility(True)  # Show the full-res actor
+            if self.actor_highlight is not None:
+                self.actor_highlight.SetVisibility(True)
 
             self._apply_clipping_planes()
         except Exception:
@@ -1286,8 +1364,13 @@ def show_streamlines(
     streamlines_file: str | Path | None = None,
     opacity: float = 1.0,
     quality: str = "interactive",
+    highlight_flags: list[bool] | None = None,
+    other_opacity: float = 0.05,
 ):
     print(f"Initial number of streamlines: {len(streamlines_xyz)}")
+    highlighting = highlight_flags is not None
+    if highlight_flags is None:
+        highlight_flags = [False] * len(streamlines_xyz)
     full_mins, full_maxs = _compute_streamline_bounds(streamlines_xyz)
     _print_box_shape("Full streamline box", full_mins, full_maxs)
 
@@ -1299,15 +1382,17 @@ def show_streamlines(
             np.array([x_min, y_min, z_min], dtype=float),
             np.array([x_max, y_max, z_max], dtype=float),
         )
-        new_streamlines, new_colors = [], []
-        for sl, cl in zip(streamlines_xyz, color_values):
+        new_streamlines, new_colors, new_flags = [], [], []
+        for sl, cl, flag in zip(streamlines_xyz, color_values, highlight_flags):
             segs, cols = _split_streamline_by_bounds(
                 sl, cl, x_min, x_max, y_min, y_max, z_min, z_max
             )
             if segs:
                 new_streamlines.extend(segs)
                 new_colors.extend(cols)
+                new_flags.extend([flag] * len(segs))
         streamlines_xyz, color_values = new_streamlines, new_colors
+        highlight_flags = new_flags
         if not streamlines_xyz:
             raise ValueError("No streamlines intersect the crop box.")
         cropped_mins, cropped_maxs = _compute_streamline_bounds(streamlines_xyz)
@@ -1320,15 +1405,17 @@ def show_streamlines(
     if filter_min_len is not None:
         print(f"Filtering out streamlines shorter than {filter_min_len} points")
 
-    ds_streamlines, ds_colors = [], []
-    for sl, cl in zip(streamlines_xyz, color_values):
+    ds_streamlines, ds_colors, ds_flags = [], [], []
+    for sl, cl, flag in zip(streamlines_xyz, color_values, highlight_flags):
         ds_sl = downsample_streamline(sl, downsample_factor)
         ds_cl = downsample_streamline(cl, downsample_factor)
         if filter_min_len is None or len(ds_sl) >= filter_min_len:
             ds_streamlines.append(ds_sl)
             ds_colors.append(ds_cl)
+            ds_flags.append(flag)
 
     streamlines_xyz, color_values = ds_streamlines, ds_colors
+    highlight_flags = ds_flags
     if not streamlines_xyz:
         raise ValueError("No streamlines left after downsampling or filtering.")
 
@@ -1339,12 +1426,14 @@ def show_streamlines(
         keep_idx = sorted(rng.sample(range(total), max(1, total // subsample_factor)))
         streamlines_xyz = [streamlines_xyz[i] for i in keep_idx]
         color_values = [color_values[i] for i in keep_idx]
+        highlight_flags = [highlight_flags[i] for i in keep_idx]
 
     if max_streamlines is not None and len(streamlines_xyz) > max_streamlines:
         print(f"Limiting to max {max_streamlines} streamlines")
         keep_idx = sorted(rng.sample(range(len(streamlines_xyz)), max_streamlines))
         streamlines_xyz = [streamlines_xyz[i] for i in keep_idx]
         color_values = [color_values[i] for i in keep_idx]
+        highlight_flags = [highlight_flags[i] for i in keep_idx]
 
     print(f"Final number of streamlines to render: {len(streamlines_xyz)}")
     points_per_streamline = np.array(
@@ -1413,6 +1502,8 @@ def show_streamlines(
         streamlines_file=streamlines_file,
         opacity=opacity,
         quality=quality,
+        highlight_flags=highlight_flags if highlighting else None,
+        other_opacity=other_opacity,
     )
     viewer.run(
         interactive=interactive,

@@ -218,6 +218,14 @@ def script() -> None:
         help="Path to save a PNG screenshot, no file is saved if omitted",
     )
     parser.add_argument(
+        "--highlight-mask", type=Path, default=None,
+        help="Binary mask; intersecting streamlines are fully opaque",
+    )
+    parser.add_argument(
+        "--other-opacity", type=float, default=0.05,
+        help="Opacity of streamlines outside --highlight-mask",
+    )
+    parser.add_argument(
         "--video",
         type=str,
         default=None,
@@ -324,6 +332,10 @@ def script() -> None:
         token.split("=", 1)[0] for token in sys.argv[1:] if token.startswith("--")
     }
     args = parser.parse_args()
+    if not 0.0 <= args.other_opacity <= 1.0:
+        parser.error("--other-opacity must be between 0 and 1")
+    if args.highlight_mask is None and args.other_opacity != 0.05:
+        parser.error("--other-opacity requires --highlight-mask")
 
     # Resolve .trk
     trk_path = _resolve_streamlines_path(args.input_path)
@@ -509,6 +521,8 @@ def script() -> None:
         restore_session=restore_session,
         session_settings=session_settings,
         fury_quality=args.quality,
+        highlight_mask=args.highlight_mask,
+        other_opacity=args.other_opacity,
     )
 
 

@@ -31,6 +31,11 @@ def visualize_vector_field(
     voxel_size: float = 1.0,
     is_vtk: bool = False,
     mode: str = "arrow",  # "arrow" or "cylinder"
+    invert_arrows: bool = False,
+    opacity_mask_path: str | Path | None = None,
+    outside_opacity: float = 0.05,
+    mask_color: str | None = None,
+    outside_color: str | None = None,
     colormap=None,  # <-- New parameter
 ):
     """
@@ -82,6 +87,17 @@ def visualize_vector_field(
         - "arrow" : draws 3D arrows
         - "cylinder" : draws cylinders aligned with vector directions
         Default is "arrow".
+    invert_arrows : bool, optional
+        Reverse every displayed vector direction after orientation alignment.
+        This changes direction but not vector position or scalar colour.
+    opacity_mask_path : str or Path, optional
+        Binary mask used only for display opacity. Vectors inside remain opaque.
+    outside_opacity : float, optional
+        Opacity of vectors outside opacity_mask_path. Default is 0.05.
+    mask_color : str, optional
+        Fixed color for vectors inside the opacity mask.
+    outside_color : str, optional
+        Fixed color for vectors outside the opacity mask.
     colormap : matplotlib colormap, optional
         Colormap used for coloring the vectors based on `color_volume`.
         Accepts any Matplotlib colormap (e.g., `plt.cm.turbo`) or your
@@ -92,6 +108,11 @@ def visualize_vector_field(
     None
         Displays the 3D vector field interactively or saves a screenshot/VK file.
     """
+    if not 0.0 <= outside_opacity <= 1.0:
+        raise ValueError("outside_opacity must be between 0 and 1")
+    if opacity_mask_path is None and (mask_color or outside_color):
+        raise ValueError("mask_color and outside_color require opacity_mask_path")
+
     # Default colormap
     if colormap is None:
         colormap = helix_angle_cmap
@@ -139,6 +160,10 @@ def visualize_vector_field(
     if vector_field.shape[0] == 3:
         vector_field = np.moveaxis(vector_field, 0, -1)
 
+    if invert_arrows:
+        print("↩️ Inverting displayed vector directions...")
+        vector_field *= -1
+
     # Optional mask
     if mask_path:
         print(f"🩹 Applying mask from {mask_path} ...")
@@ -150,6 +175,16 @@ def visualize_vector_field(
         )
         mask = (mask_volume > 0).astype(np.uint8)
         vector_field[mask == 0, :] = np.nan
+
+    opacity_mask_volume = None
+    if opacity_mask_path:
+        print(f"🩹 Loading opacity mask from {opacity_mask_path} ...")
+        opacity_reader = DataReader(opacity_mask_path)
+        opacity_mask_volume = opacity_reader.load_volume(
+            start_index=start_binned,
+            end_index=end_binned,
+            unbinned_shape=vec_reader.shape[1:],
+        ) > 0
 
     # Optional color volume
     color_volume = None
@@ -196,6 +231,10 @@ def visualize_vector_field(
         mode=mode,
         save_path=save_path,
         colormap=colormap,
+        opacity_mask=opacity_mask_volume,
+        outside_opacity=outside_opacity,
+        mask_color=mask_color,
+        outside_color=outside_color,
     )
 
     # Optional VTK export
