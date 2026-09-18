@@ -13,7 +13,6 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
@@ -46,7 +45,8 @@ keywords = ["cardiotensor, cardiomyocytes, heart, orientation, structure tensor,
 license = {file = "LICENSE"}
 name = "cardiotensor"
 readme = "README.md"
-requires-python = ">=3.11"
+# FURY 0.12 requires VTK <9.4, which has no Python 3.13 wheels.
+requires-python = ">=3.11,<3.13"
 version = "1.1.91"
 
 [project.optional-dependencies]

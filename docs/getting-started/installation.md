@@ -4,7 +4,10 @@ Cardiotensor is a powerful and user-friendly toolkit for analyzing the orientati
 
 ## Prerequisites
 
-- Python 3.10 or higher
+- Python 3.11 or 3.12
+
+The current FURY viewer requires VTK <9.4, which has no Python 3.13 wheels.
+Use Python 3.12 for this version of Cardiotensor.
 
 ## Installing with pip <small>recommended</small>
 
