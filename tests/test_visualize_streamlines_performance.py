@@ -693,6 +693,7 @@ def test_fury_session_restores_camera_plane_and_controls(tmp_path):
     viewer.plane_fn = FakePlane()
     viewer.actor0 = SimpleNamespace(GetMapper=lambda: mapper_a)
     viewer.actor_fast = SimpleNamespace(GetMapper=lambda: mapper_b)
+    viewer.actor_highlight = None
     viewer.plane_widget = FakeWidget()
     viewer.box_rep = None
     viewer.box_widget = None

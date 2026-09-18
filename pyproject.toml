@@ -23,7 +23,8 @@ dependencies = [
     "PyQt5",
     "alive_progress",
     "dipy",
-    "fury",
+    # The visualizers use the VTK API; FURY 2 uses a different rendering backend.
+    "fury>=0.12,<0.13",
     "glymur",
     "imagecodecs",
     "matplotlib",
