@@ -256,7 +256,10 @@ class DataReader:
             np.ndarray: Loaded volume.
         """
         if end_index is None:
-            end_index = self.shape[1] if len(self.shape) == 4 else self.shape[0]
+            end_index = (
+                unbinned_shape[0] if unbinned_shape is not None
+                else self.shape[1] if len(self.shape) == 4 else self.shape[0]
+            )
 
         # Check memory available is enough
         effective_shape = list(self.shape)
@@ -280,12 +283,23 @@ class DataReader:
 
         if need_resize:
             start_index_ini, end_index_ini = start_index, end_index
-            start_index = int(start_index_ini / zoom_factors[0]) - 1
-            start_index = max(start_index, 0)
-            end_index = int(end_index_ini / zoom_factors[0]) + 1
+            # Map the requested output interval onto the integer resampling
+            # grid. Downsampling must start on a global block boundary.
+            fz = zoom_factors[0]
+            if fz >= 1:
+                z_factor = max(1, int(round(fz)))
+                start_index = start_index_ini // z_factor
+                end_index = (end_index_ini + z_factor - 1) // z_factor
+                z_offset = start_index_ini - start_index * z_factor
+            else:
+                z_divisor = max(1, int(round(1.0 / fz)))
+                start_index = start_index_ini * z_divisor
+                end_index = end_index_ini * z_divisor
+                z_offset = 0
+            start_index = min(max(start_index, 0), self.shape[0])
             end_index = min(end_index, self.shape[0])
             if show_progress:
-                print(f"Volume start index padded: {start_index} - end: {end_index}")
+                print(f"Source volume start index: {start_index} - end: {end_index}")
 
         # Load volume from stack or mhd
         if not self.volume_info["stack"]:
@@ -415,8 +429,10 @@ class DataReader:
 
             # Enforce exact shape
             if show_progress:
-                print(f"Fitting to exact unbinned shape: {unbinned_shape}")
-            volume = _fit(volume, (z1, y1, x1), pad_value=0)
+                print(f"Fitting to requested shape: {(z1, y1, x1)}")
+            volume = _fit(
+                volume[z_offset : z_offset + z1], (z1, y1, x1), pad_value=0
+            )
 
         return volume
 
