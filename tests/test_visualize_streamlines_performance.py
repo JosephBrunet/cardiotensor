@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -11,45 +10,10 @@ from cardiotensor.scripts.visualize_streamlines import (
     _apply_session_settings,
     _discover_trk_color_fields,
 )
-from cardiotensor.visualization import fury_plotting_streamlines
-from cardiotensor.visualization import pyvista_plotting_streamlines
-
-
-def test_fury_orbit_frames_use_video_output_scratch(monkeypatch, tmp_path):
-    viewer = object.__new__(fury_plotting_streamlines.StreamlineViewer)
-    viewer.actor_fast = SimpleNamespace(SetVisibility=lambda visible: None)
-    viewer.actor0 = SimpleNamespace(SetVisibility=lambda visible: None)
-    viewer.scene = SimpleNamespace(azimuth=lambda degrees: None)
-    viewer.window_size = (100, 100)
-    viewer._set_default_camera = lambda: None
-
-    monkeypatch.setattr(
-        fury_plotting_streamlines.fury.window,
-        "record",
-        lambda scene, out_path, size, reset_camera: Path(out_path).write_bytes(b"png"),
-    )
-
-    video_path = tmp_path / "analysis" / "orbit.mp4"
-
-    def fake_video_writer(frame_paths, out_path, fps):
-        scratch_root = video_path.parent / ".cardiotensor_scratch"
-        assert all(path.parent.parent == scratch_root for path in frame_paths)
-        Path(out_path).write_bytes(b"video")
-
-    monkeypatch.setattr(
-        fury_plotting_streamlines,
-        "_write_frame_sequence_to_video",
-        fake_video_writer,
-    )
-
-    viewer._record_orbit(video_path, video_frames=2, video_fps=30)
-
-    assert video_path.exists()
-    assert not list(
-        (video_path.parent / ".cardiotensor_scratch").glob(
-            "cardiotensor_fury_orbit_*"
-        )
-    )
+from cardiotensor.visualization import (
+    fury_plotting_streamlines,
+    pyvista_plotting_streamlines,
+)
 
 
 def test_color_field_discovery_uses_lazy_trk_loading(monkeypatch, tmp_path):
@@ -106,14 +70,11 @@ def test_visualizer_accepts_custom_per_point_scalar(monkeypatch, tmp_path):
     assert captured["color_label"] == "CLUSTER_ID"
 
 
-def test_top_clusters_keeps_every_member_of_the_largest_clusters(
-    monkeypatch, tmp_path
-):
+def test_top_clusters_keeps_every_member_of_the_largest_clusters(monkeypatch, tmp_path):
     trk_path = tmp_path / "members.trk"
     trk_path.write_bytes(b"trk")
     streamlines = [
-        np.array([[0, index, 0], [1, index, 0]], dtype=np.float32)
-        for index in range(6)
+        np.array([[0, index, 0], [1, index, 0]], dtype=np.float32) for index in range(6)
     ]
     cluster_ids = [0, 0, 1, 1, 1, 2]
     cluster_values = [
@@ -145,17 +106,13 @@ def test_top_clusters_keeps_every_member_of_the_largest_clusters(
     )
 
     assert len(captured["streamlines_xyz"]) == 5
-    assert {
-        int(values[0]) for values in captured["color_values"]
-    } == {0, 1}
+    assert {int(values[0]) for values in captured["color_values"]} == {0, 1}
 
 
 def test_top_clusters_rejects_normal_tractogram(monkeypatch, tmp_path):
     trk_path = tmp_path / "normal.trk"
     trk_path.write_bytes(b"trk")
-    streamlines = [
-        np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float32)
-    ]
+    streamlines = [np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float32)]
     monkeypatch.setattr(
         streamline_visualization,
         "load_trk_streamlines",
@@ -264,30 +221,6 @@ def test_cli_asks_before_restoring_default_session(monkeypatch, tmp_path):
         assert captured["line_width"] == expected_width
 
 
-def test_fury_window_close_saves_once_and_terminates():
-    calls = {"saved": 0, "exited": 0, "widgets_disabled": 0}
-
-    class FakeWidget:
-        def EnabledOff(self):
-            calls["widgets_disabled"] += 1
-
-    viewer = fury_plotting_streamlines.StreamlineViewer.__new__(
-        fury_plotting_streamlines.StreamlineViewer
-    )
-    viewer._closing = False
-    viewer.plane_widget = FakeWidget()
-    viewer.box_widget = FakeWidget()
-    viewer.showm = SimpleNamespace(
-        exit=lambda: calls.__setitem__("exited", calls["exited"] + 1)
-    )
-    viewer._autosave_session = lambda: calls.__setitem__("saved", calls["saved"] + 1)
-
-    viewer._close_window()
-    viewer._close_window()
-
-    assert calls == {"saved": 1, "exited": 1, "widgets_disabled": 2}
-
-
 def test_pyvista_connectivity_is_built_correctly(monkeypatch):
     class FakePolyData:
         def __init__(self, points):
@@ -334,114 +267,6 @@ def test_pyvista_bounds_ignore_empty_streamlines():
 
     np.testing.assert_array_equal(mins, [-1, 3, -2])
     np.testing.assert_array_equal(maxs, [4, 7, 8])
-
-
-def test_fury_screenshot_uses_current_viewer_window(monkeypatch, tmp_path):
-    calls = {}
-
-    class FakeRenderWindow:
-        def Render(self):
-            calls["rendered"] = True
-
-    class FakeOutput:
-        def __init__(self, scale):
-            self.scale = scale
-
-        def GetDimensions(self):
-            return (3200 * self.scale, 1800 * self.scale, 1)
-
-    class FakeCapture:
-        scale = 1
-
-        def SetInput(self, render_window):
-            calls["capture_input"] = render_window
-
-        def SetInputBufferTypeToRGB(self):
-            calls["rgb"] = True
-
-        def Update(self):
-            calls["updated"] = True
-
-        def SetScale(self, scale):
-            self.scale = scale
-            calls["scale"] = scale
-
-        def GetOutputPort(self):
-            return self
-
-        def GetOutput(self):
-            return FakeOutput(self.scale)
-
-    class FakeWriter:
-        def SetFileName(self, filename):
-            calls["filename"] = filename
-
-        def SetInputConnection(self, connection):
-            calls["writer_input"] = connection
-
-        def Write(self):
-            calls["written"] = True
-
-    capture = FakeCapture()
-    monkeypatch.setattr(
-        fury_plotting_streamlines.vtk,
-        "vtkWindowToImageFilter",
-        lambda: capture,
-    )
-    monkeypatch.setattr(fury_plotting_streamlines.vtk, "vtkPNGWriter", FakeWriter)
-
-    render_window = FakeRenderWindow()
-    viewer = fury_plotting_streamlines.StreamlineViewer.__new__(
-        fury_plotting_streamlines.StreamlineViewer
-    )
-    viewer.showm = SimpleNamespace(window=render_window)
-    out_path = tmp_path / "view.png"
-
-    size = viewer._save_screenshot(out_path)
-
-    assert size == (3200, 1800)
-    assert calls["capture_input"] is render_window
-    assert calls["filename"] == str(out_path)
-    assert calls["rendered"] and calls["updated"] and calls["written"]
-
-    size = viewer._save_screenshot(out_path, scale=2)
-    assert size == (6400, 3600)
-    assert calls["scale"] == 2
-
-
-def test_fury_spline_subdivision_and_crop_box_rotation():
-    streamlines = [
-        np.array([[index, index % 2, 0] for index in range(10)], dtype=np.float32)
-    ]
-    colors = [np.arange(10, dtype=np.float32)]
-    lut = fury_plotting_streamlines.actor.colormap_lookup_table(scale_range=(0, 9))
-
-    viewer = fury_plotting_streamlines.StreamlineViewer(
-        streamlines,
-        colors,
-        "line",
-        2,
-        (800, 600),
-        lut,
-        spline_subdiv=2,
-    )
-    assert viewer.actor_spline_subdiv == 2
-    viewer.actor0.GetMapper().Update()
-    assert viewer.actor0.GetMapper().GetInput().GetNumberOfPoints() == 3
-
-    viewer.showm = fury_plotting_streamlines.window.ShowManager(
-        scene=viewer.scene, size=(800, 600), reset_camera=False
-    )
-    viewer._setup_box_widget()
-    assert viewer.box_widget.GetRotationEnabled() == 1
-
-    viewer.box_clipping_active = True
-    viewer._apply_clipping_planes()
-    assert viewer.actor0.GetMapper().GetNumberOfClippingPlanes() == 6
-
-    viewer.clipping_active = True
-    viewer._apply_clipping_planes()
-    assert viewer.actor0.GetMapper().GetNumberOfClippingPlanes() == 7
 
 
 def test_saved_settings_are_defaults_but_cli_options_win():
@@ -515,104 +340,147 @@ def test_pyvista_subsampling_is_reproducible():
     assert [line[0, 0] for line in first] == [line[0, 0] for line in second]
 
 
-def test_ctrl_s_saves_complete_fury_session(tmp_path):
-    class FakeCamera:
-        def GetPosition(self):
-            return (10, 20, 30)
-
-        def GetFocalPoint(self):
-            return (1, 2, 3)
-
-        def GetViewUp(self):
-            return (0, 0, 1)
-
-        def GetClippingRange(self):
-            return (0.1, 5000)
-
-        def GetViewAngle(self):
-            return 30
-
-        def GetParallelProjection(self):
-            return False
-
-        def GetParallelScale(self):
-            return 12
-
-    class FakePlane:
-        def GetOrigin(self, output):
-            output[:] = [4, 5, 6]
-
-        def GetNormal(self, output):
-            output[:] = [0, 1, 0]
-
-    trk_path = tmp_path / "streamlines.trk"
-    trk_path.write_bytes(b"trk")
-    session_path = tmp_path / "my_view.json"
-    viewer = fury_plotting_streamlines.StreamlineViewer.__new__(
-        fury_plotting_streamlines.StreamlineViewer
+def make_fury_viewer(tmp_path=None, **kwargs):
+    points = np.array([[10, 0, 0], [11, 1, 0], [12, 0, 1]], dtype=np.float32)
+    return fury_plotting_streamlines.StreamlineViewer(
+        [points],
+        [np.array([0.0, 1.0, 2.0])],
+        "line",
+        2,
+        (320, 240),
+        fury_plotting_streamlines.ScalarColors("turbo", (0, 2)),
+        session_path=tmp_path / "session.json" if tmp_path else None,
+        **kwargs,
     )
-    viewer.session_path = session_path
-    viewer.session_settings = {"subsample_factor": 4, "random_seed": 1234}
-    viewer.streamlines_file = trk_path
-    viewer.scene = SimpleNamespace(GetActiveCamera=lambda: FakeCamera())
-    viewer.plane_rep = FakePlane()
-    viewer.plane_widget = SimpleNamespace(GetEnabled=lambda: True)
-    viewer.showm = SimpleNamespace(window=SimpleNamespace(GetSize=lambda: (1800, 1200)))
-    viewer.window_size = (800, 800)
-    viewer.linewidth = 2.5
-    viewer.current_bg = (0.0, 0.0, 0.0)
+
+
+def test_fury_orbit_frames_use_video_output_scratch(monkeypatch, tmp_path):
+    viewer = make_fury_viewer()
+    initial = viewer.camera.local.position.copy()
+    monkeypatch.setattr(
+        viewer, "_save_screenshot", lambda path: path.write_bytes(b"png")
+    )
+    video_path = tmp_path / "analysis" / "orbit.mp4"
+
+    def writer(paths, output, fps):
+        assert all(
+            path.parent.parent == video_path.parent / ".cardiotensor_scratch"
+            for path in paths
+        )
+        assert len(paths) == 2
+        assert fps == 30
+        output.write_bytes(b"video")
+
+    monkeypatch.setattr(
+        fury_plotting_streamlines, "_write_frame_sequence_to_video", writer
+    )
+    viewer._record_orbit(video_path, 2, 30)
+    assert video_path.exists()
+    np.testing.assert_allclose(viewer.camera.local.position, initial)
+    assert not list(
+        (video_path.parent / ".cardiotensor_scratch").glob("cardiotensor_fury_orbit_*")
+    )
+
+
+def test_fury_window_close_saves_once_and_terminates():
+    viewer = make_fury_viewer()
+    calls = []
+    viewer.showm = SimpleNamespace(close=lambda: calls.append("closed"))
+    viewer._autosave_session = lambda: calls.append("saved")
+    viewer._close_window()
+    viewer._close_window()
+    assert calls == ["saved", "closed"]
+
+
+def test_fury_screenshot_uses_current_viewer_window(monkeypatch, tmp_path):
+    from cardiotensor.visualization.fury_support import capture
+
+    calls = []
+    renderer = SimpleNamespace(pixel_ratio=1)
+    showm = SimpleNamespace(
+        renderer=renderer,
+        render=lambda: calls.append("render"),
+        window=SimpleNamespace(draw=lambda: calls.append("draw")),
+        snapshot=lambda fname: np.zeros(
+            (int(180 * renderer.pixel_ratio), int(320 * renderer.pixel_ratio), 4),
+            dtype=np.uint8,
+        ),
+    )
+    assert capture(showm, tmp_path / "image.png", scale=2) == (640, 360)
+    assert renderer.pixel_ratio == 1
+    assert calls == ["render", "draw"]
+
+
+def test_fury_spline_subdivision_and_crop_box_rotation():
+    import pylinalg as la
+
+    from cardiotensor.visualization.fury_support import materials
+
+    viewer = make_fury_viewer(spline_subdiv=2)
+    assert viewer.render_lines[0].shape == (3, 3)
+    np.testing.assert_allclose(viewer.actor0.local.position, [0, 0, 0])
+    viewer.box_object.local.rotation = la.quat_from_axis_angle((0, 0, 1), np.pi / 4)
+    viewer.box_clipping_active = True
+    viewer._apply_clipping_planes()
+    assert len(next(materials(viewer.actor0)).clipping_planes) == 6
+    equations = np.array(viewer._box_equations())
+    assert np.all(equations[:, :3] @ viewer.center >= equations[:, 3] - 1e-6)
+    outside = viewer.center + [100, 0, 0]
+    assert np.any(equations[:, :3] @ outside < equations[:, 3])
     viewer.clipping_active = True
-    viewer.scale_bar_on = False
-    viewer.material = {
-        "ambient": 0.4,
-        "diffuse": 0.7,
-        "specular": 0.2,
-        "opacity": 0.9,
-    }
-    viewer.quality = "publication"
-    viewer.box_rep = None
-    viewer.box_widget = None
-    viewer.box_clipping_active = False
-    viewer.controls_visible = False
+    viewer._apply_clipping_planes()
+    assert len(next(materials(viewer.actor0)).clipping_planes) == 7
 
-    class ControlS:
-        def GetKeySym(self):
-            return "s"
 
-        def GetControlKey(self):
-            return 1
-
-    viewer._on_keypress(ControlS(), None)
-    saved = json.loads(session_path.read_text())
-
+def test_ctrl_s_saves_complete_fury_session(tmp_path):
+    viewer = make_fury_viewer(tmp_path)
+    viewer.clipping_active = True
+    viewer.box_clipping_active = True
+    viewer.box_object.local.scale = (0.5, 0.7, 0.9)
+    viewer._on_keypress(SimpleNamespace(key="s", modifiers=["Control"]))
+    saved = json.loads(viewer.session_path.read_text())
     assert saved["format"] == "cardiotensor-fury-session"
-    assert saved["streamlines_size"] == 3
-    assert saved["settings"]["random_seed"] == 1234
-    assert saved["settings"]["line_width"] == 2.5
-    assert saved["settings"]["tube_thickness"] == 2.5
-    assert saved["view"]["camera"]["position"] == [10, 20, 30]
-    assert saved["view"]["clipping_plane"] == {
-        "origin": [4, 5, 6],
-        "normal": [0, 1, 0],
-        "enabled": True,
-        "gizmo_visible": True,
-    }
-    assert saved["view"]["window_size"] == [1800, 1200]
+    assert saved["version"] == 2
+    assert saved["view"]["clipping_plane"]["enabled"]
+    assert saved["view"]["crop_box"]["enabled"]
+    np.testing.assert_allclose(
+        saved["view"]["crop_box"]["matrix"], viewer.box_object.local.matrix
+    )
+    assert saved["settings"]["line_width"] == 2
 
 
 def test_fury_session_restores_camera_plane_and_controls(tmp_path):
-    calls = {}
-    session_path = tmp_path / "my_view.json"
-    session_path.write_text(
+    viewer = make_fury_viewer(tmp_path)
+    viewer.camera.local.position = [10, 20, 30]
+    viewer.plane_object.local.position = [4, 5, 6]
+    viewer.clipping_active = viewer.box_clipping_active = True
+    viewer.box_object.local.scale = [0.5, 0.6, 0.7]
+    viewer.current_bg = (1, 1, 1)
+    viewer.scale_bar_on = False
+    viewer.controls_visible = True
+    viewer._save_session()
+    restored = make_fury_viewer(tmp_path)
+    assert restored._restore_session()
+    np.testing.assert_allclose(restored.camera.local.position, [10, 20, 30])
+    np.testing.assert_allclose(restored.plane_object.local.position, [4, 5, 6])
+    np.testing.assert_allclose(restored.box_object.local.scale, [0.5, 0.6, 0.7])
+    assert restored.clipping_active and restored.box_clipping_active
+    assert restored.current_bg == (1, 1, 1)
+    assert not restored.scale_bar_on
+    assert restored.controls_visible
+
+
+def test_fury_legacy_session_migrates(tmp_path):
+    viewer = make_fury_viewer(tmp_path)
+    viewer.session_path.write_text(
         json.dumps(
             {
+                "version": 1,
                 "view": {
                     "camera": {
                         "position": [10, 20, 30],
                         "focal_point": [1, 2, 3],
                         "view_up": [0, 0, 1],
-                        "clipping_range": [0.1, 5000],
-                        "view_angle": 25,
                         "parallel_projection": True,
                         "parallel_scale": 12,
                     },
@@ -620,97 +488,19 @@ def test_fury_session_restores_camera_plane_and_controls(tmp_path):
                         "origin": [4, 5, 6],
                         "normal": [0, 1, 0],
                         "enabled": True,
-                        "gizmo_visible": True,
                     },
-                    "background_color": [1, 1, 1],
-                    "scale_bar_visible": False,
-                }
+                },
             }
         )
     )
+    assert viewer._restore_session()
+    np.testing.assert_allclose(viewer.camera.local.position, [10, 20, 30])
+    assert viewer.camera.fov == 0
+    assert viewer.camera.height == 24
+    np.testing.assert_allclose(viewer._plane_equation(), [0, 1, 0, 5], atol=1e-6)
 
-    class FakeCamera:
-        def __getattr__(self, name):
-            if name.startswith("Set"):
-                return lambda *values: calls.__setitem__(name, values)
-            raise AttributeError(name)
 
-    class FakePlaneRepresentation:
-        origin = [0, 0, 0]
-        normal = [1, 0, 0]
-
-        def SetOrigin(self, *values):
-            self.origin = list(values)
-
-        def SetNormal(self, *values):
-            self.normal = list(values)
-
-        def GetOrigin(self, output):
-            output[:] = self.origin
-
-        def GetNormal(self, output):
-            output[:] = self.normal
-
-        def UpdatePlacement(self):
-            calls["plane_updated"] = True
-
-    class FakePlane:
-        def SetOrigin(self, *values):
-            calls["plane_origin"] = values
-
-        def SetNormal(self, *values):
-            calls["plane_normal"] = values
-
-    class FakeMapper:
-        def RemoveAllClippingPlanes(self):
-            calls["planes_removed"] = calls.get("planes_removed", 0) + 1
-
-        def AddClippingPlane(self, plane):
-            calls["planes_added"] = calls.get("planes_added", 0) + 1
-
-    class FakeWidget:
-        def EnabledOn(self):
-            calls["gizmo"] = True
-
-        def EnabledOff(self):
-            calls["gizmo"] = False
-
-    mapper_a = FakeMapper()
-    mapper_b = FakeMapper()
-    camera = FakeCamera()
-    scene = SimpleNamespace(
-        GetActiveCamera=lambda: camera,
-        SetBackground=lambda *values: calls.__setitem__("background", values),
-        add=lambda actor: calls.__setitem__("scale_bar_added", actor),
-        rm=lambda actor: calls.__setitem__("scale_bar_removed", actor),
-    )
-    viewer = fury_plotting_streamlines.StreamlineViewer.__new__(
-        fury_plotting_streamlines.StreamlineViewer
-    )
-    viewer.session_path = session_path
-    viewer.scene = scene
-    viewer.plane_rep = FakePlaneRepresentation()
-    viewer.plane_fn = FakePlane()
-    viewer.actor0 = SimpleNamespace(GetMapper=lambda: mapper_a)
-    viewer.actor_fast = SimpleNamespace(GetMapper=lambda: mapper_b)
-    viewer.actor_highlight = None
-    viewer.plane_widget = FakeWidget()
-    viewer.box_rep = None
-    viewer.box_widget = None
-    viewer.box_clipping_active = False
-    viewer.clipping_active = False
-    viewer.current_bg = (0, 0, 0)
-    viewer.scale_bar = object()
-    viewer.scale_bar_on = True
-    viewer.showm = SimpleNamespace(render=lambda: calls.__setitem__("rendered", True))
-
-    assert viewer._restore_session() is True
-    assert calls["SetPosition"] == (10, 20, 30)
-    assert calls["SetParallelProjection"] == (True,)
-    assert calls["plane_origin"] == ([4, 5, 6],)
-    assert calls["plane_normal"] == ([0, 1, 0],)
-    assert calls["planes_added"] == 2
-    assert calls["gizmo"] is True
-    assert calls["background"] == (1.0, 1.0, 1.0)
-    assert calls["scale_bar_removed"] is viewer.scale_bar
-    assert calls["rendered"] is True
+def test_fury_smoothing_preserves_scalar_endpoints():
+    viewer = make_fury_viewer(spline_subdiv=20)
+    assert len(viewer.render_lines[0]) == 21
+    np.testing.assert_allclose(viewer.render_colors[0][[0, -1]], viewer.lut.map([0, 2]))

@@ -4,10 +4,13 @@ Cardiotensor is a powerful and user-friendly toolkit for analyzing the orientati
 
 ## Prerequisites
 
-- Python 3.11 or 3.12
+- Python 3.11 or higher (tested on 3.11–3.13)
+- A WebGPU-compatible graphics driver for FURY visualization
 
-The current FURY viewer requires VTK <9.4, which has no Python 3.13 wheels.
-Use Python 3.12 for this version of Cardiotensor.
+Cardiotensor uses FURY 2 with the PyGfx/WGPU renderer. VTK remains a
+dependency for the PyVista backend and VTK export.
+
+Upgrade the package and its dependencies with `python -m pip install --upgrade cardiotensor`.
 
 ## Installing with pip <small>recommended</small>
 

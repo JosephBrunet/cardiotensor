@@ -1,23 +1,15 @@
 import numpy as np
-from matplotlib.colors import to_rgb
-import vtk
 from fury import actor, window
+from matplotlib.colors import to_rgb
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
-
-
-def matplotlib_cmap_to_fury_lut(
-    cmap, value_range: tuple[float, float], n_colors: int = 256
-) -> vtk.vtkLookupTable:
-    """Convert a Matplotlib colormap to a VTK lookup table for FURY scalar bars."""
-    colors = cmap(np.linspace(0, 1, n_colors))
-    lut = vtk.vtkLookupTable()
-    lut.SetNumberOfTableValues(n_colors)
-    lut.SetRange(*value_range)
-    lut.Build()
-    for i, (r, g, b, a) in enumerate(colors):
-        lut.SetTableValue(i, float(r), float(g), float(b), float(a))
-    return lut
+from cardiotensor.visualization.fury_support import (
+    ScalarColors,
+    camera_for_scene,
+    capture,
+    scalar_bar,
+    set_opacity,
+)
 
 
 def plot_vector_field_fury(
@@ -114,7 +106,7 @@ def plot_vector_field_fury(
 
         # Normalize to [0, 1]
         cmin, cmax = np.nanmin(color_values), np.nanmax(color_values)
-        scalar_lut = matplotlib_cmap_to_fury_lut(colormap, (float(cmin), float(cmax)))
+        scalar_lut = ScalarColors(colormap, (float(cmin), float(cmax)))
         color_values = (color_values - cmin) / (cmax - cmin + 1e-8)
 
         # Map to RGB using the chosen colormap
@@ -146,7 +138,7 @@ def plot_vector_field_fury(
         nonlocal vector_actor, highlight_actor
         for current_actor in (vector_actor, highlight_actor):
             if current_actor is not None:
-                scene.rm(current_actor)
+                scene.remove(current_actor)
         highlight_actor = None
 
         def make_actor(selected, color_override=None):
@@ -162,67 +154,77 @@ def plot_vector_field_fury(
                 scales = selected_norms * voxel_size * current_size
                 scales = np.repeat(scales[:, None], 3, axis=1)
                 return actor.arrow(
-                    selected_centers, selected_directions,
-                    colors=selected_colors, scales=10.0 * scales,
+                    selected_centers,
+                    directions=selected_directions,
+                    colors=selected_colors,
+                    scales=10.0 * scales,
                 )
             if mode == "cylinder":
                 heights = selected_norms * voxel_size * current_size
                 return actor.cylinder(
-                    centers=selected_centers, directions=selected_directions,
-                    colors=selected_colors, heights=heights * 10,
-                    radius=current_radius * voxel_size, capped=True,
+                    centers=selected_centers,
+                    directions=selected_directions,
+                    colors=selected_colors,
+                    height=heights * 10,
+                    radii=current_radius * voxel_size,
+                    capped=True,
                 )
             raise ValueError("Mode must be 'arrow' or 'cylinder'")
 
         if highlighted is None:
-            vector_actor = make_actor(
-                np.ones(len(centers), dtype=bool), outside_color
-            )
+            vector_actor = make_actor(np.ones(len(centers), dtype=bool), outside_color)
             scene.add(vector_actor)
             return
 
         outside = ~highlighted
         if np.any(outside):
             vector_actor = make_actor(outside, outside_color)
-            vector_actor.GetProperty().SetOpacity(float(outside_opacity))
+            set_opacity(vector_actor, outside_opacity)
             scene.add(vector_actor)
         else:
             vector_actor = None
 
         if np.any(highlighted):
             highlight_actor = make_actor(highlighted, mask_color)
-            highlight_actor.GetProperty().SetOpacity(1.0)
+            set_opacity(highlight_actor, 1.0)
             scene.add(highlight_actor)
 
     print(f"Rendering as {mode}s...")
     rebuild_actor()
     if scalar_lut is not None and not (mask_color and outside_color):
-        scene.add(actor.scalar_bar(lookup_table=scalar_lut, title="Value"))
+        scene.add(scalar_bar(scalar_lut, "Value"))
+
+    camera = camera_for_scene(scene, (800, 800))
 
     # Show or save
     if save_path:
         print(f"Saving FURY vector plot to: {save_path}")
-        window.record(scene, out_path=str(save_path), size=(800, 800))
+        showm = window.ShowManager(
+            scene=scene, camera=camera, size=(800, 800), window_type="offscreen"
+        )
+        try:
+            capture(showm, save_path)
+        finally:
+            showm.close()
     else:
         print("Displaying interactive scene...")
-        showm = window.ShowManager(scene=scene, size=(800, 800), reset_camera=True)
+        showm = window.ShowManager(scene=scene, camera=camera, size=(800, 800))
 
-        def on_keypress(obj, _evt):
+        def on_keypress(event):
             nonlocal current_size, current_radius
-            key = obj.GetKeySym().lower()
-            if key in ("plus", "equal", "kp_add"):
+            key = event.key.lower()
+            if key in ("+", "=", "plus", "equal", "kp_add"):
                 current_size *= 1.25
-            elif key in ("minus", "underscore", "kp_subtract"):
+            elif key in ("-", "_", "minus", "underscore", "kp_subtract"):
                 current_size = max(0.001, current_size * 0.8)
-            elif mode == "cylinder" and key in ("bracketright", "rightbracket"):
+            elif mode == "cylinder" and key in ("]", "bracketright", "rightbracket"):
                 current_radius *= 1.25
-            elif mode == "cylinder" and key in ("bracketleft", "leftbracket"):
+            elif mode == "cylinder" and key in ("[", "bracketleft", "leftbracket"):
                 current_radius = max(0.001, current_radius * 0.8)
             else:
                 return
 
             rebuild_actor()
-            scene.ResetCameraClippingRange()
             showm.render()
             if mode == "cylinder":
                 print(
@@ -233,8 +235,7 @@ def plot_vector_field_fury(
             else:
                 print(f"Arrow size: {current_size:.3f}")
 
-        showm.initialize()
-        showm.iren.AddObserver("KeyPressEvent", on_keypress)
+        showm.renderer.add_event_handler(on_keypress, "key_down")
         if mode == "cylinder":
             print("Keys: +/- cylinder length; [/] cylinder diameter")
         else:

@@ -252,7 +252,7 @@ def script() -> None:
         type=int,
         default=None,
         help=(
-            "Number of cardinal-spline segments per streamline; 1 disables "
+            "Number of spline segments per streamline; 1 disables "
             "smoothing (quality preset default when omitted)"
         ),
     )
