@@ -1332,6 +1332,20 @@
   Visualize streamlines in 3D using Fury. Can also export to ParaView.</p>
 </li>
 </ul>
+<p>The FURY backend uses FURY 2 (PyGfx/WebGPU). In the streamline viewer:</p>
+<ul>
+<li><code>O</code> enables the clipping plane; <code>H</code> shows its transform handles; <code>I</code> flips it and <code>R</code> resets it.</li>
+<li><code>C</code> enables the crop box; <code>G</code> shows its transform handles; <code>X</code> resets it.</li>
+<li>Drag gizmo arrows to translate, spheres to rotate, and cubes to scale along an axis. Click the center to change the gizmo coordinate system.</li>
+<li><code>L</code> opens material controls, <code>+</code>/<code>-</code> changes thickness, and <code>1</code>–<code>4</code> selects camera views. <code>5</code> switches projection.</li>
+<li><code>Ctrl+S</code> saves the session; <code>P</code> saves a PNG, <code>Shift+P</code> saves at twice the pixel resolution, and <code>V</code> records an orbit.</li>
+<li><code>B</code> changes the background and <code>S</code> toggles a ruler in dataset coordinate units.</li>
+</ul>
+<p>Existing VTK-era sessions are read and converted when saved. New sessions use
+format version 2 and are intended for the FURY 2 viewer. Overlays and gizmos have
+changed appearance. FURY smoothing now uses a natural cubic spline; set
+<code>--spline-subdiv 1</code> to preserve the original points. The PyVista backend retains
+its VTK smoothing.</p>
 <p>See the <a href="../../getting-started/examples/#generating-and-visualizing-streamlines">example</a> for usage.</p>
 <hr />
 <h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
@@ -1358,7 +1372,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 17, 2026 12:55:11 UTC"><span class="timeago" datetime="2026-06-17T12:55:11+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 17, 2026 12:55:11 UTC">2026-06-17</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 22, 2026 08:58:43 UTC"><span class="timeago" datetime="2026-09-22T08:58:43+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 22, 2026 08:58:43 UTC">2026-09-22</span>
   </span>
 
     
