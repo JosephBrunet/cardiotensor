@@ -131,6 +131,18 @@ def test_normalize_attrs_already_degrees():
     np.testing.assert_allclose(result["IA"][0], [-0.5, 0.0, 0.5], atol=1e-6)
 
 
+def test_normalize_attrs_preserves_positive_degrees_across_field():
+    attrs = {
+        "HA": [
+            np.array([5.0], dtype=np.float32),
+            np.array([10.0, 20.0], dtype=np.float32),
+        ]
+    }
+    result = normalize_attrs_to_degrees(attrs)
+    np.testing.assert_allclose(result["HA"][0], [5.0])
+    np.testing.assert_allclose(result["HA"][1], [10.0, 20.0])
+
+
 # ---------------------------------------------------------------------------
 # compute_elevation_angles
 # ---------------------------------------------------------------------------

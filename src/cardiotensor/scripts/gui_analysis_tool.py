@@ -42,11 +42,22 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--image-mode",
         type=str,
-        default="HA",
+        default=None,
         choices=["HA", "IA", "EL", "AZ", "FA"],
-        help="Which map to display first. Can be switched in the GUI",
+        help=(
+            "Which map to display first. Defaults to HA for ANGLE_MODE=ha_ia "
+            "and AZ for ANGLE_MODE=az_el. Can be switched in the GUI"
+        ),
     )
     return parser.parse_args()
+
+
+def image_mode_from_config(params: dict) -> str:
+    """Return the primary display map for the configured angle pair."""
+    angle_mode = str(params.get("ANGLE_MODE", "ha_ia")).strip().lower()
+    if angle_mode == "az_el":
+        return "AZ"
+    return "HA"
 
 
 def script() -> None:
@@ -70,6 +81,7 @@ def script() -> None:
     # Extract parameters
     mask_path = params.get("MASK_PATH", "")
     output_dir = params.get("OUTPUT_PATH", "./output")
+    image_mode = args.image_mode or image_mode_from_config(params)
 
     # Determine slice number, CLI overrides config
     N_slice = (
@@ -84,7 +96,7 @@ def script() -> None:
         N_slice=N_slice,
         N_line=args.N_line,
         angle_range=args.angle_range,
-        image_mode=args.image_mode,
+        image_mode=image_mode,
     )
     w.show()
     sys.exit(app.exec())

@@ -48,7 +48,8 @@ def load_npz_streamlines(
 
 def load_trk_streamlines(
     p: Path,
-) -> tuple[list[np.ndarray], dict[str, list[np.ndarray]]]:
+    include_per_streamline: bool = False,
+):
     """
     Load streamlines and all per-point fields from a TrackVis .trk file.
     Returns streamlines in (x, y, z) voxel/world space (as stored in the TRK),
@@ -91,7 +92,22 @@ def load_trk_streamlines(
                 )
             per_point[name] = vals
 
-    return streamlines_xyz, per_point
+    if not include_per_streamline:
+        return streamlines_xyz, per_point
+
+    per_streamline: dict[str, np.ndarray] = {}
+    dps = getattr(tg, "data_per_streamline", None)
+    if dps:
+        for name, values in dps.items():
+            values = np.asarray(values)
+            if len(values) != len(streamlines_xyz):
+                raise ValueError(
+                    f"data_per_streamline['{name}'] length {len(values)} does not "
+                    f"match number of streamlines {len(streamlines_xyz)}"
+                )
+            per_streamline[name] = values
+
+    return streamlines_xyz, per_point, per_streamline
 
 
 def ha_to_degrees_per_streamline(ha_list: list[np.ndarray]) -> list[np.ndarray]:
@@ -124,22 +140,35 @@ def normalize_attrs_to_degrees(attrs: dict | None) -> dict[str, list[np.ndarray]
     if not attrs:
         return {}
 
+    angle_ranges = {
+        "HA": (-90.0, 90.0),
+        "IA": (-90.0, 90.0),
+        "AZ": (-180.0, 180.0),
+        "EL": (0.0, 90.0),
+    }
     normalized = {}
     for key, arr_list in attrs.items():
+        name = key.upper()
+        source_arrays = [np.asarray(arr) for arr in arr_list]
+        nonempty = [arr.reshape(-1) for arr in source_arrays if arr.size]
+        byte_scaled = any(arr.dtype == np.uint8 for arr in source_arrays)
+        if nonempty and name in angle_ranges and not byte_scaled:
+            field_min = min(float(np.nanmin(arr)) for arr in nonempty)
+            field_max = max(float(np.nanmax(arr)) for arr in nonempty)
+            _, physical_max = angle_ranges[name]
+            byte_scaled = (
+                field_min >= 0.0 and field_max <= 255.0 and field_max > physical_max
+            )
+
         out_list = []
-        for arr in arr_list:
+        for arr in source_arrays:
             a = np.asarray(arr, dtype=np.float32).reshape(-1)
-
-            # Detect encoding:
-            # If input uses uint8 (0-255), convert -> degrees
-            # Otherwise assume already degrees
-            if a.dtype == np.uint8 or (np.nanmax(a) > 1.5 and np.nanmax(a) <= 255):
-                # Convert 0–255 → -90° to +90° convention
-                a = (a / 255.0) * 180.0 - 90.0
-
+            if byte_scaled and name in angle_ranges:
+                angle_min, angle_max = angle_ranges[name]
+                a = angle_min + (a / 255.0) * (angle_max - angle_min)
             out_list.append(a.astype(np.float32))
 
-        normalized[key.upper()] = out_list
+        normalized[name] = out_list
 
     return normalized
 

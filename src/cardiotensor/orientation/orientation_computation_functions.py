@@ -1,5 +1,7 @@
+import mmap
 import os
 import warnings
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -140,8 +142,11 @@ def calculate_structure_tensor(
     devices: list[str] | None = None,
     block_size: int = 200,
     use_gpu: bool = False,
-    dtype: type = np.float32,  # Default to np.float64
-) -> tuple[np.ndarray, np.ndarray]:
+    gpu_workers_per_device: int = 1,
+    dtype: type = np.float32,
+    return_eigenvalues: bool = True,
+    memmap_dir: str | os.PathLike[str] | None = None,
+) -> tuple[np.ndarray | None, np.ndarray]:
     """
     Calculates the structure tensor of a volume.
 
@@ -152,14 +157,21 @@ def calculate_structure_tensor(
         devices (Optional[list[str]]): List of devices for parallel processing (e.g., ['cpu', 'cuda:0']).
         block_size (int): Size of the blocks for processing. Default is 200.
         use_gpu (bool): If True, uses GPU for calculations. Default is False.
+        gpu_workers_per_device: Worker processes assigned to each visible GPU.
+        dtype: Output dtype for eigenvalues and eigenvectors.
+        return_eigenvalues: If False, do not allocate the eigenvalue volume.
+        memmap_dir: Optional scratch directory for disk-backed tensor outputs.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Eigenvalues and eigenvectors of the structure tensor.
+        tuple[np.ndarray | None, np.ndarray]: Eigenvalues, when requested, and
+        eigenvectors of the structure tensor.
     """
     # Filter or ignore specific warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     num_cpus = get_available_cpu_count(default=4)
+    if gpu_workers_per_device < 1:
+        raise ValueError("gpu_workers_per_device must be at least 1")
 
     devices = devices or []
     num_gpus = 0
@@ -177,10 +189,15 @@ def calculate_structure_tensor(
 
     if not devices:
         if use_gpu and num_gpus > 0:
-            print(f"Using {num_gpus} GPUs for computation")
-            devices = []
-            for i in range(num_gpus):
-                devices.extend([f"cuda:{i}"] * 16)
+            print(
+                f"Using {num_gpus} GPU(s) with "
+                f"{gpu_workers_per_device} worker(s) per GPU"
+            )
+            devices = [
+                f"cuda:{device_id}"
+                for device_id in range(num_gpus)
+                for _ in range(gpu_workers_per_device)
+            ]
         else:
             print(f"Using {num_cpus} CPU for computation")
             devices = ["cpu"] * num_cpus
@@ -189,7 +206,10 @@ def calculate_structure_tensor(
     print(f"---  Volume shape: {volume.shape}")
     print(f"---  sigma: {sigma}, rho: {rho}, Block size: {block_size}")
     if use_gpu and num_gpus > 0:
-        device_str = f"{num_gpus} GPU{'s' if num_gpus > 1 else ''}"
+        device_str = (
+            f"{len(devices)} worker{'s' if len(devices) > 1 else ''} "
+            f"across {num_gpus} GPU{'s' if num_gpus > 1 else ''}"
+        )
     else:
         device_str = f"{num_cpus} CPU{'s' if num_cpus > 1 else ''}"
     print(f"---  Devices: {device_str}")
@@ -198,7 +218,44 @@ def calculate_structure_tensor(
         def update_with_total(self, n=1, total=None):
             if total is not None:
                 self.total = total
+            if (
+                memmap_dir is not None
+                and total is not None
+                and (n % 16 == 0 or n == total)
+            ):
+                for output in (eigenvector_output, eigenvalue_output):
+                    if isinstance(output, np.memmap):
+                        output.flush()
+                        mapped = getattr(output, "_mmap", None)
+                        if (
+                            n == total
+                            and mapped is not None
+                            and hasattr(mapped, "madvise")
+                            and hasattr(mmap, "MADV_DONTNEED")
+                        ):
+                            mapped.madvise(mmap.MADV_DONTNEED)
             return self.update(1)
+
+    eigenvector_output: type | np.memmap = dtype
+    eigenvalue_output: type | np.memmap | None = dtype if return_eigenvalues else None
+    if memmap_dir is not None:
+        scratch_dir = Path(memmap_dir)
+        scratch_dir.mkdir(parents=True, exist_ok=True)
+        output_shape = (3, *volume.shape)
+        eigenvector_output = np.lib.format.open_memmap(
+            scratch_dir / "eigenvectors.npy",
+            mode="w+",
+            dtype=dtype,
+            shape=output_shape,
+        )
+        if return_eigenvalues:
+            eigenvalue_output = np.lib.format.open_memmap(
+                scratch_dir / "eigenvalues.npy",
+                mode="w+",
+                dtype=dtype,
+                shape=output_shape,
+            )
+        print("---  Flushing memory-mapped tensor outputs every 16 blocks")
 
     def run_structure_tensor(selected_devices: list[str]):
         with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
@@ -210,8 +267,8 @@ def calculate_structure_tensor(
                 block_size=block_size,
                 truncate=truncate,
                 structure_tensor=None,
-                eigenvectors=dtype,
-                eigenvalues=dtype,
+                eigenvectors=eigenvector_output,
+                eigenvalues=eigenvalue_output,
                 progress_callback_fn=t.update_with_total,
             )
 
@@ -230,6 +287,8 @@ def calculate_structure_tensor(
     print("Structure tensor computation completed\n")
 
     # vec has shape =(3,z,y,x) in the order of (x,y,z)
+    if vec is None:
+        raise RuntimeError("Structure tensor calculation did not return eigenvectors")
 
     return val, vec
 
@@ -240,6 +299,8 @@ def remove_padding(
     vec: np.ndarray,
     padding_start: int,
     padding_end: int,
+    *,
+    copy: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Removes padding from the volume, eigenvalues, and eigenvectors.
@@ -250,14 +311,19 @@ def remove_padding(
         vec (np.ndarray): The eigenvectors.
         padding_start (int): Padding at the start to remove.
         padding_end (int): Padding at the end to remove.
+        copy: Return compact copies instead of views into the padded arrays.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Adjusted data without padding.
+        Tuple[np.ndarray, np.ndarray, np.ndarray]: Adjusted data without padding.
     """
     array_end = vec.shape[1] - padding_end
     volume = volume[padding_start:array_end, :, :]
     vec = vec[:, padding_start:array_end, :, :]
     val = val[:, padding_start:array_end, :, :]
+    if copy:
+        volume = volume.copy(order="C")
+        vec = vec.copy(order="C")
+        val = val.copy(order="C")
 
     return volume, val, vec
 
@@ -327,21 +393,10 @@ def rotate_vectors_to_new_axis(
             + np.dot(skew_matrix, skew_matrix) * ((1.0 - cos_angle) / (axis_length**2))
         )
 
-    # Flatten the vector field to shape (3, N)
-    vec_reshaped = np.reshape(vector_field_slice, (3, -1))
-
-    # Normalize safely
-    norms = np.linalg.norm(vec_reshaped, axis=0)
-    nonzero_mask = norms > 0
-    vec_reshaped[:, nonzero_mask] /= norms[nonzero_mask]
-
-    # Rotate
-    rotated_vecs = np.dot(rotation_matrix, vec_reshaped)
-
-    # Reshape back
-    rotated_vecs = rotated_vecs.reshape(vector_field_slice.shape)
-
-    return rotated_vecs
+    vector_dtype = np.result_type(vector_field_slice.dtype, np.float32)
+    rotation_matrix = rotation_matrix.astype(vector_dtype, copy=False)
+    vectors = np.asarray(vector_field_slice, dtype=vector_dtype)
+    return np.einsum("ij,jyx->iyx", rotation_matrix, vectors, optimize=True)
 
 
 def orient_vectors_y_positive(vector_field_slice: np.ndarray) -> np.ndarray:
@@ -398,42 +453,48 @@ def compute_helical_and_intrusion_angles(
     Returns:
         Tuple[np.ndarray, np.ndarray]: Helical and intrusion angle arrays.
     """
-    center = center_point[0:2]  # Replace with actual values
     rows, cols = vector_field_2d.shape[1:3]
+    vector_dtype = np.result_type(vector_field_2d.dtype, np.float32)
+    vectors = np.asarray(vector_field_2d, dtype=vector_dtype)
+    vx, vy, vz = vectors
 
-    reshaped_vector_field = np.reshape(vector_field_2d, (3, -1))
+    center_x, center_y = center_point[:2]
+    x = np.arange(cols, dtype=vector_dtype) - vector_dtype.type(center_x)
+    y = np.arange(rows, dtype=vector_dtype) - vector_dtype.type(center_y)
+    x = x[None, :]
+    y = y[:, None]
 
-    center_x, center_y = center[0], center[1]
+    # Compute the cylindrical components directly. This avoids full-size X/Y,
+    # theta, sine, cosine, and three-component intermediate arrays.
+    radius = np.hypot(x, y)
+    radial_component = np.multiply(vx, x)
+    radial_component += vy * y
+    circumferential_component = np.multiply(vy, x)
+    circumferential_component -= vx * y
 
-    X, Y = np.meshgrid(np.arange(cols) - center_x, np.arange(rows) - center_y)
-
-    theta = -np.arctan2(Y.flatten(), X.flatten())
-    cos_angle = np.cos(theta)
-    sin_angle = np.sin(theta)
-
-    # Change coordinate system to cylindrical
-    rotated_vector_field = np.copy(reshaped_vector_field)
-    rotated_vector_field[0, :] = (
-        cos_angle * reshaped_vector_field[0, :]
-        - sin_angle * reshaped_vector_field[1, :]
+    away_from_center = radius > 0
+    np.divide(
+        radial_component,
+        radius,
+        out=radial_component,
+        where=away_from_center,
     )
-    rotated_vector_field[1, :] = (
-        sin_angle * reshaped_vector_field[0, :]
-        + cos_angle * reshaped_vector_field[1, :]
+    np.divide(
+        circumferential_component,
+        radius,
+        out=circumferential_component,
+        where=away_from_center,
     )
+    at_center = ~away_from_center
+    radial_component[at_center] = vx[at_center]
+    circumferential_component[at_center] = vy[at_center]
+    del radius, away_from_center, at_center
 
-    # Reshape rotated vector field to original image dimensions
-    reshaped_rotated_vector_field = np.zeros((3, rows, cols))
-    for i in range(3):
-        reshaped_rotated_vector_field[i] = rotated_vector_field[i].reshape(rows, cols)
-
-    reshaped_rotated_vector_field = orient_vectors_y_positive(
-        reshaped_rotated_vector_field
-    )
-
-    radial_component = reshaped_rotated_vector_field[0, :, :]
-    circumferential_component = reshaped_rotated_vector_field[1, :, :]
-    longitudinal_component = reshaped_rotated_vector_field[2, :, :]
+    longitudinal_component = np.array(vz, copy=True)
+    flip_mask = circumferential_component < 0
+    radial_component[flip_mask] *= -1
+    circumferential_component[flip_mask] *= -1
+    longitudinal_component[flip_mask] *= -1
 
     # Calculate helical and intrusion angles
     if projected:
@@ -448,8 +509,8 @@ def compute_helical_and_intrusion_angles(
             radial_component,
             np.hypot(circumferential_component, longitudinal_component),
         )
-    helical_angle = np.rad2deg(helical_angle)
-    intrusion_angle = np.rad2deg(intrusion_angle)
+    np.rad2deg(helical_angle, out=helical_angle)
+    np.rad2deg(intrusion_angle, out=intrusion_angle)
 
     return helical_angle, intrusion_angle
 
@@ -461,13 +522,15 @@ def compute_azimuth_and_elevation(
     Azimuth = angle in XY plane from +X toward +Y, in degrees [-180, 180]
     Elevation = unsigned angle from XY plane toward +Z, in degrees [0, 90]
     """
-    oriented = orient_vectors_z_positive(vector_field_2d)
-    vx = oriented[0, :, :]
-    vy = oriented[1, :, :]
-    vz = oriented[2, :, :]
+    vx, vy, vz = vector_field_2d
+    az = np.arctan2(vy, vx)
+    flip_mask = vz < 0
+    az[flip_mask] = np.arctan2(-vy[flip_mask], -vx[flip_mask])
+    np.rad2deg(az, out=az)
 
-    az = np.rad2deg(np.arctan2(vy, vx))  # [-180, 180]
-    el = np.rad2deg(np.arctan2(vz, np.hypot(vx, vy)))  # [0, 90]
+    horizontal = np.hypot(vx, vy)
+    el = np.arctan2(np.abs(vz), horizontal)
+    np.rad2deg(el, out=el)
 
     return az, el
 

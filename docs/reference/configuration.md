@@ -36,7 +36,7 @@ RHO = 0.6
 TRUNCATE = 4
 
 # Padding to avoid border artifacts
-# Default value is TRUNCATE * RHO + 0.5
+# By default this includes the support of both Gaussian filtering stages.
 # VERTICAL_PADDING = 10
 
 # Number of slices to load into memory at a time during processing.
@@ -46,9 +46,21 @@ N_CHUNK = 20
 # Enable GPU computation during the structure tensor calculation (True/False)
 USE_GPU = True
 
-# Whether to save the orientation vectors (as .npy) (True/False)
+# Store temporary eigenvalue/eigenvector volumes in memory-mapped files.
+# Enable this when tensor outputs do not comfortably fit in RAM. Temporary
+# files default to OUTPUT_PATH/.cardiotensor_scratch, never the system /tmp.
+# Unsafe N_CHUNK values are reduced automatically from the available memory.
+LOW_MEMORY = False
+# Optional explicit scratch root on your data-processing filesystem.
+# LOW_MEMORY_DIR = /path/to/data-proposal/cardiotensor_scratch
+
+# Whether to save the orientation vectors (True/False)
 # Use for 3D vector/fiber visualisation
 WRITE_VECTORS = True
+
+# Vector storage format: npy or zarr
+# Use zarr for compressed, chunked storage of very large volumes.
+VECTOR_FORMAT = zarr
 
 # Specify the processing direction:
 #   - True: Process slices from the beginning (0) to the end.
@@ -107,6 +119,8 @@ OUTPUT_TYPE = 8bit
 !!! note
 
     Modify the configuration file as needed to fit your dataset.
+    Relative dataset, mask, and output paths are resolved from the directory
+    containing the configuration file.
 
 ---
 
@@ -127,14 +141,34 @@ OUTPUT_TYPE = 8bit
 - **`SIGMA`**: Noise scale before gradient computation. Helps reduce noise while preserving structures.
 - **`RHO`**: Integration scale for smoothing tensor components. Larger values yield smoother orientation fields.
 - **`TRUNCATE`**: Multiple of RHO for defining the gradient filter kernel size.
-- **`VERTICAL_PADDING (optional)`**: Extra padding (in voxels) to avoid edge artifacts. If not set, defaults to TRUNCATE * RHO + 0.5.
+- **`VERTICAL_PADDING (optional)`**: Extra padding (in voxels) to avoid edge
+  artifacts. If omitted, Cardiotensor includes the support radius of both the
+  `SIGMA` and `RHO` Gaussian filters.
 - **`N_CHUNK`**: Number of slices to process simultaneously.
 - **`USE_GPU`**: Enable GPU computation (requires CuPy).
-- **`WRITE_VECTORS`**: Save orientation 3rd vector as `.npy` files.
+- **`LOW_MEMORY`**: Store temporary tensor outputs on disk using memory maps.
+  This reduces RAM use but can be slower unless the temporary directory is on
+  fast node-local storage. Cardiotensor treats `N_CHUNK` as an upper bound and
+  reduces it when the padded chunk would exceed a conservative cgroup-aware
+  memory estimate.
+- **`LOW_MEMORY_DIR (optional)`**: Scratch root for tensor memory maps. If
+  omitted, CardioTensor uses `OUTPUT_PATH/.cardiotensor_scratch`; it never
+  falls back to the system `/tmp`. The required and available scratch
+  capacities are printed before calculation. Temporary task directories are
+  removed after normal completion. Because OOM and `SIGKILL` cannot run
+  cleanup code, inspect this scratch root after failed jobs and remove orphaned
+  `cardiotensor_tensor_*` directories.
+- **`WRITE_VECTORS`**: Save the orientation vector field.
+- **`VECTOR_FORMAT`**: Vector storage backend:
+    - `npy`: one `float32` file per Z slice in `eigen_vec/`.
+    - `zarr` (default): compressed, chunked and sharded storage in `eigen_vec.zarr/`.
+      This is recommended for very large volumes and supports safe slice-level
+      restart tracking.
 
 !!! warning
 
-    Orientation vectors are saved in `float32` format and may consume significant disk space.
+    Orientation vectors are saved in `float32` format. Zarr uses Blosc Zstd
+    compression with bit-shuffle; zero-filled masked regions generally compress well.
 
 - **`REVERSE`**: Process volume from end to start if set to `True`.
 

@@ -67,6 +67,21 @@ def script():
     streamlines_xyz, attrs = load_trk_streamlines(
         inp
     )  # dict like {"HA":[...], "IA":[...], ...}
+    keep = [
+        index
+        for index, streamline in enumerate(streamlines_xyz)
+        if len(streamline) >= 2
+    ]
+    removed = len(streamlines_xyz) - len(keep)
+    if removed:
+        print(f"Skipping {removed} streamline(s) with fewer than 2 points")
+        streamlines_xyz = [streamlines_xyz[index] for index in keep]
+        attrs = {
+            name: [values[index] for index in keep] for name, values in attrs.items()
+        }
+    if not streamlines_xyz:
+        raise ValueError("No streamlines with at least 2 points to export")
+
     attrs_deg = normalize_attrs_to_degrees(
         attrs
     )  # cast to float32 degrees where needed

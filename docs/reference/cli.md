@@ -47,6 +47,21 @@ Visualize results in 3D using vector fields and streamlines.
 - `cardio-visualize-streamlines`
   Visualize streamlines in 3D using Fury. Can also export to ParaView.
 
+The FURY backend uses FURY 2 (PyGfx/WebGPU). In the streamline viewer:
+
+- `O` enables the clipping plane; `H` shows its transform handles; `I` flips it and `R` resets it.
+- `C` enables the crop box; `G` shows its transform handles; `X` resets it.
+- Drag gizmo arrows to translate, spheres to rotate, and cubes to scale along an axis. Click the center to change the gizmo coordinate system.
+- `L` opens material controls, `+`/`-` changes thickness, and `1`–`4` selects camera views. `5` switches projection.
+- `Ctrl+S` saves the session; `P` saves a PNG, `Shift+P` saves at twice the pixel resolution, and `V` records an orbit.
+- `B` changes the background and `S` toggles a ruler in dataset coordinate units.
+
+Existing VTK-era sessions are read and converted when saved. New sessions use
+format version 2 and are intended for the FURY 2 viewer. Overlays and gizmos have
+changed appearance. FURY smoothing now uses a natural cubic spline; set
+`--spline-subdiv 1` to preserve the original points. The PyVista backend retains
+its VTK smoothing.
+
 See the [example](../getting-started/examples.md#generating-and-visualizing-streamlines) for usage.
 
 ---

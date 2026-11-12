@@ -34,7 +34,6 @@ nav:
     - advanced/index.md
     - Python API: advanced/python-api.md
     - Transmural Analysis: advanced/cardio-analysis.md
-    - Streamlines: advanced/streamlines.md
     - SLURM Launcher: advanced/slurm-launcher.md
   - Reference:
     - reference/index.md

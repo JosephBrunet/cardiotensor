@@ -12,6 +12,60 @@ from cardiotensor.utils.image_io import read_image_file, write_image
 from cardiotensor.utils.utils import convert_to_8bit, get_available_cpu_count
 
 
+def _downsample_vector_axes(vector_block: np.ndarray, bin_factor: int) -> np.ndarray:
+    """Downsample unoriented vectors without cancelling equivalent v/-v axes."""
+    if vector_block.ndim != 4 or vector_block.shape[0] != 3:
+        raise ValueError("vector_block must have shape (3, Z, Y, X)")
+    if bin_factor <= 0:
+        raise ValueError("bin_factor must be > 0")
+
+    vectors = np.asarray(vector_block, dtype=np.float32)
+    vectors = np.nan_to_num(vectors, copy=False)
+    _, depth, height, width = vectors.shape
+    out_h = math.ceil(height / bin_factor)
+    out_w = math.ceil(width / bin_factor)
+    pad_h = out_h * bin_factor - height
+    pad_w = out_w * bin_factor - width
+    if pad_h or pad_w:
+        vectors = np.pad(vectors, ((0, 0), (0, 0), (0, pad_h), (0, pad_w)))
+
+    # Each output pixel is represented by a 3x3 orientation tensor:
+    # sum(v @ v.T). Its principal eigenvector is invariant to vector sign.
+    samples = vectors.reshape(3, depth, out_h, bin_factor, out_w, bin_factor).transpose(
+        2, 4, 1, 3, 5, 0
+    )
+    samples = samples.reshape(out_h, out_w, -1, 3)
+    valid = np.any(samples, axis=(2, 3))
+    axes = np.zeros((out_h, out_w, 3), dtype=np.float32)
+    if not np.any(valid):
+        return np.moveaxis(axes, -1, 0)
+
+    all_valid = np.all(valid)
+    active_samples = samples if all_valid else samples[valid]
+    tensors = np.einsum(
+        "...ni,...nj->...ij", active_samples, active_samples, optimize=True
+    )
+    eigenvalues, eigenvectors = np.linalg.eigh(tensors)
+    active_axes = eigenvectors[..., -1].astype(np.float32, copy=False)
+
+    # Choose a deterministic polarity for storage. The physical orientation
+    # remains an axis, so this does not change the result.
+    eps = np.finfo(np.float32).eps
+    z_zero = np.abs(active_axes[..., 2]) <= eps
+    y_zero = np.abs(active_axes[..., 1]) <= eps
+    flip = active_axes[..., 2] < -eps
+    flip |= z_zero & (active_axes[..., 1] < -eps)
+    flip |= z_zero & y_zero & (active_axes[..., 0] < 0)
+    active_axes[flip] *= -1
+    active_axes[eigenvalues[..., -1] <= eps] = 0
+    if all_valid:
+        axes = active_axes
+    else:
+        axes[valid] = active_axes
+
+    return np.moveaxis(axes, -1, 0)
+
+
 def process_vector_block(
     block: list[Path],
     bin_factor: int,
@@ -40,34 +94,86 @@ def process_vector_block(
             return
 
         array = np.empty((3, len(block), h, w), dtype=np.float32)
-        bin_array = np.empty(
-            (3, math.ceil(h / bin_factor), math.ceil(w / bin_factor)), dtype=np.float32
-        )
-
         for i, p in enumerate(block):
             array[:, i, :, :] = np.load(p)
 
-        array = array.mean(axis=1)
-
-        block_size = (bin_factor, bin_factor)
-        for comp in range(3):
-            bin_array[comp] = block_reduce(
-                array[comp], block_size=block_size, func=np.mean
-            )
-
-        np.save(output_file, bin_array.astype(np.float32))
+        bin_array = _downsample_vector_axes(array, bin_factor)
+        np.save(output_file, bin_array)
 
     except Exception as e:
         print(f"Error processing block {idx}: {e}")
         # print(f"Failed to process files: {[str(p) for p in block]}")
-        raise e
+        raise
+
+
+def _process_vector_range(
+    vector_reader: DataReader,
+    start_index: int,
+    end_index: int,
+    bin_factor: int,
+    output_dir: Path,
+    output_index: int,
+    mask_reader: DataReader | None = None,
+    mask_y_indices: np.ndarray | None = None,
+    mask_x_indices: np.ndarray | None = None,
+    overwrite: bool = False,
+) -> None:
+    """Load and downsample one Z range from any DataReader vector backend."""
+    output_file = output_dir / f"eigen_vec_{output_index:06d}.npy"
+    if output_file.exists() and not overwrite:
+        return
+
+    mask = None
+    if mask_reader is not None:
+        vector_depth = vector_reader.shape[1]
+        mask_depth = mask_reader.shape[0]
+        mask_z_indices = (
+            np.arange(start_index, end_index, dtype=np.int64)
+            * mask_depth
+            // vector_depth
+        )
+        mask_start = int(mask_z_indices[0])
+        mask = mask_reader.load_volume(
+            mask_start,
+            int(mask_z_indices[-1]) + 1,
+            show_progress=False,
+        )
+        mask = np.take(mask, mask_y_indices, axis=1)
+        mask = np.take(mask, mask_x_indices, axis=2)
+        mask = mask[mask_z_indices - mask_start]
+        expected_shape = (
+            end_index - start_index,
+            vector_reader.shape[2],
+            vector_reader.shape[3],
+        )
+        if mask.shape != expected_shape:
+            raise ValueError(
+                f"Mask block shape {mask.shape} does not match vector block "
+                f"shape {expected_shape}"
+            )
+        if not np.any(mask):
+            output_shape = (
+                3,
+                math.ceil(vector_reader.shape[2] / bin_factor),
+                math.ceil(vector_reader.shape[3] / bin_factor),
+            )
+            np.save(output_file, np.zeros(output_shape, dtype=np.float32))
+            return
+
+    vector_block = vector_reader.load_volume(
+        start_index, end_index, show_progress=False
+    )
+    if mask is not None:
+        vector_block[:, mask <= 0] = 0
+    np.save(output_file, _downsample_vector_axes(vector_block, bin_factor))
 
 
 def downsample_vector_volume(
     input_npy: Path,
     bin_factor: int,
     output_dir: Path,
-) -> None:
+    mask_path: str | Path | None = None,
+) -> Path:
     """
     Downsamples a vector volume using a thread pool.
 
@@ -75,21 +181,57 @@ def downsample_vector_volume(
         input_npy (Path): Path to the directory containing numpy files.
         bin_factor (int): Binning factor for downsampling.
         output_dir (Path): Path to the output directory.
+        mask_path: Optional mask applied before vector downsampling.
     """
     bin_dir = output_dir / f"bin{bin_factor}"
     eig_out_dir = bin_dir / "eigen_vec"
     os.makedirs(eig_out_dir, exist_ok=True)
 
-    npy_list = sorted(input_npy.glob("*.npy"))
-    if len(npy_list) == 0:
-        return
-
-    # Determine block count
-    blocks = [npy_list[i : i + bin_factor] for i in range(0, len(npy_list), bin_factor)]
+    input_npy = Path(input_npy)
+    mask_path = None if mask_path is None else Path(mask_path)
+    reader = DataReader(input_npy)
+    if len(reader.shape) != 4 or reader.shape[0] != 3:
+        raise ValueError(
+            f"Expected vector field shape (3, Z, Y, X), got {reader.shape}"
+        )
+    total_slices = reader.shape[1]
+    mask_reader = None
+    mask_y_indices = None
+    mask_x_indices = None
+    if mask_path is not None:
+        mask_reader = DataReader(mask_path)
+        if len(mask_reader.shape) != 3:
+            raise ValueError(f"Expected a 3D mask, got shape {mask_reader.shape}")
+        _, vector_height, vector_width = reader.shape[1:]
+        _, mask_height, mask_width = mask_reader.shape
+        mask_y_indices = (
+            np.arange(vector_height, dtype=np.int64) * mask_height // vector_height
+        )
+        mask_x_indices = (
+            np.arange(vector_width, dtype=np.int64) * mask_width // vector_width
+        )
+        print(
+            f"Applying mask shape {mask_reader.shape} to vector field "
+            f"shape {reader.shape[1:]} before binning"
+        )
+    blocks = [
+        (start, min(start + bin_factor, total_slices))
+        for start in range(0, total_slices, bin_factor)
+    ]
     total_blocks = len(blocks)
 
-    # Quick check: if all expected output files already exist, skip processing
-    all_exist = True
+    # Do not reuse vectors produced with a different mask. A missing marker also
+    # invalidates caches created by older Cardiotensor versions.
+    mask_source = (
+        "mask-index-v3:none"
+        if mask_path is None
+        else f"mask-index-v3:{mask_path.resolve()}"
+    )
+    cache_marker = eig_out_dir / ".mask_source"
+    cache_matches = (
+        cache_marker.exists() and cache_marker.read_text().strip() == mask_source
+    )
+    all_exist = cache_matches
     for idx in range(total_blocks):
         expected_file = eig_out_dir / f"eigen_vec_{idx:06d}.npy"
         if not expected_file.exists():
@@ -97,26 +239,36 @@ def downsample_vector_volume(
             break
     if all_exist:
         print("✅ Downsampled images for eigen_vec already exist. Skipping.")
-        return
-
-    # Load dimensions from the first npy in each block
-    sample = np.load(npy_list[0])
-    _, h, w = sample.shape
+        return eig_out_dir
 
     tasks = [
-        (block, bin_factor, h, w, bin_dir, idx) for idx, block in enumerate(blocks)
+        (
+            reader,
+            start,
+            end,
+            bin_factor,
+            eig_out_dir,
+            idx,
+            mask_reader,
+            mask_y_indices,
+            mask_x_indices,
+            not cache_matches,
+        )
+        for idx, (start, end) in enumerate(blocks)
     ]
 
     with ThreadPool(processes=min(get_available_cpu_count(), 32)) as pool:
         with alive_bar(len(tasks), title="Downsampling vector volumes") as bar:
             results = [
                 pool.apply_async(
-                    process_vector_block, args=task, callback=lambda _: bar()
+                    _process_vector_range, args=task, callback=lambda _: bar()
                 )
                 for task in tasks
             ]
             for result in results:
-                result.wait()
+                result.get()
+    cache_marker.write_text(mask_source + "\n")
+    return eig_out_dir
 
 
 def process_image_block(
@@ -200,11 +352,15 @@ def downsample_volume(
     out_dir = bin_dir / subfolder
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Early exit if all output files already exist
+    cache_key = f"scalar-v2:{Path(input_path).resolve()}:{reader.shape}:bin{bin_factor}"
+    cache_marker = out_dir / ".source_complete"
+    cache_matches = (
+        cache_marker.exists() and cache_marker.read_text().strip() == cache_key
+    )
     expected_files = [
         out_dir / f"{subfolder}_{i:06d}.{out_ext}" for i in range(num_blocks)
     ]
-    if all(f.exists() for f in expected_files):
+    if cache_matches and all(f.exists() for f in expected_files):
         print(f"✅ Downsampled images for '{subfolder}' already exist. Skipping.")
         return
 
@@ -220,7 +376,7 @@ def downsample_volume(
     tasks = []
     for block_idx in range(num_blocks):
         out_file = out_dir / f"{subfolder}_{block_idx:06d}.{out_ext}"
-        if not out_file.exists():
+        if not cache_matches or not out_file.exists():
             tasks.append(
                 (file_list, block_idx, bin_factor, H, W, out_file, min_value, max_value)
             )
@@ -240,4 +396,5 @@ def downsample_volume(
                 for task in tasks
             ]
             for r in results:
-                r.wait()
+                r.get()
+    cache_marker.write_text(cache_key + "\n")

@@ -42,6 +42,15 @@ Other useful flags:
 - `--no_monitor`: submit jobs and return immediately (do not watch output progress).
 - `--dry_run`: generate the `.slurm` script and print `sbatch` command without submitting.
 
+When `LOW_MEMORY=True`, the launcher estimates the padded tensor, mask, worker,
+and post-processing peak from `--mem_gb`. If the requested `--chunk_size` is
+unsafe, it is reduced before the array is submitted. Low-memory tensor files
+default to `OUTPUT_PATH/.cardiotensor_scratch`, not node `/tmp`. Set
+`LOW_MEMORY_DIR` only when another data-processing filesystem should be used.
+The generated job prints the selected tensor scratch root and its free capacity.
+After an OOM or cancelled job, remove any orphaned `cardiotensor_tensor_*`
+directories from that scratch root.
+
 Run help for the full list:
 
 ```bash

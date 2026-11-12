@@ -1,60 +1,53 @@
 # Angle Definitions
 
-This page explains how helical and intrusion angles are calculated from the 3D eigenvector field derived by `cardiotensor`.
+Cardiotensor computes helical angle (HA) and intrusion angle (IA) from the local myocyte-axis eigenvector.
 
-By default, Cardiotensor reports **unprojected 3D angles**. The primary eigenvector is not first flattened onto a 2D plane before the angle is measured, because projection discards one component of the vector and can bias the resulting angle. Projection-based angles are available only for legacy comparison.
+By default, these are **unprojected 3D angles**. The vector is not flattened onto a 2D plane before measuring HA or IA, because projection removes one component of the vector and can bias the result.
 
-## Coordinate System
+## Local Components
 
-A transformation to a cylindrical coordinate system is defined for each voxel based on an approximation of the left ventricle (LV) centerline.
+Cardiotensor expresses the vector in a centerline-based cylindrical frame for the left ventricle:
 
-- **Radial (r)**: outward from the LV center
-- **Circumferential (θ)**: tangential around the ventricle
-- **Longitudinal (z)**: base to apex direction
+- **R**: radial component, outward from the LV centerline
+- **C**: circumferential component, tangent around the ventricle
+- **L**: longitudinal component, along the LV axis
 
-To compute local fiber angles consistently, all eigenvectors are first rotated into this cylindrical coordinate frame. This alignment is performed using the Rodrigues rotation formula, which computes the minimal-angle rotation that maps the global reference axis (here the z-axis) onto the local longitudinal axis at each point. This allows a robust comparison of orientations across the myocardium.
+This is a practical LV cylindrical approximation. It should not be read as a full reproduction of anatomically corrected methods that explicitly model epicardial curvature.
 
-## Helical Angle (HA)
+## Helical Angle
 
-The helical angle is defined as the angle between the primary myocyte-axis eigenvector \\( \vec{v}_1 \\) and the local circumferential plane.
+The helical angle measures how far the vector points out of the local horizontal, or short-axis, plane. That plane is spanned by the radial and circumferential directions.
 
-In local cylindrical coordinates, with radial component \\(R\\), circumferential component \\(C\\), and longitudinal component \\(L\\), the unprojected helical angle is:
+```text
+HA = atan2(L, sqrt(R^2 + C^2))
+```
 
-\\[
-\mathrm{HA} = \arctan2\left(L, \sqrt{R^2 + C^2}\right)
-\\]
+Typical values are around -60 degrees at the epicardium, 0 degrees in the mid-wall, and +60 degrees at the endocardium.
 
-It captures the transmural variation of fiber orientation from epicardium to endocardium.
+## Intrusion Angle
 
-Typical pattern:
-- ~−60° at epicardium
-- ~0° in mid-wall
-- ~+60° at endocardium
+The intrusion angle measures radial deviation from the local tangential plane. That plane is spanned by the circumferential and longitudinal directions.
 
-## Intrusion Angle (IA)
+```text
+IA = atan2(R, sqrt(C^2 + L^2))
+```
 
-The intrusion angle is the angle between the primary myocyte-axis eigenvector \\( \vec{v}_1 \\) and the **tangential plane** (longitudinal + circumferential).
+## Projected Legacy Angles
 
-Using the same local components, the unprojected intrusion angle is:
+Set `PROJECTED_ANGLES = True` only when comparing with legacy projection-based maps:
 
-\\[
-\mathrm{IA} = \arctan2\left(R, \sqrt{C^2 + L^2}\right)
-\\]
+```text
+HA_projected = atan2(L, C)
+IA_projected = atan2(R, C)
+```
 
-It captures radial deviation of fiber aggregates and can help identify wall thickening or microstructural disruptions.
+`IA_projected` corresponds to the projected transverse angle terminology often used in the literature.
 
-## Projection Bias
-
-Conventional projected angles are computed after removing one vector component, for example \\(\arctan2(L, C)\\) for projected helical angle or \\(\arctan2(R, C)\\) for projected intrusion angle. These projected quantities can differ from the true 3D orientation when the discarded component is large.
-
-Set `PROJECTED_ANGLES = True` only when you need legacy projected `HA_projected` and `IA_projected` maps for comparison with literature.
-
-This convention follows the projection-error discussion in Agger et al., "Anatomically correct assessment of the orientation of the cardiomyocytes using diffusion tensor imaging", *NMR in Biomedicine* (2020), https://doi.org/10.1002/nbm.4205.
+Projection-based angles can differ from the true 3D orientation when the discarded component is large. This projection bias is discussed in Agger et al., "Anatomically correct assessment of the orientation of the cardiomyocytes using diffusion tensor imaging", *NMR in Biomedicine* (2020), https://doi.org/10.1002/nbm.4205.
 
 ## Angle Ranges
 
 Both angles are reported in degrees:
-- **HA**: −90° to +90°
-- **IA**: −90° to +90°
 
-Angles are defined in a left-handed cylindrical coordinate system aligned to the LV.
+- **HA**: -90 to +90 degrees
+- **IA**: -90 to +90 degrees

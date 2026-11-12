@@ -17,6 +17,7 @@ from pathlib import Path
 from cardiotensor.tractography.generate_streamlines import (
     generate_streamlines_from_params,
 )
+from cardiotensor.utils.image_io import vector_field_path
 from cardiotensor.utils.utils import read_conf_file
 
 
@@ -36,6 +37,9 @@ def script() -> None:
     parser.add_argument("--bin", type=int, default=1, help="Downsampling factor")
     parser.add_argument("--seeds", type=int, default=20000, help="Number of seeds")
     parser.add_argument(
+        "--random-seed", type=int, default=0, help="Random seed for seed selection"
+    )
+    parser.add_argument(
         "--fa-seed-min", type=float, default=0.2, help="Min FA for seeding"
     )
     parser.add_argument("--fa-threshold", type=float, default=0.1, help="FA threshold")
@@ -47,7 +51,10 @@ def script() -> None:
         "--angle", type=float, default=60.0, help="Max turning angle in degrees"
     )
     parser.add_argument(
-        "--min-len", type=int, default=10, help="Minimum streamline length in points"
+        "--min-len",
+        type=int,
+        default=10,
+        help="Minimum streamline length in points (values below 2 are raised to 2)",
     )
 
     # Base angle folder selection for discovery
@@ -77,10 +84,16 @@ def script() -> None:
 
     # Resolve standard output structure
     output_dir = Path(params.get("OUTPUT_PATH", "./output"))
-    vector_field_dir = output_dir / "eigen_vec"
+    vector_field_dir = vector_field_path(
+        output_dir, params.get("VECTOR_FORMAT", "zarr")
+    )
     fa_dir = output_dir / "FA"
     angle_dir = output_dir / angle_folder
     mask_path = params.get("MASK_PATH", None)
+    voxel_size_mm = float(params.get("VOXEL_SIZE", 1000.0)) / 1000.0
+    if voxel_size_mm <= 0:
+        print("VOXEL_SIZE must be positive.")
+        sys.exit(2)
 
     # Call library
     generate_streamlines_from_params(
@@ -99,7 +112,9 @@ def script() -> None:
         max_steps=args.max_steps,
         angle_threshold=args.angle,
         min_length_pts=args.min_len,
+        voxel_sizes_zyx=(voxel_size_mm,) * 3,
         angle_mode=angle_mode,
+        random_seed=args.random_seed,
     )
 
     print(f"Done! Streamlines generated and saved to {output_dir}.")

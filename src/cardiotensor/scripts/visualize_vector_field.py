@@ -17,6 +17,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
+from cardiotensor.utils.image_io import vector_field_path
 from cardiotensor.utils.utils import read_conf_file
 from cardiotensor.visualization.vector_field import visualize_vector_field
 
@@ -24,7 +25,7 @@ from cardiotensor.visualization.vector_field import visualize_vector_field
 def _discover_color_folders(output_dir: Path) -> list[str]:
     candidates = []
     for path in sorted(output_dir.iterdir()):
-        if not path.is_dir() or path.name == "eigen_vec":
+        if not path.is_dir() or path.name in {"eigen_vec", "eigen_vec.zarr"}:
             continue
         try:
             if any(
@@ -72,6 +73,33 @@ def script():
         default="arrow",
         help="Visualization mode (default: arrow)",
     )
+    parser.add_argument(
+        "--invert-arrows",
+        action="store_true",
+        help="Reverse every displayed vector direction (v becomes -v)",
+    )
+    parser.add_argument(
+        "--opacity-mask",
+        type=Path,
+        default=None,
+        help="Binary mask: vectors inside are opaque and outside are transparent",
+    )
+    parser.add_argument(
+        "--outside-opacity",
+        type=float,
+        default=0.05,
+        help="Opacity outside --opacity-mask (default: 0.05)",
+    )
+    parser.add_argument(
+        "--mask-color",
+        default=None,
+        help="Color inside --opacity-mask (name or hex, e.g. red or #ff0000)",
+    )
+    parser.add_argument(
+        "--outside-color",
+        default=None,
+        help="Color outside --opacity-mask (name or hex)",
+    )
 
     parser.add_argument(
         "--colormap",
@@ -103,6 +131,12 @@ def script():
     )
 
     args = parser.parse_args()
+    if not 0.0 <= args.outside_opacity <= 1.0:
+        parser.error("--outside-opacity must be between 0 and 1")
+    if args.opacity_mask is None and args.outside_opacity != 0.05:
+        parser.error("--outside-opacity requires --opacity-mask")
+    if args.opacity_mask is None and (args.mask_color or args.outside_color):
+        parser.error("--mask-color and --outside-color require --opacity-mask")
 
     # Determine colormap
     if args.colormap.lower() == "helix_angle":
@@ -143,7 +177,9 @@ def script():
 
     # Call visualization function (handles both plotting and VTK export)
     visualize_vector_field(
-        vector_field_path=output_dir / "eigen_vec",
+        vector_field_path=vector_field_path(
+            output_dir, params.get("VECTOR_FORMAT", "zarr")
+        ),
         color_volume_path=output_dir / color_volume_dir,
         mask_path=mask_path,
         downsample=args.downsample,
@@ -151,6 +187,11 @@ def script():
         size=args.size,
         radius=args.radius,
         mode=args.mode,
+        invert_arrows=args.invert_arrows,
+        opacity_mask_path=args.opacity_mask,
+        outside_opacity=args.outside_opacity,
+        mask_color=args.mask_color,
+        outside_color=args.outside_color,
         start=args.start,
         end=args.end,
         save_path=args.save,
