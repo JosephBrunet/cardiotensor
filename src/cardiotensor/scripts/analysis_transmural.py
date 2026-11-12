@@ -159,8 +159,10 @@ def script() -> None:
 
     new_slices, geom = utils.ResliceMultipleSlices(axis_vec, C_reslice, images_path)
 
+
+    ########################### To do: Match up geometry 
     for C_done in zip(C_done):
-        geo = utils.get_geom(axis_vec, C_reslice, images_path)
+        geo = utils.GetResliceGeometry(axis_vec, C_reslice, images_path)
 
     for idx, slice in zip(slices, new_slices):
         reslices[idx] = slice

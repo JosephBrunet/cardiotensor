@@ -12,6 +12,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt
 from cardiotensor.utils.DataReader import DataReader
 from cardiotensor.utils.utils import read_conf_file
 import cardiotensor.analysis.analysis_utils as utils
+from cardiotensor.utils.image_io import write_tif
 import csv
 from cardiotensor.colormaps.helix_angle import helix_angle_cmap
 
@@ -49,6 +51,8 @@ def script() -> None:
     ap.add_argument("--value_range", nargs=2, type=float, default=[0.0, 1.0])
     ap.add_argument("--circular", action="store_true", default=False, help="Use circular statistics for plotting (default: False)")
     ap.add_argument("--headless", action="store_true", default=False, help="Disable popups for batch processing")
+    ap.add_argument("--volume_output", action="store_true", default=False, help="Save map of downsampledsegmentation mask")
+    ap.add_argument("--volume_output_only", action="store_true", default=False, help="Save only the downsampled segmentation mask (quit before histograms)")
     args = ap.parse_args()
 
     # Resolve config/base
@@ -150,6 +154,22 @@ def script() -> None:
         seg_map_to_use = seg_radial_map
     else:
         seg_map_to_use = seg_map
+
+    ## Save segmentation mask if requested
+    if args.volume_output or args.volume_output_only:
+        savepath = outdir / "Segmentation_mask"
+        savepath.mkdir(parents=True, exist_ok=True)
+
+        for idx, slic in enumerate(seg_map_to_use):
+            out = savepath / f"segmentation_mask_{idx:06d}.tiff"
+            write_tif(str(out), slic)
+
+        if args.volume_output_only:
+            print(f"Segmentation mask saved to {savepath}. Exiting as requested.")
+            return
+            
+
+
 
     # Resample segment map to HA reader shape
     target_shape = tuple(ha_rdr.shape)
@@ -301,7 +321,11 @@ def script() -> None:
                     for r in range(1, 5):
                         label = base + r
                         rv_segs.append(label)
-                    
+
+            
+
+
+
         # Plot overall histogram
         fig = utils.plot_segment_histogram(
             bins,
