@@ -78,6 +78,7 @@ git = [
 [project.scripts]
 cardio-analysis = "cardiotensor.scripts.gui_analysis_tool:script"
 cardio-analysis-histo = "cardiotensor.scripts.analysis_histograms:script"
+cardio-analysis-histo-aha = "cardiotensor.scripts.analysis_histograms_aha:script"
 cardio-analysis-streamlines = "cardiotensor.scripts.analysis_streamlines:script"
 cardio-create-movie = "cardiotensor.scripts.create_movie:script"
 cardio-downsample-vectors = "cardiotensor.scripts.downsample_vectors:script"

@@ -258,7 +258,20 @@ def calculate_structure_tensor(
         print("---  Flushing memory-mapped tensor outputs every 16 blocks")
 
     def run_structure_tensor(selected_devices: list[str]):
+         # CuPy requires a process pool rather than a thread pool.
+        use_cuda = any(
+            str(device).lower().startswith("cuda:")
+            for device in selected_devices
+        )
+
+        pool_type = "process" if use_cuda else None
+        
         with TqdmTotal(desc="Computing structure tensors", unit="block") as t:
+            kwargs = {}
+
+            if pool_type is not None:
+                kwargs["pool_type"] = pool_type
+
             return parallel_structure_tensor_analysis(
                 volume,
                 sigma,
@@ -270,6 +283,7 @@ def calculate_structure_tensor(
                 eigenvectors=eigenvector_output,
                 eigenvalues=eigenvalue_output,
                 progress_callback_fn=t.update_with_total,
+                **kwargs,
             )
 
     try:
